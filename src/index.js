@@ -1,5 +1,5 @@
 // PDF43: tools for Open PDF Studio in one extension. Each tool lives in its
-// own folder under src/ and can be switched on or off on the PDF43 ribbon
+// own folder under src/ and can be switched on or off on the Seed43 ribbon
 // tab; the choice is remembered.
 //
 //   ocr/  PaddleOCR text recognition engine (Recognize Text, page labels,
@@ -52,7 +52,7 @@ export async function activate(api) {
   const telling = () => TOOLS.filter(t => aan[t.id] !== false).length;
   tab = api.registerRibbonTab({
     id: 'main',
-    label: 'PDF43',
+    label: 'Seed43',
     groups: [
       {
         id: 'tools',

@@ -1,6 +1,6 @@
 # PDF43
 
-Tools for [Open PDF Studio](https://github.com/OpenAEC-Foundation/open-pdf-studio) in one extension. Each tool can be switched on or off on the **PDF43** ribbon tab, and the choice is remembered.
+Tools for [Open PDF Studio](https://github.com/OpenAEC-Foundation/open-pdf-studio) in one extension. Each tool can be switched on or off on the **Seed43** ribbon tab, and the choice is remembered.
 
 | Tool | What it does |
 |---|---|
