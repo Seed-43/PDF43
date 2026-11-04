@@ -1,0 +1,7 @@
+{
+  "id": "lens-ocr",
+  "name": "Lens OCR",
+  "version": "0.1.2",
+  "description": "PaddleOCR text recognition for Open PDF Studio: reads horizontal and vertical text on drawings, runs locally. Pick it as the engine in Recognize Text (OCR).",
+  "author": "Seed-43"
+}

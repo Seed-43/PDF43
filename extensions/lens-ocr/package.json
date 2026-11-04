@@ -1,0 +1,20 @@
+{
+  "name": "lens-ocr",
+  "version": "1.0.0",
+  "description": "PaddleOCR engine add-on for Open PDF Studio",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "onnxruntime-node": "^1.23.2",
+    "onnxruntime-web": "^1.23.2",
+    "pngjs": "^7.0.0"
+  },
+  "private": true
+}
