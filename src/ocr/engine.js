@@ -1,8 +1,8 @@
-// PDF43 OCR: a PaddleOCR (PP-OCR) engine for Open PDF Studio. It registers
-// itself as an OCR engine; pick "PDF43 OCR (PaddleOCR)" as the engine in
+// Paddle OCR: a PaddleOCR (PP-OCR) engine for Open PDF Studio. It registers
+// itself as an OCR engine; pick "Paddle OCR" as the engine in
 // Recognize Text (OCR) and the app uses it for the searchable text layer,
 // page labels and form recognition. Everything runs locally: the models and
-// ONNX Runtime ship inside the PDF43 extension.
+// ONNX Runtime ship inside the Seed43 extension.
 
 import * as ort from 'onnxruntime-web/wasm';
 import { herken, alfabet, bild } from './pipeline.js';
@@ -58,12 +58,12 @@ async function rasterVan(request, gebied, schaal) {
 
 export async function registreerOcr(api) {
   if (api.features?.ocrEngines !== true || api.features?.assets !== true) {
-    console.warn('[pdf43] this Open PDF Studio has no OCR engine slot; update the app');
+    console.warn('[seed43] this Open PDF Studio has no OCR engine slot; update the app');
     return;
   }
   await api.registerOcrEngine({
     id: 'paddleocr',
-    label: 'PDF43 OCR (PaddleOCR)',
+    label: 'Paddle OCR',
     languages: ['eng'],
     region: true,
     async recognize(request) {

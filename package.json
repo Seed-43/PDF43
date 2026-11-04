@@ -1,7 +1,7 @@
 {
-  "name": "pdf43",
+  "name": "seed43",
   "version": "1.0.0",
-  "description": "PDF43: tools for Open PDF Studio",
+  "description": "Seed43 tools for Open PDF Studio",
   "type": "module",
   "main": "src/index.js",
   "scripts": {

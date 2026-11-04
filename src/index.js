@@ -1,13 +1,13 @@
-// PDF43: tools for Open PDF Studio in one extension. Each tool lives in its
+// Seed43: tools for Open PDF Studio in one extension. Each tool lives in its
 // own folder under src/ and can be switched on or off on the Seed43 ribbon
 // tab; the choice is remembered.
 //
-//   ocr/  PaddleOCR text recognition engine (Recognize Text, page labels,
+//   ocr/  Paddle OCR engine (Recognize Text, page labels,
 //         form recognition)
 
 import { registreerOcr, stopOcr } from './ocr/engine.js';
 
-const OPSLAG = 'pdf43.tools';
+const OPSLAG = 'seed43.tools';
 
 const ICOON_OCR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h3"/><path d="M17 4h3v3"/><path d="M20 17v3h-3"/><path d="M7 20H4v-3"/><path d="M8 9h8"/><path d="M8 12h8"/><path d="M8 15h5"/></svg>';
 
@@ -15,10 +15,10 @@ const ICOON_OCR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const TOOLS = [
   {
     id: 'ocr',
-    label: { en: 'OCR', nl: 'OCR' },
+    label: { en: 'Paddle OCR', nl: 'Paddle OCR' },
     title: {
-      en: 'PDF43 OCR: PaddleOCR engine for drawings and scans. When on, pick "PDF43 OCR" as the engine in Recognize Text (OCR).',
-      nl: 'PDF43 OCR: PaddleOCR-engine voor tekeningen en scans. Aan: kies "PDF43 OCR" als engine in Tekst herkennen (OCR).',
+      en: 'Paddle OCR engine. When on, pick "Paddle OCR" as the engine in Recognize Text (OCR).',
+      nl: 'Paddle OCR-engine. Aan: kies "Paddle OCR" als engine in Tekst herkennen (OCR).',
     },
     icon: ICOON_OCR,
     start: (api) => registreerOcr(api),
@@ -44,7 +44,7 @@ export async function activate(api) {
   const aan = leesAan();
   for (const t of TOOLS) {
     if (aan[t.id] !== false) {
-      try { await t.start(api); } catch (e) { console.warn(`[pdf43] ${t.id} did not start:`, e); aan[t.id] = false; }
+      try { await t.start(api); } catch (e) { console.warn(`[seed43] ${t.id} did not start:`, e); aan[t.id] = false; }
     }
   }
 

@@ -1,6 +1,6 @@
 # Third-party components
 
-PDF43 bundles the following, each under its own licence.
+Seed43 bundles the following, each under its own licence.
 
 | Component | Files | Licence | Source |
 |---|---|---|---|

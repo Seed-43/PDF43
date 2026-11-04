@@ -1,22 +1,22 @@
 # PDF43
 
-Tools for [Open PDF Studio](https://github.com/OpenAEC-Foundation/open-pdf-studio) in one extension. Each tool can be switched on or off on the **Seed43** ribbon tab, and the choice is remembered.
+The **Seed43** extension for [Open PDF Studio](https://github.com/OpenAEC-Foundation/open-pdf-studio): tools in one add-on. (This repository is called PDF43; in the app it is Seed43.) Each tool can be switched on or off on the **Seed43** ribbon tab, and the choice is remembered.
 
 | Tool | What it does |
 |---|---|
-| **OCR** | PaddleOCR (PP-OCR) text recognition, running locally. It finds every text line and turns it upright before reading, so drawings that mix horizontal and vertical text, and sheets stored sideways, read in one pass. On a test architectural sheet it read 380 clean words where the built-in Tesseract read 38, and every drawing number in the title blocks correctly. |
+| **Paddle OCR** | Paddle OCR engine: PaddleOCR (PP-OCR) text recognition, running locally. It finds every text line and turns it upright before reading, so drawings that mix horizontal and vertical text, and sheets stored sideways, read in one pass. On a test architectural sheet it read 380 clean words where the built-in Tesseract read 38, and every drawing number in the title blocks correctly. |
 
 ## Install
 
-In Open PDF Studio: **File > Extensions > Browse**, find PDF43, **Install**. Or **Add custom** with `https://github.com/Seed-43/PDF43`, or download `pdf43.oppx` from the latest release and use **Install from File**.
+In Open PDF Studio: **File > Extensions > Browse**, find Seed43, **Install**. Or **Add custom** with `https://github.com/Seed-43/PDF43`, or download `seed43.oppx` from the latest release and use **Install from File**.
 
-**OCR:** open **Recognize Text (OCR)** and set **Engine** to **PDF43 OCR (PaddleOCR)**. The app then uses it for the searchable text layer, page labels and form recognition, and falls back to its built-in Tesseract if it fails. Needs an Open PDF Studio build with the OCR engine slot (`api.features.ocrEngines`).
+**Paddle OCR:** open **Recognize Text (OCR)** and set **Engine** to **Paddle OCR**. The app then uses it for the searchable text layer, page labels and form recognition, and falls back to its built-in Tesseract if it fails. Needs an Open PDF Studio build with the OCR engine slot (`api.features.ocrEngines`).
 
 ## Build
 
 ```bash
 npm install
-node build.mjs                      # dist/pdf43.oppx
+node build.mjs                      # dist/seed43.oppx
 node test/run-node.mjs page.png     # the OCR pipeline in Node, for testing
 ```
 

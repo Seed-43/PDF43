@@ -2,14 +2,13 @@
   "version": 1,
   "extensions": [
     {
-      "id": "pdf43",
-      "name": "PDF43",
-      "description": "Tools for Open PDF Studio. OCR: PaddleOCR text recognition that reads horizontal and vertical text on drawings and scans, locally.",
+      "id": "seed43",
+      "name": "Seed43",
+      "description": "Seed43 tools for Open PDF Studio. Paddle OCR: Paddle OCR engine.",
       "author": "Seed-43",
       "repo": "https://github.com/Seed-43/PDF43",
       "tags": [
         "ocr",
-        "drawings",
         "tools"
       ]
     }
