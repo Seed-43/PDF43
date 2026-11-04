@@ -1,7 +1,7 @@
 {
-  "name": "lens-ocr",
+  "name": "pdf43",
   "version": "1.0.0",
-  "description": "PaddleOCR engine add-on for Open PDF Studio",
+  "description": "PDF43: tools for Open PDF Studio",
   "type": "module",
   "main": "src/index.js",
   "scripts": {

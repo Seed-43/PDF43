@@ -2,15 +2,16 @@
   "version": 1,
   "extensions": [
     {
-      "id": "lens-ocr",
-      "name": "Lens OCR",
-      "description": "PaddleOCR text recognition that reads horizontal and vertical text on drawings and scans. Runs locally. Pick it as the engine in Recognize Text (OCR).",
+      "id": "pdf43",
+      "name": "PDF43",
+      "description": "Tools for Open PDF Studio. OCR: PaddleOCR text recognition that reads horizontal and vertical text on drawings and scans, locally.",
       "author": "Seed-43",
-      "homepage": "https://github.com/Seed-43/PDF43/tree/main/extensions/lens-ocr",
-      "package": "https://github.com/Seed-43/PDF43/releases/download/lens-ocr-v0.1.2/lens-ocr.oppx",
-      "sha256": "331eef3ac803e23a2925e4c503662b602151f8084cb7e2ad388f009314a43e57",
-      "version": "0.1.2",
-      "tags": ["ocr", "drawings"]
+      "repo": "https://github.com/Seed-43/PDF43",
+      "tags": [
+        "ocr",
+        "drawings",
+        "tools"
+      ]
     }
   ]
 }

@@ -1,8 +1,8 @@
-// Lens OCR: a PaddleOCR (PP-OCR) engine for Open PDF Studio. It registers
-// itself as an OCR engine; pick "Lens OCR (PaddleOCR)" as the engine in
+// PDF43 OCR: a PaddleOCR (PP-OCR) engine for Open PDF Studio. It registers
+// itself as an OCR engine; pick "PDF43 OCR (PaddleOCR)" as the engine in
 // Recognize Text (OCR) and the app uses it for the searchable text layer,
 // page labels and form recognition. Everything runs locally: the models and
-// ONNX Runtime ship inside this add-on.
+// ONNX Runtime ship inside the PDF43 extension.
 
 import * as ort from 'onnxruntime-web/wasm';
 import { herken, alfabet, bild } from './pipeline.js';
@@ -56,14 +56,14 @@ async function rasterVan(request, gebied, schaal) {
   return bild(breedtePx, hoogtePx, data);
 }
 
-export async function activate(api) {
+export async function registreerOcr(api) {
   if (api.features?.ocrEngines !== true || api.features?.assets !== true) {
-    console.warn('[lens-ocr] this Open PDF Studio has no OCR engine slot; update the app');
+    console.warn('[pdf43] this Open PDF Studio has no OCR engine slot; update the app');
     return;
   }
   await api.registerOcrEngine({
     id: 'paddleocr',
-    label: 'Lens OCR (PaddleOCR)',
+    label: 'PDF43 OCR (PaddleOCR)',
     languages: ['eng'],
     region: true,
     async recognize(request) {
@@ -94,6 +94,7 @@ function clampGebied(r, page) {
   return { x, y, width: Math.max(1, Math.min(page.width - x, r.width)), height: Math.max(1, Math.min(page.height - y, r.height)) };
 }
 
-export function deactivate() {
+export async function stopOcr(api) {
   laden = null;
+  try { await api?.unregisterOcrEngine?.('paddleocr'); } catch {}
 }

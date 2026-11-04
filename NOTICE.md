@@ -1,6 +1,6 @@
 # Third-party components
 
-Lens OCR bundles the following, each under its own licence.
+PDF43 bundles the following, each under its own licence.
 
 | Component | Files | Licence | Source |
 |---|---|---|---|

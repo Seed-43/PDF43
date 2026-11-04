@@ -2,7 +2,7 @@
 import fs from 'fs';
 import * as ort from 'onnxruntime-node';
 import { PNG } from 'pngjs';
-import { herken, alfabet, bild } from '../src/pipeline.js';
+import { herken, alfabet, bild } from '../src/ocr/pipeline.js';
 const M = new URL('../models/', import.meta.url);
 const sessie = (f) => ort.InferenceSession.create(new URL(f, M).pathname.replace(/^\/([A-Z]:)/, '$1'));
 const [det, cls, rec] = await Promise.all([sessie('det_ppocrv4_mobile.onnx'), sessie('cls_mobile_v2.onnx'), sessie('rec_en_ppocrv5.onnx')]);

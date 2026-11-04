@@ -1,4 +1,4 @@
-// Lens OCR pipeline: PP-OCR (detection, line direction, recognition) on raw
+// PDF43 OCR pipeline: PP-OCR (detection, line direction, recognition) on raw
 // RGBA pixels. Pure JavaScript, so the same code runs in the add-on
 // (onnxruntime-web) and in the Node test harness (onnxruntime-node).
 //

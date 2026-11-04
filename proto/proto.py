@@ -1,4 +1,4 @@
-"""Prototype of the Lens OCR pipeline (PP-OCR via ONNX Runtime) to check
+"""Prototype of the PDF43 OCR pipeline (PP-OCR via ONNX Runtime) to check
 accuracy before porting it to the add-on. Usage:
     python -I proto.py <page.png> [rec_height]
 Prints the recognized lines with confidence."""
