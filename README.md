@@ -4,7 +4,28 @@ The **Seed43** extension for [Open PDF Studio](https://github.com/OpenAEC-Founda
 
 | Tool | What it does |
 |---|---|
+| **Element Library** | Steel and timber sections, members and bolt groups placed to scale from an editable library, with snapping and grips. See below. |
 | **Paddle OCR** | Paddle OCR engine: PaddleOCR (PP-OCR) text recognition, running locally. It finds every text line and turns it upright before reading, so drawings that mix horizontal and vertical text, and sheets stored sideways, read in one pass. On a test architectural sheet it read 380 clean words where the built-in Tesseract read 38, and every drawing number in the title blocks correctly. |
+
+## Element Library
+
+**Seed43 > Element Library** opens the library window: NZ Steel and Timber to start (UB, UC, WB, WC, PFC, angles, hollow sections, bars, purlins, sawn and gauged timber, Prolam posts, hyJOIST I-joists, bolts and the NZ gauge tables), which you edit and save like a CAD block library.
+
+![Element Library window](docs/screenshots/library-window.jpg)
+
+- **Find:** type in the search box across the top (names and sizes: `310UB`, `90x45`, `M20`, `H5`); filter by kind, shape and category on the left, or browse the tree (Steel, Timber, Bolts, Reference tables). Back, forward and home work like a file browser; the result count updates as you type.
+- **Look:** the main area shows a tile with a preview of each section (**To scale** draws a category to one common scale; **-** and **+** change the tile size), or switch to **List** for the editable table. The details panel on the right shows all fields, a larger preview and the source note. Rows marked check come from type names, not a supplier table.
+- **Edit:** in List view (pick a category first): edit cells, add, duplicate or delete rows and columns, **Import CSV** (paste from Excel), rename the category or change its shape. **Save** (Ctrl+S) keeps the library in the app; **Export library** and **Import library** move it between computers; **Reset to default** goes back to the shipped library; **Add new defaults** adds categories that a newer shipped library has and your saved one does not (for example Timber).
+- **Place:** **Place as Section / Elevation / Plan** in the footer, Enter, or double-click a tile (section). Bolts: **Place bolt group**. Keyboard: arrow keys move through the tiles, Enter places, Esc closes, Ctrl+F searches.
+
+On the sheet:
+
+- **Sections and bolt groups:** click to place. Space turns the element by 90 degrees.
+- **Members (elevation or plan):** click point A, then point B, like the line tool; a live preview shows the member and its length. Press-drag-release also works. Hold **Ctrl** or **Shift** to keep the member horizontal or vertical (both keys: also 45 degrees). Esc cancels after point A. **by** in the footer sets the grip you place by: End A (click A then B), Midpoint (click the middle, then an end) or End B.
+- **Snapping:** while placing or dragging a grip, points snap to member ends A and B, midpoints and centre lines, and to section and bolt group centres; a marker and its name show the snap point. Otherwise the app's own snap (PDF lines, grid) is used for the clicked point.
+- **Grips:** select an element with the Select tool to see its grips. Drag end A or B to stretch a member (Ctrl or Shift keeps it square), its midpoint to move it, or the centre of a section or bolt group to move it. One drag is one undo step.
+
+What would need a change in the app itself (the app's own tools snapping to Seed43 elements, a two-point draw mode for plug-ins) is written up in [docs/host-changes.md](docs/host-changes.md).
 
 ## Install
 
