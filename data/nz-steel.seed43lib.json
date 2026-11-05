@@ -1,6 +1,6 @@
 {
  "seed43Library": 1,
- "name": "NZ Steel",
+ "name": "NZ Steel and Timber",
  "units": {
   "length": "mm",
   "mass": "kg/m",
@@ -8,7 +8,7 @@
   "inertia": "mm4",
   "modulus": "mm3"
  },
- "source": "Section data from the Revit steel families (UB axes corrected; HST properties left out). Gauge tables and bolt clearances from the Revit reference schedules.",
+ "source": "Section data from the Revit steel families (UB axes corrected; HST properties left out). Gauge tables and bolt clearances from the Revit reference schedules. Timber sizes from the timber type names in the Revit model (Timber Framing, TIMBER GAUGED, Prolam Posts, hyJOIST): check them against the supplier tables (rows marked check).",
  "categories": [
   {
    "id": "ub",
@@ -8331,6 +8331,214 @@
      "t": 1.45,
      "d": 300,
      "b": 100
+    }
+   ]
+  },
+  {
+   "id": "timber-gauged",
+   "name": "Timber gauged",
+   "group": "Timber",
+   "kind": "section",
+   "shape": "rect",
+   "fields": [
+    "d",
+    "b",
+    "plies",
+    "grade",
+    "treatment",
+    "check"
+   ],
+   "note": "Sawn and gauged framing, depth x breadth in mm, from the Revit types Timber Framing and TIMBER GAUGED. Sizes are as named; grade and treatment are only filled in where the type name gives them. Check against NZS 3604 / the supplier before use. 2/ = two pieces side by side.",
+   "items": [
+    {
+     "name": "90x45",
+     "d": 90,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "140x45",
+     "d": 140,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "190x45",
+     "d": 190,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "240x45",
+     "d": 240,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "290x45",
+     "d": 290,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "90x90",
+     "d": 90,
+     "b": 90,
+     "check": true
+    },
+    {
+     "name": "140x90",
+     "d": 140,
+     "b": 90,
+     "check": true
+    },
+    {
+     "name": "190x90",
+     "d": 190,
+     "b": 90,
+     "check": true
+    },
+    {
+     "name": "2/240x45 SG8",
+     "d": 240,
+     "b": 90,
+     "plies": 2,
+     "grade": "SG8",
+     "check": true
+    },
+    {
+     "name": "2/290x45 SG8",
+     "d": 290,
+     "b": 90,
+     "plies": 2,
+     "grade": "SG8",
+     "check": true
+    },
+    {
+     "name": "100x100 H5 brace",
+     "d": 100,
+     "b": 100,
+     "treatment": "H5",
+     "check": true
+    }
+   ]
+  },
+  {
+   "id": "prolam-posts",
+   "name": "Glulam / LVL posts (Prolam)",
+   "group": "Timber",
+   "kind": "section",
+   "shape": "rect",
+   "fields": [
+    "d",
+    "b",
+    "nominal",
+    "grade",
+    "treatment",
+    "check"
+   ],
+   "note": "Prolam H5 laminated posts, from the Revit type names PLPH5-125 to 350. The number is the nominal size; d and b are set to it until checked. The finished sizes are smaller (retail listings give PLPH5-100 as 88 x 88). Enter the finished size and grade (PL8 / PL12) from the Prolam product list.",
+   "items": [
+    {
+     "name": "PLPH5-125",
+     "d": 125,
+     "b": 125,
+     "nominal": 125,
+     "treatment": "H5",
+     "check": true
+    },
+    {
+     "name": "PLPH5-150",
+     "d": 150,
+     "b": 150,
+     "nominal": 150,
+     "treatment": "H5",
+     "check": true
+    },
+    {
+     "name": "PLPH5-200",
+     "d": 200,
+     "b": 200,
+     "nominal": 200,
+     "treatment": "H5",
+     "check": true
+    },
+    {
+     "name": "PLPH5-250",
+     "d": 250,
+     "b": 250,
+     "nominal": 250,
+     "treatment": "H5",
+     "check": true
+    },
+    {
+     "name": "PLPH5-300",
+     "d": 300,
+     "b": 300,
+     "nominal": 300,
+     "treatment": "H5",
+     "check": true
+    },
+    {
+     "name": "PLPH5-350",
+     "d": 350,
+     "b": 350,
+     "nominal": 350,
+     "treatment": "H5",
+     "check": true
+    }
+   ]
+  },
+  {
+   "id": "hyjoist",
+   "name": "I-joists (hyJOIST)",
+   "group": "Timber",
+   "kind": "section",
+   "shape": "ijoist",
+   "fields": [
+    "d",
+    "b",
+    "tf",
+    "tw",
+    "check"
+   ],
+   "note": "hyJOIST engineered I-joists (LVL flanges, plywood web), from the Revit type names: HJ240 63 = 240 deep, 63 wide flange. Flange depth tf and web thickness tw are not in the names: enter them from the Futurebuild hyJOIST design guide to draw the true outline (until then the outline is drawn with the web dashed).",
+   "items": [
+    {
+     "name": "HJ200 45",
+     "d": 200,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "HJ240 45",
+     "d": 240,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "HJ240 63",
+     "d": 240,
+     "b": 63,
+     "check": true
+    },
+    {
+     "name": "HJ240 90",
+     "d": 240,
+     "b": 90,
+     "check": true
+    },
+    {
+     "name": "HJ300 45",
+     "d": 300,
+     "b": 45,
+     "check": true
+    },
+    {
+     "name": "HJ300 63",
+     "d": 300,
+     "b": 63,
+     "check": true
     }
    ]
   },

@@ -30,6 +30,21 @@ export function sectieVorm(shape, it) {
         [hb, -hd + lip], [hb, -hd], [-hb, -hd], [-hb, hd], [hb, hd], [hb, hd - lip], [hb - t, hd - lip], [hb - t, hd - t],
         [-hb + t, hd - t], [-hb + t, -hd + t], [hb - t, -hd + t], [hb - t, -hd + lip]]] };
     }
+    case 'rect': {
+      // Timber: the section with a cross; 2/ = pieces side by side.
+      const n = Math.max(1, Math.round(num(it.plies) || 1));
+      const lijnen = [[[-hb, -hd], [hb, hd]], [[hb, -hd], [-hb, hd]]];
+      for (let i = 1; i < n; i++) { const x = -hb + (b * i) / n; lijnen.push([[x, -hd], [x, hd]]); }
+      return { w: b, h: d, hout: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    case 'ijoist': {
+      // I-joist: true outline once tf and tw are known, else the outline
+      // with the web dashed.
+      const f = num(it.tf), w = num(it.tw);
+      if (f > 0 && w > 0) return { ...sectieVorm('I', { d, b, tf: f, tw: w }), hout: true };
+      return { w: b, h: d, hout: true, streep: [[[0, -hd], [0, hd]]],
+        polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
     case 'flat':
     default:
       return { w: b, h: d, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
@@ -45,6 +60,59 @@ function draai([x, y], graden) {
 export function gedraaid(w, h, graden) {
   const r = ((graden || 0) * Math.PI) / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
   return { w: w * c + h * s, h: w * s + h * c };
+}
+
+const STAAL = '#1d4ed8';
+const HOUT = '#92400e';
+const HOUT_VUL = 'rgba(180, 120, 50, 0.16)';
+
+/** Timber shapes are drawn in brown. */
+export const isHout = (shape) => shape === 'rect' || shape === 'ijoist';
+
+/** Fill and stroke a section outline (mm) at cx, cy, k page points per mm. */
+function tekenVorm(ctx, v, cx, cy, k, rot, kleur, vul) {
+  const P = (p) => { const [x, y] = draai(p, rot); return [cx + x * k, cy + y * k]; };
+  ctx.strokeStyle = kleur;
+  ctx.fillStyle = vul;
+  ctx.beginPath();
+  for (const poly of v.polys || []) {
+    poly.forEach((p, i) => { const [x, y] = P(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.closePath();
+  }
+  for (const c of v.circles || []) {
+    ctx.moveTo(cx + c.r * k, cy);
+    ctx.arc(cx, cy, c.r * k, 0, Math.PI * 2, !!c.hole);
+  }
+  ctx.fill('evenodd');
+  ctx.stroke();
+  const lijn = (lijst, streep) => {
+    if (!lijst?.length) return;
+    const lw = ctx.lineWidth;
+    ctx.lineWidth = lw * 0.6;
+    ctx.setLineDash(streep ? [lw * 4, lw * 3] : []);
+    ctx.beginPath();
+    for (const [a, b] of lijst) { const [x1, y1] = P(a), [x2, y2] = P(b); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = lw;
+  };
+  lijn(v.lijnen, false);
+  lijn(v.streep, true);
+}
+
+/** A section fitted into a w x h box (library previews), proportions kept. */
+export function tekenVoorbeeld(ctx, shape, it, w, h, opties = {}) {
+  const v = sectieVorm(shape, it);
+  if (!(v.w > 0) || !(v.h > 0)) return false;
+  const marge = opties.marge ?? 6;
+  const k = opties.k || Math.min((w - 2 * marge) / v.w, (h - 2 * marge) / v.h);
+  ctx.save();
+  ctx.lineWidth = opties.lijn || 1;
+  ctx.lineJoin = 'round';
+  const kleur = opties.kleur || (v.hout ? HOUT : STAAL);
+  tekenVorm(ctx, v, w / 2, h / 2, k, 0, kleur, v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.16)');
+  ctx.restore();
+  return true;
 }
 
 export function sectieMaat(el) {
@@ -63,25 +131,11 @@ export function tekenSectie(ctx, ann) {
   const cx = ann.x + m.w / 2, cy = ann.y + m.h / 2;
   ctx.save();
   ctx.lineWidth = 0.6;
-  ctx.strokeStyle = el.color || '#1d4ed8';
-  ctx.fillStyle = 'rgba(29, 78, 216, 0.18)';
-  ctx.beginPath();
-  for (const poly of v.polys || []) {
-    poly.forEach((p, i) => {
-      const [x, y] = draai(p, el.rotation || 0);
-      i ? ctx.lineTo(cx + x * k, cy + y * k) : ctx.moveTo(cx + x * k, cy + y * k);
-    });
-    ctx.closePath();
-  }
-  for (const c of v.circles || []) {
-    ctx.moveTo(cx + c.r * k, cy);
-    ctx.arc(cx, cy, c.r * k, 0, Math.PI * 2, !!c.hole);
-  }
-  ctx.fill('evenodd');
-  ctx.stroke();
+  const kleur = el.color || (v.hout ? HOUT : STAAL);
+  tekenVorm(ctx, v, cx, cy, k, el.rotation || 0, kleur, v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.18)');
   if (el.label !== false) {
     const { h } = m;
-    ctx.fillStyle = el.color || '#1d4ed8';
+    ctx.fillStyle = kleur;
     ctx.font = '7px Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -176,11 +230,14 @@ export function lidProfiel(shape, it, view) {
     else if (shape === 'channel') lijnen.push({ o: -b / 2 + tw, dash: true });
     else if (shape === 'angle') lijnen.push({ o: -b / 2 + t, dash: true });
     else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c') lijnen.push({ o: -breedte / 2 + t, dash: true }, { o: breedte / 2 - t, dash: true });
+    else if (shape === 'rect') { const n = Math.max(1, Math.round(num(it.plies) || 1)); for (let i = 1; i < n; i++) lijnen.push({ o: -b / 2 + (b * i) / n }); }
+    else if (shape === 'ijoist') { const w = num(it.tw); if (w > 0) lijnen.push({ o: -w / 2, dash: true }, { o: w / 2, dash: true }); else lijnen.push({ o: 0, dash: true }); }
   } else {
     breedte = d;
     if (shape === 'I' || shape === 'channel') lijnen.push({ o: -d / 2 + tf }, { o: d / 2 - tf });
     else if (shape === 'angle') lijnen.push({ o: -d / 2 + t });
     else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c') lijnen.push({ o: -d / 2 + t, dash: true }, { o: d / 2 - t, dash: true });
+    else if (shape === 'ijoist' && num(it.tf) > 0) lijnen.push({ o: -d / 2 + num(it.tf) }, { o: d / 2 - num(it.tf) });
   }
   return { breedte, lijnen };
 }
@@ -207,11 +264,11 @@ export function tekenLid(ctx, ann) {
   const el = ann.element;
   if (!el) return;
   const g = lidGeometrie(ann);
-  const kleur = el.color || '#1d4ed8';
+  const kleur = el.color || (isHout(el.shape) ? HOUT : STAAL);
   ctx.save();
   ctx.strokeStyle = kleur;
   ctx.lineWidth = 0.6;
-  ctx.fillStyle = 'rgba(29, 78, 216, 0.10)';
+  ctx.fillStyle = isHout(el.shape) ? HOUT_VUL : 'rgba(29, 78, 216, 0.10)';
   ctx.beginPath();
   g.hoeken.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.closePath();
