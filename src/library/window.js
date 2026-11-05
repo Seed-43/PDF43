@@ -127,7 +127,7 @@ export async function openBibliotheek(api) {
       if (zoek && !JSON.stringify(it).toLowerCase().includes(zoek)) return;
       const r = maak('tr', i === gekozenRij ? 'background:var(--theme-app-menu-item-hover,#eef);' : '');
       r.addEventListener('click', () => { if (gekozenRij !== i) { gekozenRij = i; for (const x of t.querySelectorAll('tr')) x.style.background = ''; r.style.background = 'var(--theme-app-menu-item-hover,#eef)'; } });
-      r.addEventListener('dblclick', () => { if (c.kind !== 'table') { gekozenRij = i; plaatsGekozen(); } });
+      r.addEventListener('dblclick', () => { if (c.kind !== 'table') { gekozenRij = i; plaatsGekozen('section'); } });
       for (const k of kolommen) {
         const td = maak('td', 'border-bottom:1px solid var(--theme-app-menu-divider,#eee);padding:0;');
         const inp = maak('input', `font:inherit;border:none;background:transparent;color:inherit;padding:3px 6px;width:${k === 'name' ? 150 : 80}px;`);
@@ -152,15 +152,19 @@ export async function openBibliotheek(api) {
       knop('Import CSV', () => csvImport(c)),
       knop('Delete category', () => { if (!confirm(`Delete the category "${c.name}" and its ${c.items.length} rows?`)) return; lib.categories = lib.categories.filter((x) => x !== c); catId = lib.categories[0]?.id; markeer(); tekenAlles(); }),
     );
-    if (c.kind !== 'table') rijKnoppen.append(maak('span', 'flex:1'), knop(c.kind === 'bolt' ? 'Place bolt group' : 'Place section', plaatsGekozen, PRIMAIR));
+    if (c.kind === 'bolt') rijKnoppen.append(maak('span', 'flex:1'), knop('Place bolt group', () => plaatsGekozen('section'), PRIMAIR));
+    else if (c.kind === 'section') rijKnoppen.append(maak('span', 'flex:1'), maak('span', 'align-self:center;opacity:.8', 'Place as:'),
+      knop('Section', () => plaatsGekozen('section'), PRIMAIR),
+      knop('Elevation (A to B)', () => plaatsGekozen('elevation'), PRIMAIR),
+      knop('Plan (A to B)', () => plaatsGekozen('plan'), PRIMAIR));
   }
 
-  function plaatsGekozen() {
+  function plaatsGekozen(view = 'section') {
     const c = cat(); const it = c?.items[gekozenRij];
     if (!it) { alert('Select a row first.'); return; }
     if (gewijzigd) try { bewaarBibliotheek(lib); gewijzigd = false; } catch (e) { alert(e.message); return; }
     achter.remove();
-    plaats(api, c, it);
+    plaats(api, c, it, view);
   }
 
   function csvImport(c) {

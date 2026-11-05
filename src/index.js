@@ -12,7 +12,7 @@
 
 import { registreerOcr, stopOcr } from './ocr/engine.js';
 import { startStamps, wisselPalet, bouwer } from './stamps/index.js';
-import { startElementen } from './library/elements.js';
+import { startElementen, stopElementen } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 
 const OPSLAG = 'seed43.tools';
@@ -122,5 +122,6 @@ export async function activate(api) {
 
 export async function deactivate(api) {
   tab = null;
+  stopElementen();
   for (const t of TOOLS) { try { await t.stop(api); } catch {} }
 }
