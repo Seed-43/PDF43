@@ -21,6 +21,16 @@ Noted 2026-11-05.
 
 Noted 2026-11-05.
 
+## Timber sizes in the library (required)
+
+Add timber to the NZ library (sawn timber sizes and grades, gauged,
+glulam / LVL such as Prolam and hyJOIST), placed like the steel sections
+(section, elevation, plan). Possible source: the timber families in the
+Revit model (Timber Framing, TIMBER GAUGED, Prolam Posts, hyJOIST,
+TaranakiPine), checked against the supplier tables before use.
+
+Noted 2026-11-05.
+
 ## Element Library window: needs TLC (required)
 
 The library window works but needs a redesign and polish. Fred is deciding
