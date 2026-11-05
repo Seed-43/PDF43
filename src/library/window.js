@@ -1,23 +1,143 @@
-// The Element Library window: browse, edit and save the library like a CAD
-// block library, and place sections and bolt groups from it.
+// The Element Library window: browse the library like a family browser
+// (filter and category tree on the left, search across the top, a grid of
+// to-scale previews or the editable table in the middle, details on the
+// right), edit and save it like a CAD block library, and place sections,
+// members and bolt groups from it.
 
-import { laadBibliotheek, bewaarBibliotheek, standaardBibliotheek, geldigeBibliotheek, SOORTEN, VORMEN } from './store.js';
-import { plaats } from './elements.js';
+import {
+  laadBibliotheek, bewaarBibliotheek, standaardBibliotheek, geldigeBibliotheek, nieuweStandaardCategorieen,
+  groepVan, SOORTEN, VORMEN,
+} from './store.js';
+import { plaats, PLAATS_GREPEN } from './elements.js';
+import { tekenVoorbeeld, sectieVorm, isHout } from './draw.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
-const KNOP = 'font:inherit;padding:4px 10px;cursor:pointer;border:1px solid var(--theme-app-menu-sidebar-border,#999);background:var(--theme-app-menu-bg,#fff);color:inherit;';
-const PRIMAIR = KNOP + 'background:var(--theme-accent,#0078d7);border-color:var(--theme-accent,#0078d7);color:#fff;';
-const INVOER = 'font:inherit;padding:3px 5px;border:1px solid var(--theme-app-menu-sidebar-border,#999);background:var(--theme-app-menu-bg,#fff);color:inherit;';
+const UI_OPSLAG = 'seed43.library.ui';
+const GROEP_VOLGORDE = ['Steel', 'Timber', 'Bolts', 'Reference tables'];
+const SOORT_MEERVOUD = { section: 'Sections', bolt: 'Bolts', table: 'Tables' };
 
-function maak(tag, stijl = '', tekst = '') {
+// ── Styles (once, scoped under .s43l) ──────────────────────────────────────
+
+const CSS = `
+.s43l-achter{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:3000;display:flex;align-items:center;justify-content:center;}
+.s43l{--bg:var(--theme-app-menu-bg,#fff);--tx:var(--theme-app-menu-text,#1f2328);--rand:var(--theme-app-menu-sidebar-border,#c8ccd1);
+  --lijn:var(--theme-app-menu-divider,#e3e5e8);--hover:var(--theme-app-menu-item-hover,#eef2f7);--acc:var(--theme-accent,#0078d7);
+  --vlak:var(--hover);--vlak:color-mix(in srgb,var(--tx) 4%,var(--bg));--zacht:color-mix(in srgb,var(--tx) 60%,var(--bg));
+  width:min(1320px,97vw);height:min(840px,94vh);display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);background:var(--bg);color:var(--tx);
+  border:1px solid var(--rand);border-radius:8px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:12px;overflow:hidden;font-family:inherit;}
+.s43l *{box-sizing:border-box;}
+.s43l button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--rand);border-radius:5px;padding:4px 10px;cursor:pointer;line-height:1.3;}
+.s43l button:hover:not(:disabled){background:var(--hover);}
+.s43l button:disabled{opacity:.45;cursor:default;}
+.s43l button.prim{background:var(--acc);border-color:var(--acc);color:#fff;}
+.s43l button.prim:hover:not(:disabled){filter:brightness(1.08);background:var(--acc);}
+.s43l button.ikoon{padding:3px 7px;min-width:28px;}
+.s43l button.aan{background:var(--hover);border-color:var(--acc);}
+.s43l input,.s43l select,.s43l textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--rand);border-radius:5px;padding:3px 6px;}
+.s43l input:focus,.s43l select:focus,.s43l textarea:focus,.s43l button:focus-visible,.s43l .s43l-tegel:focus-visible{outline:2px solid var(--acc);outline-offset:-1px;}
+.s43l-kop{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--lijn);}
+.s43l-titel{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s43l-titel span{font-weight:400;color:var(--zacht);margin-left:6px;}
+.s43l-balk{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--lijn);background:var(--vlak);flex-wrap:wrap;}
+.s43l-nav{display:flex;gap:4px;}
+.s43l-kruimel{display:flex;align-items:center;gap:4px;min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;}
+.s43l-kruimel a{cursor:pointer;color:var(--acc);text-decoration:none;}
+.s43l-kruimel a:hover{text-decoration:underline;}
+.s43l-kruimel b{font-weight:600;}
+.s43l-zoek{flex:1 1 280px;position:relative;min-width:180px;}
+.s43l-zoek input{width:100%;font-size:14px;padding:7px 10px 7px 32px;border-radius:7px;}
+.s43l-zoek svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.55;pointer-events:none;}
+.s43l-aantal{color:var(--zacht);white-space:nowrap;min-width:78px;text-align:right;}
+.s43l-midden{display:grid;grid-template-columns:230px minmax(0,1fr) 290px;min-height:0;}
+.s43l[data-smal="1"] .s43l-midden{grid-template-columns:230px minmax(0,1fr);}
+.s43l[data-smal="1"] .s43l-info{display:none;}
+.s43l[data-smal="1"][data-info="1"] .s43l-info{display:flex;position:absolute;right:0;top:0;bottom:0;width:min(300px,80%);z-index:2;box-shadow:-6px 0 18px rgba(0,0,0,.18);}
+.s43l[data-heel-smal="1"] .s43l-midden{grid-template-columns:minmax(0,1fr);}
+.s43l[data-heel-smal="1"] .s43l-zij{display:none;}
+.s43l[data-heel-smal="1"][data-zij="1"] .s43l-zij{display:flex;position:absolute;left:0;top:0;bottom:0;width:min(250px,85%);z-index:2;box-shadow:6px 0 18px rgba(0,0,0,.18);}
+.s43l-midden{position:relative;}
+.s43l .alleen-smal{display:none;}
+.s43l[data-smal="1"] .alleen-smal.info,.s43l[data-heel-smal="1"] .alleen-smal.zij{display:inline-block;}
+.s43l-zij{border-right:1px solid var(--lijn);display:flex;flex-direction:column;min-height:0;background:var(--bg);}
+.s43l-zij-scroll{flex:1;overflow:auto;padding:6px 0 10px;}
+.s43l-sectie{padding:10px 14px 4px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--zacht);}
+.s43l-filter{padding:2px 14px 6px;display:flex;flex-direction:column;gap:6px;}
+.s43l-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.s43l-chip{border-radius:999px !important;padding:2px 9px !important;font-size:11.5px;}
+.s43l-chip.aan{background:var(--acc) !important;border-color:var(--acc) !important;color:#fff;}
+.s43l-filter select{width:100%;}
+.s43l-boom{padding:0 6px;}
+.s43l-knoop{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:5px;cursor:pointer;user-select:none;}
+.s43l-knoop:hover{background:var(--hover);}
+.s43l-knoop.aan{background:var(--hover);box-shadow:inset 3px 0 0 var(--acc);font-weight:600;}
+.s43l-knoop .n{margin-left:auto;color:var(--zacht);font-variant-numeric:tabular-nums;font-weight:400;}
+.s43l-knoop .pijl{width:12px;display:inline-block;text-align:center;opacity:.6;transition:transform .12s;}
+.s43l-knoop.dicht .pijl{transform:rotate(-90deg);}
+.s43l-knoop.kind{padding-left:26px;}
+.s43l-zij-voet{padding:8px 10px;border-top:1px solid var(--lijn);display:flex;gap:6px;flex-wrap:wrap;}
+.s43l-werk{display:flex;flex-direction:column;min-width:0;min-height:0;}
+.s43l-werk-kop{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--lijn);flex-wrap:wrap;}
+.s43l-werk-kop .notitie{flex-basis:100%;color:var(--zacht);font-style:italic;}
+.s43l-weergave{margin-left:auto;display:flex;gap:4px;align-items:center;}
+.s43l-tegels{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tegel,128px),1fr));gap:10px;align-content:start;}
+.s43l-groepkop{grid-column:1/-1;font-weight:600;padding:6px 2px 0;display:flex;gap:8px;align-items:baseline;border-bottom:1px solid var(--lijn);}
+.s43l-groepkop:first-child{padding-top:0;}
+.s43l-groepkop span{color:var(--zacht);font-weight:400;}
+.s43l-tegel{border:1px solid var(--lijn);border-radius:7px;padding:6px 6px 7px;display:flex;flex-direction:column;align-items:stretch;gap:4px;cursor:pointer;background:var(--bg);outline:none;min-width:0;}
+.s43l-tegel:hover{border-color:var(--rand);background:var(--vlak);}
+.s43l-tegel.aan{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc);background:var(--hover);}
+.s43l-tegel canvas{width:100%;aspect-ratio:4/3;display:block;border-radius:4px;background:var(--vlak);}
+.s43l-tegel .naam{font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s43l-tegel .sub{text-align:center;color:var(--zacht);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s43l-tegel .let{color:#b45309;}
+.s43l-leeg{grid-column:1/-1;padding:40px 10px;text-align:center;color:var(--zacht);}
+.s43l-lijst{flex:1;overflow:auto;}
+.s43l-lijst table{border-collapse:collapse;width:max-content;min-width:100%;}
+.s43l-lijst th{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--rand);padding:5px 6px;text-align:left;font-weight:600;z-index:1;}
+.s43l-lijst td{border-bottom:1px solid var(--lijn);padding:0;}
+.s43l-lijst td.ro{padding:4px 8px;white-space:nowrap;}
+.s43l-lijst tr.aan td{background:var(--hover);}
+.s43l-lijst tr:hover td{background:var(--vlak);}
+.s43l-lijst td input{border:none;background:transparent;border-radius:0;padding:4px 6px;width:84px;}
+.s43l-lijst td input.naam{width:160px;font-weight:600;}
+.s43l-rijknoppen{display:flex;flex-wrap:wrap;gap:6px;padding:7px 12px;border-top:1px solid var(--lijn);}
+.s43l-info{border-left:1px solid var(--lijn);display:flex;flex-direction:column;min-height:0;background:var(--bg);}
+.s43l-info-scroll{flex:1;overflow:auto;padding:12px 14px;}
+.s43l-info canvas{width:100%;aspect-ratio:4/3;display:block;border-radius:6px;background:var(--vlak);border:1px solid var(--lijn);}
+.s43l-info h3{margin:10px 0 2px;font-size:15px;}
+.s43l-info .cat{color:var(--zacht);margin-bottom:8px;}
+.s43l-velden{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-variant-numeric:tabular-nums;}
+.s43l-velden span:nth-child(odd){color:var(--zacht);}
+.s43l-bron{margin-top:12px;padding-top:8px;border-top:1px solid var(--lijn);color:var(--zacht);line-height:1.45;}
+.s43l-let{margin:8px 0;padding:6px 8px;border-radius:5px;background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.45);}
+.s43l-voet{display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--lijn);flex-wrap:wrap;background:var(--vlak);}
+.s43l-voet .status{flex:1;min-width:120px;color:var(--zacht);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s43l-voet .groep{display:flex;align-items:center;gap:6px;}
+.s43l-dialoog{position:fixed;inset:0;z-index:3100;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;}
+.s43l-dialoog>div{width:min(700px,92vw);padding:14px;display:flex;flex-direction:column;gap:8px;border-radius:8px;}
+`;
+
+function zorgVoorCss() {
+  if (document.getElementById('seed43-library-css')) return;
+  const st = document.createElement('style');
+  st.id = 'seed43-library-css';
+  st.textContent = CSS;
+  document.head.appendChild(st);
+}
+
+const IKOON_ZOEK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+
+function maak(tag, klasse = '', tekst = '') {
   const el = document.createElement(tag);
-  if (stijl) el.style.cssText = stijl;
+  if (klasse) el.className = klasse;
   if (tekst) el.textContent = tekst;
   return el;
 }
 
-function knop(tekst, actie, stijl = KNOP) {
-  const b = maak('button', stijl, tekst);
+function knop(tekst, actie, klasse = '', titel = '') {
+  const b = maak('button', klasse, tekst);
+  b.type = 'button';
+  if (titel) b.title = titel;
   b.addEventListener('click', actie);
   return b;
 }
@@ -40,197 +160,725 @@ function leesTabel(tekst) {
 }
 
 const waarde = (s) => (s !== '' && Number.isFinite(+s) ? +s : s);
+const getalTekst = (v) => (typeof v === 'number' ? v.toLocaleString('en-NZ', { maximumFractionDigits: 3 }) : String(v));
+
+function leesUi() {
+  try { return { weergave: 'tegels', schaal: false, greep: 'A', tegel: 128, dicht: [], ...JSON.parse(localStorage.getItem(UI_OPSLAG) || '{}') }; }
+  catch { return { weergave: 'tegels', schaal: false, greep: 'A', tegel: 128, dicht: [] }; }
+}
+function bewaarUi(ui) { try { localStorage.setItem(UI_OPSLAG, JSON.stringify(ui)); } catch {} }
+
+/** Short size text under a tile: "310 x 165", "M20 8.8/S", "90 x 45 SG8". */
+function maatTekst(c, it) {
+  if (c.kind === 'bolt') return [it.category, it.d ? `d ${it.d}` : ''].filter(Boolean).join(', ');
+  if (c.kind === 'table') return c.name;
+  const d = +it.d, b = +it.b;
+  const m = d && b && c.shape !== 'chs' && c.shape !== 'round' ? `${d} x ${b}` : d ? `Ø${d}` : '';
+  return [[m, it.grade, it.treatment].filter(Boolean).join(' '), it.mass ? `${it.mass} kg/m` : ''].filter(Boolean).join(', ');
+}
+
+// ── Previews ───────────────────────────────────────────────────────────────
+
+function themaKleur(el, naam, standaard) {
+  try { return getComputedStyle(el).getPropertyValue(naam).trim() || standaard; } catch { return standaard; }
+}
+
+/** Draw an item into a canvas at its CSS size; k = common mm scale (to scale) or 0 (fit). */
+function tekenInDoek(doek, c, it, k, opties = {}) {
+  const r = doek.getBoundingClientRect();
+  const w = Math.max(40, Math.round(r.width || doek.clientWidth || 120)), h = Math.max(30, Math.round(r.height || (w * 3) / 4));
+  const dpr = window.devicePixelRatio || 1;
+  doek.width = w * dpr; doek.height = h * dpr;
+  const ctx = doek.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const tx = themaKleur(doek, 'color', '#333') || '#333';
+  const acc = opties.acc || '#0078d7';
+  if (c.kind === 'section') {
+    const ok = tekenVoorbeeld(ctx, c.shape, it, w, h, { k: k || 0, kleur: isHout(c.shape) ? '#b45309' : acc, lijn: opties.lijn || 1, marge: opties.marge ?? 8 });
+    if (!ok) { ctx.fillStyle = tx; ctx.globalAlpha = 0.5; ctx.textAlign = 'center'; ctx.fillText('no d / b', w / 2, h / 2); }
+    if (opties.maten && ok) maatLijnen(ctx, c, it, w, h, tx, opties.marge ?? 8);
+  } else if (c.kind === 'bolt') {
+    const d = +it.d || 20, gat = +it.hole || d + 2, af = +it.af || d * 1.6;
+    const s = Math.min(w, h) * 0.8 / Math.max(af * 1.15, gat);
+    ctx.strokeStyle = '#0f766e'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) { const a = (Math.PI / 3) * i + Math.PI / 6, rr = (af / 2 / Math.cos(Math.PI / 6)) * s; const x = w / 2 + rr * Math.cos(a), y = h / 2 + rr * Math.sin(a); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.closePath(); ctx.fillStyle = 'rgba(15,118,110,.12)'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(w / 2, h / 2, (d / 2) * s, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([3, 2]); ctx.beginPath(); ctx.arc(w / 2, h / 2, (gat / 2) * s, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  } else {
+    ctx.strokeStyle = tx; ctx.globalAlpha = 0.45; ctx.lineWidth = 1;
+    const bw = Math.min(w * 0.6, 90), bh = Math.min(h * 0.6, 60), x0 = (w - bw) / 2, y0 = (h - bh) / 2;
+    ctx.strokeRect(x0 + 0.5, y0 + 0.5, bw, bh);
+    for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x0, y0 + (bh * i) / 4); ctx.lineTo(x0 + bw, y0 + (bh * i) / 4); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(x0 + bw / 3, y0); ctx.lineTo(x0 + bw / 3, y0 + bh); ctx.stroke();
+  }
+}
+
+/** b and d dimension text beside the large preview. */
+function maatLijnen(ctx, c, it, w, h, kleur, marge) {
+  const v = sectieVorm(c.shape, it);
+  const k = Math.min((w - 2 * marge) / v.w, (h - 2 * marge) / v.h);
+  const bw = v.w * k, bh = v.h * k;
+  ctx.save();
+  ctx.fillStyle = kleur; ctx.globalAlpha = 0.75; ctx.font = '11px Arial, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText(`${v.w}`, w / 2, (h - bh) / 2 - 2);
+  ctx.save(); ctx.translate((w - bw) / 2 - 3, h / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`${v.h}`, 0, 0); ctx.restore();
+  ctx.restore();
+}
+
+// ── The window ─────────────────────────────────────────────────────────────
+
+let open = null;   // the open window (one at a time)
 
 export async function openBibliotheek(api) {
+  if (open) { open.focus(); return; }
+  zorgVoorCss();
   let lib = kopie(await laadBibliotheek(api));
-  let catId = lib.categories[0]?.id || null;
-  let gekozenRij = -1;
+  const ui = leesUi();
+  let nav = { groep: null, catId: null };
+  const geschiedenis = [nav]; let positie = 0;
+  const filter = { soorten: new Set(Object.keys(SOORTEN)), vorm: '' };
   let zoek = '';
+  let gekozen = null;          // { catId, i }
   let gewijzigd = false;
+  let resultaat = [];          // [{ c, it, i }]
+  let tegels = [];             // tile elements in result order
+  let waarnemer = null;        // IntersectionObserver for lazy previews
 
-  const achter = maak('div', 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000;display:flex;align-items:center;justify-content:center;');
-  const venster = maak('div', 'width:min(1150px,96vw);height:min(720px,92vh);display:flex;flex-direction:column;background:var(--theme-app-menu-bg,#fff);color:var(--theme-app-menu-text,#222);border:1px solid var(--theme-app-menu-sidebar-border,#888);box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:12px;');
-  const kopbalk = maak('div', 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--theme-app-menu-divider,#ddd);');
-  const titel = maak('div', 'font-size:14px;font-weight:bold;flex:1;');
-  const midden = maak('div', 'flex:1;display:flex;min-height:0;');
-  const links = maak('div', 'width:220px;border-right:1px solid var(--theme-app-menu-divider,#ddd);display:flex;flex-direction:column;');
-  const catLijst = maak('div', 'flex:1;overflow:auto;');
-  const rechts = maak('div', 'flex:1;display:flex;flex-direction:column;min-width:0;');
-  const catKop = maak('div', 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--theme-app-menu-divider,#ddd);');
-  const tabelVak = maak('div', 'flex:1;overflow:auto;');
-  const rijKnoppen = maak('div', 'display:flex;flex-wrap:wrap;gap:6px;padding:6px 10px;border-top:1px solid var(--theme-app-menu-divider,#ddd);');
-  const voet = maak('div', 'display:flex;gap:6px;justify-content:flex-end;padding:8px 12px;border-top:1px solid var(--theme-app-menu-divider,#ddd);');
-  links.append(catLijst, maak('div', 'padding:6px;border-top:1px solid var(--theme-app-menu-divider,#ddd);'));
-  rechts.append(catKop, tabelVak, rijKnoppen);
-  midden.append(links, rechts);
-  venster.append(kopbalk, midden, voet);
+  // Skeleton
+  const achter = maak('div', 's43l-achter');
+  const venster = maak('div', 's43l');
+  venster.setAttribute('role', 'dialog');
+  venster.setAttribute('aria-label', 'Element Library');
+  venster.tabIndex = -1;
+  const kop = maak('div', 's43l-kop');
+  const titel = maak('div', 's43l-titel');
+  const balk = maak('div', 's43l-balk');
+  const midden = maak('div', 's43l-midden');
+  const zij = maak('div', 's43l-zij');
+  const zijScroll = maak('div', 's43l-zij-scroll');
+  const zijVoet = maak('div', 's43l-zij-voet');
+  const werk = maak('div', 's43l-werk');
+  const werkKop = maak('div', 's43l-werk-kop');
+  const werkVak = maak('div', '');
+  werkVak.style.cssText = 'flex:1;display:flex;flex-direction:column;min-height:0;';
+  const info = maak('div', 's43l-info');
+  const infoScroll = maak('div', 's43l-info-scroll');
+  const voet = maak('div', 's43l-voet');
+  zij.append(zijScroll, zijVoet);
+  werk.append(werkKop, werkVak);
+  info.append(infoScroll);
+  midden.append(zij, werk, info);
+  venster.append(kop, balk, midden, voet);
   achter.appendChild(venster);
 
-  const cat = () => lib.categories.find((c) => c.id === catId);
-  const markeer = () => { gewijzigd = true; titel.textContent = `Element Library: ${lib.name || 'Library'} *`; };
+  const cat = (id) => lib.categories.find((c) => c.id === id) || null;
+  const gekozenItem = () => { const c = gekozen && cat(gekozen.catId); const it = c?.items[gekozen.i]; return it ? { c, it } : null; };
+  const zetTitel = () => { titel.innerHTML = ''; titel.append('Element Library', maak('span', '', `${lib.name || 'Library'}${gewijzigd ? ' *' : ''}`)); };
+  const markeer = () => { gewijzigd = true; zetTitel(); };
+
   const sluit = () => {
     if (gewijzigd && !confirm('Close without saving your changes?')) return;
+    waarnemer?.disconnect();
+    grootte.disconnect();
+    window.removeEventListener('keydown', toetsen, true);
     achter.remove();
+    open = null;
   };
 
-  function tekenLinks() {
-    catLijst.innerHTML = '';
-    const groepen = {};
-    for (const c of lib.categories) (groepen[c.kind] ||= []).push(c);
-    for (const [soort, lijst] of Object.entries(groepen)) {
-      catLijst.appendChild(maak('div', 'padding:8px 10px 2px;font-size:10px;text-transform:uppercase;opacity:.6;', SOORTEN[soort] || soort));
-      for (const c of lijst) {
-        const r = maak('div', `padding:5px 10px;cursor:pointer;display:flex;justify-content:space-between;${c.id === catId ? 'background:var(--theme-app-menu-item-hover,#eef);font-weight:bold;' : ''}`);
-        r.append(maak('span', '', c.name), maak('span', 'opacity:.5', String(c.items.length)));
-        r.addEventListener('click', () => { catId = c.id; gekozenRij = -1; zoek = ''; tekenAlles(); });
-        catLijst.appendChild(r);
-      }
+  // ── Navigation ──
+  function gaNaar(n, { opslaan = true } = {}) {
+    nav = { groep: n.groep || null, catId: n.catId || null };
+    if (nav.catId) nav.groep = groepVan(cat(nav.catId) || {}) || nav.groep;
+    if (opslaan) { geschiedenis.splice(positie + 1); geschiedenis.push(nav); positie = geschiedenis.length - 1; }
+    if (venster.dataset.zij === '1') venster.dataset.zij = '0';
+    tekenAlles();
+  }
+  const terug = () => { if (positie > 0) { positie--; gaNaar(geschiedenis[positie], { opslaan: false }); } };
+  const vooruit = () => { if (positie < geschiedenis.length - 1) { positie++; gaNaar(geschiedenis[positie], { opslaan: false }); } };
+  const thuis = () => gaNaar({});
+
+  // ── Results ──
+  function hooiberg(c, it) {
+    // Names and sizes: name, category, d x b, and text fields such as grade,
+    // treatment or bolt category (not every section property).
+    const delen = [it.name, c.name, groepVan(c)];
+    if (it.d && it.b) delen.push(`${it.d}x${it.b}`, `${it.b}x${it.d}`);
+    else if (it.d) delen.push(`d${it.d}`);
+    for (const v of Object.values(it)) if (typeof v === 'string') delen.push(v);
+    return delen.join(' ').toLowerCase().replace(/\s*x\s*/g, 'x');
+  }
+  function zoekResultaat() {
+    const woorden = zoek.toLowerCase().replace(/\s*x\s*/g, 'x').split(/\s+/).filter(Boolean);
+    const uit = [];
+    for (const c of lib.categories) {
+      if (!filter.soorten.has(c.kind)) continue;
+      if (filter.vorm && (c.kind !== 'section' || c.shape !== filter.vorm)) continue;
+      if (nav.catId && c.id !== nav.catId) continue;
+      if (nav.groep && groepVan(c) !== nav.groep) continue;
+      c.items.forEach((it, i) => {
+        if (!woorden.length) { uit.push({ c, it, i }); return; }
+        const h = hooiberg(c, it);
+        if (woorden.every((w) => h.includes(w))) uit.push({ c, it, i });
+      });
     }
-    const extra = links.lastChild; extra.innerHTML = '';
-    extra.append(knop('+ Category', () => {
-      const naam = prompt('Name of the new category (e.g. Anchors):'); if (!naam) return;
-      const soort = (prompt('Kind: section, bolt or table', 'table') || 'table').toLowerCase();
-      const id = naam.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString(36).slice(-4);
-      lib.categories.push({ id, name: naam, kind: SOORTEN[soort] ? soort : 'table', shape: soort === 'section' ? 'I' : undefined, fields: soort === 'bolt' ? ['d', 'category', 'hole', 'minEdge', 'minPitch'] : ['d', 'b'], items: [] });
-      catId = id; markeer(); tekenAlles();
-    }));
+    return uit;
   }
 
+  // ── Header and toolbar ──
   function tekenKop() {
-    catKop.innerHTML = '';
-    const c = cat(); if (!c) return;
-    const naam = maak('input', INVOER + 'font-weight:bold;width:160px;'); naam.value = c.name;
-    naam.addEventListener('change', () => { c.name = naam.value.trim() || c.name; markeer(); tekenLinks(); });
-    catKop.append(naam, maak('span', 'opacity:.7', `${SOORTEN[c.kind] || c.kind}`));
-    if (c.kind === 'section') {
-      const vorm = maak('select', INVOER);
-      for (const [k, t] of Object.entries(VORMEN)) { const o = maak('option', '', t); o.value = k; vorm.appendChild(o); }
-      vorm.value = c.shape || 'I';
-      vorm.addEventListener('change', () => { c.shape = vorm.value; markeer(); });
-      catKop.append(maak('span', 'opacity:.7', 'Shape'), vorm);
-    }
-    const z = maak('input', INVOER + 'margin-left:auto;width:180px;'); z.type = 'search'; z.placeholder = 'Search...'; z.value = zoek;
-    z.addEventListener('input', () => { zoek = z.value.trim().toLowerCase(); tekenTabel(); });
-    catKop.appendChild(z);
-    if (c.note) catKop.appendChild(maak('div', 'flex-basis:100%;opacity:.75;font-style:italic;', c.note));
-  }
-
-  function tekenTabel() {
-    tabelVak.innerHTML = '';
-    const c = cat(); if (!c) return;
-    const kolommen = ['name', ...c.fields];
-    const t = maak('table', 'border-collapse:collapse;width:max-content;min-width:100%;');
-    const kop = maak('tr');
-    for (const k of kolommen) kop.appendChild(maak('th', 'position:sticky;top:0;background:var(--theme-app-menu-bg,#fff);border-bottom:1px solid var(--theme-app-menu-divider,#ccc);padding:4px 6px;text-align:left;font-weight:bold;', k));
-    t.appendChild(kop);
-    c.items.forEach((it, i) => {
-      if (zoek && !JSON.stringify(it).toLowerCase().includes(zoek)) return;
-      const r = maak('tr', i === gekozenRij ? 'background:var(--theme-app-menu-item-hover,#eef);' : '');
-      r.addEventListener('click', () => { if (gekozenRij !== i) { gekozenRij = i; for (const x of t.querySelectorAll('tr')) x.style.background = ''; r.style.background = 'var(--theme-app-menu-item-hover,#eef)'; } });
-      r.addEventListener('dblclick', () => { if (c.kind !== 'table') { gekozenRij = i; plaatsGekozen('section'); } });
-      for (const k of kolommen) {
-        const td = maak('td', 'border-bottom:1px solid var(--theme-app-menu-divider,#eee);padding:0;');
-        const inp = maak('input', `font:inherit;border:none;background:transparent;color:inherit;padding:3px 6px;width:${k === 'name' ? 150 : 80}px;`);
-        inp.value = it[k] ?? '';
-        inp.addEventListener('change', () => { const v = waarde(inp.value.trim()); if (v === '') delete it[k]; else it[k] = v; markeer(); });
-        td.appendChild(inp);
-        r.appendChild(td);
-      }
-      t.appendChild(r);
-    });
-    tabelVak.appendChild(t);
-  }
-
-  function tekenKnoppen() {
-    rijKnoppen.innerHTML = '';
-    const c = cat(); if (!c) return;
-    rijKnoppen.append(
-      knop('+ Row', () => { c.items.push({ name: 'New' }); gekozenRij = c.items.length - 1; markeer(); tekenTabel(); tabelVak.scrollTop = 1e9; }),
-      knop('Duplicate row', () => { if (gekozenRij < 0) return; const n = { ...c.items[gekozenRij], name: c.items[gekozenRij].name + ' copy' }; c.items.splice(gekozenRij + 1, 0, n); gekozenRij++; markeer(); tekenTabel(); }),
-      knop('Delete row', () => { if (gekozenRij < 0) return; c.items.splice(gekozenRij, 1); gekozenRij = -1; markeer(); tekenTabel(); }),
-      knop('+ Column', () => { const k = prompt('Column name (e.g. grade):'); if (!k || c.fields.includes(k) || k === 'name') return; c.fields.push(k.trim()); markeer(); tekenTabel(); }),
-      knop('Import CSV', () => csvImport(c)),
-      knop('Delete category', () => { if (!confirm(`Delete the category "${c.name}" and its ${c.items.length} rows?`)) return; lib.categories = lib.categories.filter((x) => x !== c); catId = lib.categories[0]?.id; markeer(); tekenAlles(); }),
+    kop.innerHTML = '';
+    zetTitel();
+    const nieuw = knop('Add new defaults', async () => {
+      const extra = await nieuweStandaardCategorieen(api, lib);
+      if (!extra.length) { alert('Your library already has every category of the default library.'); return; }
+      if (!confirm(`Add ${extra.length} categories from the default library (${extra.map((c) => c.name).join(', ')})? Your own categories and rows stay as they are.`)) return;
+      lib.categories.push(...kopie(extra)); markeer(); tekenAlles();
+    }, '', 'Add the categories of the shipped library that your saved library does not have yet (for example Timber)');
+    nieuw.style.display = 'none';
+    nieuweStandaardCategorieen(api, lib).then((x) => { if (x.length) { nieuw.style.display = ''; nieuw.textContent = `Add new defaults (${x.length})`; } }).catch(() => {});
+    kop.append(titel, nieuw,
+      knop('Rename', () => { const n = prompt('Library name:', lib.name || ''); if (n) { lib.name = n; markeer(); } }),
+      knop('Import library', () => {
+        const inp = maak('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+        inp.addEventListener('change', async () => {
+          try {
+            const v = JSON.parse(await inp.files[0].text());
+            if (!geldigeBibliotheek(v)) throw new Error('not a Seed43 library file');
+            if (!confirm(`Replace the current library with "${v.name || inp.files[0].name}"? (Export the current one first if you want to keep it.)`)) return;
+            lib = v; gekozen = null; markeer(); thuis();
+          } catch (e) { alert(`Could not import: ${e.message || e}`); }
+        });
+        inp.click();
+      }),
+      knop('Export library', () => {
+        const blob = new Blob([JSON.stringify(lib, null, 1)], { type: 'application/json' });
+        const a = maak('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${(lib.name || 'library').replace(/[^A-Za-z0-9 _-]+/g, '')}.seed43lib.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      }),
+      knop('Reset to default', async () => {
+        if (!confirm('Replace the library with the original NZ Steel and Timber library? Your changes are lost unless you exported them.')) return;
+        lib = await standaardBibliotheek(api); gekozen = null; markeer(); thuis();
+      }, '', 'Go back to the library shipped with the extension'),
+      knop('✕', sluit, 'ikoon', 'Close (Esc)'),
     );
-    if (c.kind === 'bolt') rijKnoppen.append(maak('span', 'flex:1'), knop('Place bolt group', () => plaatsGekozen('section'), PRIMAIR));
-    else if (c.kind === 'section') rijKnoppen.append(maak('span', 'flex:1'), maak('span', 'align-self:center;opacity:.8', 'Place as:'),
-      knop('Section', () => plaatsGekozen('section'), PRIMAIR),
-      knop('Elevation (A to B)', () => plaatsGekozen('elevation'), PRIMAIR),
-      knop('Plan (A to B)', () => plaatsGekozen('plan'), PRIMAIR));
   }
 
-  function plaatsGekozen(view = 'section') {
-    const c = cat(); const it = c?.items[gekozenRij];
-    if (!it) { alert('Select a row first.'); return; }
-    if (gewijzigd) try { bewaarBibliotheek(lib); gewijzigd = false; } catch (e) { alert(e.message); return; }
-    achter.remove();
-    plaats(api, c, it, view);
+  const zoekVak = maak('div', 's43l-zoek');
+  const zoekInvoer = maak('input');
+  zoekInvoer.type = 'search';
+  zoekInvoer.placeholder = 'Search names and sizes (e.g. 310UB, 90x45, M20, H5)';
+  zoekInvoer.setAttribute('aria-label', 'Search names and sizes');
+  zoekVak.innerHTML = IKOON_ZOEK;
+  zoekVak.appendChild(zoekInvoer);
+  let zoekTimer = 0;
+  zoekInvoer.addEventListener('input', () => {
+    clearTimeout(zoekTimer);
+    zoekTimer = setTimeout(() => { zoek = zoekInvoer.value.trim(); tekenWerk(); }, 90);
+  });
+  zoekInvoer.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault();
+      if (e.key === 'Enter' && gekozenItem() && zoekResultaat().some((r) => r.c.id === gekozen.catId && r.i === gekozen.i)) { plaatsGekozen('section'); return; }
+      if (resultaat.length) { kies(resultaat[0].c.id, resultaat[0].i); tegels[0]?.focus(); }
+    }
+  });
+  const aantal = maak('div', 's43l-aantal');
+  aantal.setAttribute('aria-live', 'polite');
+  const kruimel = maak('div', 's43l-kruimel');
+  const knopTerug = knop('‹', terug, 'ikoon', 'Back (Alt+Left)');
+  const knopVooruit = knop('›', vooruit, 'ikoon', 'Forward (Alt+Right)');
+  const knopThuis = knop('⌂', thuis, 'ikoon', 'All elements');
+  const knopZij = knop('☰', () => { venster.dataset.zij = venster.dataset.zij === '1' ? '0' : '1'; }, 'ikoon alleen-smal zij', 'Filter and browse');
+  const nav1 = maak('div', 's43l-nav'); nav1.append(knopZij, knopTerug, knopVooruit, knopThuis);
+  balk.append(nav1, kruimel, zoekVak, aantal);
+
+  function tekenBalk() {
+    knopTerug.disabled = positie <= 0;
+    knopVooruit.disabled = positie >= geschiedenis.length - 1;
+    kruimel.innerHTML = '';
+    const link = (tekst, n) => { const a = maak('a', '', tekst); a.addEventListener('click', () => gaNaar(n)); return a; };
+    const delen = [nav.groep || nav.catId ? link('Library', {}) : maak('b', '', 'Library')];
+    if (nav.groep) delen.push(nav.catId ? link(nav.groep, { groep: nav.groep }) : maak('b', '', nav.groep));
+    if (nav.catId) delen.push(maak('b', '', cat(nav.catId)?.name || ''));
+    delen.forEach((d, i) => { if (i) kruimel.append(maak('span', '', '›')); kruimel.append(d); });
+  }
+
+  // ── Sidebar: filter and browse ──
+  function tekenZij() {
+    zijScroll.innerHTML = '';
+    zijScroll.append(maak('div', 's43l-sectie', 'Filter'));
+    const f = maak('div', 's43l-filter');
+    const chips = maak('div', 's43l-chips');
+    for (const [k] of Object.entries(SOORTEN)) {
+      const n = lib.categories.filter((c) => c.kind === k).reduce((s, c) => s + c.items.length, 0);
+      const b = knop(`${SOORT_MEERVOUD[k] || k} ${n}`, () => {
+        if (filter.soorten.has(k) && filter.soorten.size > 1) filter.soorten.delete(k); else filter.soorten.add(k);
+        tekenZij(); tekenWerk();
+      }, `s43l-chip${filter.soorten.has(k) ? ' aan' : ''}`, `Show ${SOORT_MEERVOUD[k] || k}`);
+      b.setAttribute('aria-pressed', String(filter.soorten.has(k)));
+      chips.appendChild(b);
+    }
+    const vorm = maak('select');
+    vorm.setAttribute('aria-label', 'Shape');
+    const vormen = new Set(lib.categories.filter((c) => c.kind === 'section').map((c) => c.shape));
+    vorm.append(new Option('All shapes', ''));
+    for (const [k, t] of Object.entries(VORMEN)) if (vormen.has(k)) vorm.append(new Option(t, k));
+    vorm.value = filter.vorm;
+    vorm.addEventListener('change', () => { filter.vorm = vorm.value; tekenWerk(); });
+    const catKeuze = maak('select');
+    catKeuze.setAttribute('aria-label', 'Category');
+    catKeuze.append(new Option('All categories', ''));
+    for (const c of lib.categories) catKeuze.append(new Option(`${c.name} (${c.items.length})`, c.id));
+    catKeuze.value = nav.catId || '';
+    catKeuze.addEventListener('change', () => gaNaar(catKeuze.value ? { catId: catKeuze.value } : {}));
+    f.append(maak('div', '', 'Kind'), chips, maak('div', '', 'Shape'), vorm, maak('div', '', 'Category'), catKeuze);
+    zijScroll.append(f);
+
+    zijScroll.append(maak('div', 's43l-sectie', 'Browse'));
+    const boom = maak('div', 's43l-boom');
+    boom.setAttribute('role', 'tree');
+    const alles = maak('div', `s43l-knoop${!nav.groep && !nav.catId ? ' aan' : ''}`);
+    alles.append(maak('span', 'pijl', ''), maak('span', '', 'All elements'), maak('span', 'n', String(lib.categories.reduce((s, c) => s + c.items.length, 0))));
+    alles.addEventListener('click', () => gaNaar({}));
+    boom.appendChild(alles);
+    const groepen = new Map();
+    for (const c of lib.categories) { const g = groepVan(c); if (!groepen.has(g)) groepen.set(g, []); groepen.get(g).push(c); }
+    const volgorde = [...groepen.keys()].sort((a, b) => ((GROEP_VOLGORDE.indexOf(a) + 1 || 99) - (GROEP_VOLGORDE.indexOf(b) + 1 || 99)) || a.localeCompare(b));
+    for (const g of volgorde) {
+      const lijst = groepen.get(g);
+      const dicht = ui.dicht.includes(g) && nav.groep !== g;
+      const k = maak('div', `s43l-knoop${nav.groep === g && !nav.catId ? ' aan' : ''}${dicht ? ' dicht' : ''}`);
+      k.setAttribute('role', 'treeitem');
+      const pijl = maak('span', 'pijl', '▾');
+      pijl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ui.dicht = dicht ? ui.dicht.filter((x) => x !== g) : [...ui.dicht, g]; bewaarUi(ui); tekenZij();
+      });
+      k.append(pijl, maak('span', '', g), maak('span', 'n', String(lijst.reduce((s, c) => s + c.items.length, 0))));
+      k.addEventListener('click', () => gaNaar({ groep: g }));
+      boom.appendChild(k);
+      if (dicht) continue;
+      for (const c of lijst) {
+        const r = maak('div', `s43l-knoop kind${c.id === nav.catId ? ' aan' : ''}`);
+        r.setAttribute('role', 'treeitem');
+        r.title = c.note || c.name;
+        r.append(maak('span', '', c.name), maak('span', 'n', String(c.items.length)));
+        r.addEventListener('click', () => gaNaar({ catId: c.id }));
+        boom.appendChild(r);
+      }
+    }
+    zijScroll.append(boom);
+    zijVoet.innerHTML = '';
+    zijVoet.append(knop('+ Category', nieuweCategorie, '', 'Add a category of your own (sections, bolts or a reference table)'));
+  }
+
+  function nieuweCategorie() {
+    const naam = prompt('Name of the new category (e.g. Anchors):'); if (!naam) return;
+    const soort = (prompt('Kind: section, bolt or table', 'section') || 'table').toLowerCase().trim();
+    const k = SOORTEN[soort] ? soort : 'table';
+    let shape;
+    if (k === 'section') {
+      const v = (prompt(`Shape: ${Object.keys(VORMEN).join(', ')}`, nav.groep === 'Timber' ? 'rect' : 'I') || 'I').trim();
+      shape = VORMEN[v] ? v : 'I';
+    }
+    const id = naam.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString(36).slice(-4);
+    const fields = k === 'bolt' ? ['d', 'category', 'hole', 'minEdge', 'minPitch'] : shape === 'rect' ? ['d', 'b', 'grade', 'treatment'] : ['d', 'b'];
+    const c = { id, name: naam, kind: k, fields, items: [] };
+    if (shape) c.shape = shape;
+    if (nav.groep && !['Steel', 'Timber', 'Bolts', 'Reference tables'].includes(nav.groep)) c.group = nav.groep;
+    lib.categories.push(c);
+    ui.weergave = 'lijst'; bewaarUi(ui);
+    markeer(); gaNaar({ catId: id });
+  }
+
+  // ── Main area ──
+  function tekenWerk() {
+    resultaat = zoekResultaat();
+    if (gekozen && !resultaat.some((r) => r.c.id === gekozen.catId && r.i === gekozen.i)) gekozen = null;
+    aantal.textContent = `${resultaat.length.toLocaleString('en-NZ')} result${resultaat.length === 1 ? '' : 's'}`;
+    tekenWerkKop();
+    werkVak.innerHTML = '';
+    waarnemer?.disconnect();
+    if (ui.weergave === 'lijst') tekenLijst(); else tekenTegels();
+    tekenInfo();
+    tekenVoet();
+    if (!venster.contains(document.activeElement)) (tegels.find((t) => t.classList.contains('aan')) || venster).focus({ preventScroll: true });
+  }
+
+  function tekenWerkKop() {
+    werkKop.innerHTML = '';
+    const c = nav.catId && cat(nav.catId);
+    if (c && ui.weergave === 'lijst') {
+      const naam = maak('input'); naam.value = c.name; naam.style.cssText = 'font-weight:600;width:170px;';
+      naam.setAttribute('aria-label', 'Category name');
+      naam.addEventListener('change', () => { c.name = naam.value.trim() || c.name; markeer(); tekenZij(); tekenBalk(); });
+      werkKop.append(naam, maak('span', '', SOORTEN[c.kind] || c.kind));
+      if (c.kind === 'section') {
+        const vorm = maak('select');
+        for (const [k, t] of Object.entries(VORMEN)) vorm.append(new Option(t, k));
+        vorm.value = c.shape || 'I';
+        vorm.addEventListener('change', () => { c.shape = vorm.value; markeer(); tekenInfo(); });
+        werkKop.append(maak('span', '', 'Shape'), vorm);
+      }
+    } else {
+      werkKop.append(maak('b', '', c ? c.name : nav.groep || 'All elements'));
+      if (c) werkKop.append(maak('span', '', `${SOORTEN[c.kind] || c.kind}${c.kind === 'section' ? `, ${VORMEN[c.shape] || c.shape}` : ''}`));
+    }
+    const wg = maak('div', 's43l-weergave');
+    if (ui.weergave === 'tegels') {
+      const schaal = knop('To scale', () => { ui.schaal = !ui.schaal; bewaarUi(ui); tekenWerk(); }, ui.schaal ? 'aan' : '', 'Draw the tiles of a category to one common scale');
+      schaal.setAttribute('aria-pressed', String(!!ui.schaal));
+      const kleiner = knop('−', () => { ui.tegel = Math.max(96, ui.tegel - 24); bewaarUi(ui); tegelMaat(); }, 'ikoon', 'Smaller tiles');
+      const groter = knop('+', () => { ui.tegel = Math.min(240, ui.tegel + 24); bewaarUi(ui); tegelMaat(); }, 'ikoon', 'Larger tiles');
+      wg.append(schaal, kleiner, groter);
+    }
+    const tg = knop('▦ Tiles', () => { ui.weergave = 'tegels'; bewaarUi(ui); tekenWerk(); }, ui.weergave === 'tegels' ? 'aan' : '', 'Grid of previews');
+    const lj = knop('☰ List', () => { ui.weergave = 'lijst'; bewaarUi(ui); tekenWerk(); }, ui.weergave === 'lijst' ? 'aan' : '', 'Table: edit rows and columns');
+    tg.setAttribute('aria-pressed', String(ui.weergave === 'tegels'));
+    lj.setAttribute('aria-pressed', String(ui.weergave === 'lijst'));
+    wg.append(tg, lj, knop('ⓘ', () => { venster.dataset.info = venster.dataset.info === '1' ? '0' : '1'; }, 'ikoon alleen-smal info', 'Details'));
+    werkKop.append(wg);
+    if (c?.note) werkKop.append(maak('div', 'notitie', c.note));
+  }
+
+  function tegelMaat() { werkVak.querySelector('.s43l-tegels')?.style.setProperty('--tegel', `${ui.tegel}px`); waarnemer && herbeginPreviews(); }
+
+  function herbeginPreviews() {
+    for (const t of tegels) { t._getekend = false; waarnemer.unobserve(t); waarnemer.observe(t); }
+  }
+
+  function tekenTegels() {
+    const grid = maak('div', 's43l-tegels');
+    grid.style.setProperty('--tegel', `${ui.tegel}px`);
+    grid.setAttribute('role', 'listbox');
+    grid.setAttribute('aria-label', 'Results');
+    werkVak.appendChild(grid);
+    tegels = [];
+    if (!resultaat.length) {
+      grid.appendChild(maak('div', 's43l-leeg', zoek ? `Nothing matches "${zoek}". Try a size such as 310 or 90x45, or clear the filter.` : 'This category is empty. Switch to List to add rows.'));
+      return;
+    }
+    // Common scale per category (to scale): the largest item fills its tile.
+    const schaalVan = new Map();
+    if (ui.schaal) {
+      for (const r of resultaat) {
+        if (r.c.kind !== 'section') continue;
+        const v = sectieVorm(r.c.shape, r.it);
+        const m = Math.max(v.w || 0, (v.h || 0) * 4 / 3);
+        schaalVan.set(r.c.id, Math.max(schaalVan.get(r.c.id) || 0, m));
+      }
+    }
+    const acc = themaKleur(venster, '--acc', '#0078d7');
+    const meerdere = new Set(resultaat.map((r) => r.c.id)).size > 1;
+    const frag = document.createDocumentFragment();
+    let vorige = null;
+    resultaat.forEach((r, idx) => {
+      if (meerdere && r.c !== vorige) {
+        const n = resultaat.filter((x) => x.c === r.c).length;
+        const h = maak('div', 's43l-groepkop', r.c.name);
+        h.append(maak('span', '', `${groepVan(r.c)}, ${n}`));
+        frag.appendChild(h);
+        vorige = r.c;
+      }
+      const t = maak('div', `s43l-tegel${gekozen && gekozen.catId === r.c.id && gekozen.i === r.i ? ' aan' : ''}`);
+      t.tabIndex = -1;
+      t.setAttribute('role', 'option');
+      t.dataset.idx = String(idx);
+      const doek = maak('canvas');
+      t.append(doek, maak('div', 'naam', r.it.name));
+      const sub = maak('div', 'sub', maatTekst(r.c, r.it));
+      if (r.it.check) { sub.prepend(maak('span', 'let', '● ')); t.title = `${r.it.name}: check against the supplier table`; }
+      t.appendChild(sub);
+      t._teken = () => {
+        const max = schaalVan.get(r.c.id);
+        const w = doek.getBoundingClientRect().width || ui.tegel;
+        tekenInDoek(doek, r.c, r.it, max ? (w - 16) / max : 0, { acc });
+      };
+      t.addEventListener('click', () => kies(r.c.id, r.i));
+      t.addEventListener('dblclick', () => { kies(r.c.id, r.i); if (r.c.kind === 'table') { ui.weergave = 'lijst'; bewaarUi(ui); gaNaar({ catId: r.c.id }); } else plaatsGekozen('section'); });
+      frag.appendChild(t);
+      tegels.push(t);
+    });
+    grid.appendChild(frag);
+    waarnemer = new IntersectionObserver((items) => {
+      for (const x of items) if (x.isIntersecting && !x.target._getekend) { x.target._getekend = true; x.target._teken(); }
+    }, { root: grid, rootMargin: '200px' });
+    for (const t of tegels) waarnemer.observe(t);
+    const aan = tegels.find((t) => t.classList.contains('aan'));
+    if (aan) aan.scrollIntoView({ block: 'nearest' });
+  }
+
+  function kies(catId, i, { focus = false } = {}) {
+    gekozen = { catId, i };
+    for (const t of tegels) {
+      const r = resultaat[+t.dataset.idx];
+      const aan = r.c.id === catId && r.i === i;
+      t.classList.toggle('aan', aan);
+      t.setAttribute('aria-selected', String(aan));
+      if (aan) { t.tabIndex = 0; if (focus) { t.focus(); t.scrollIntoView({ block: 'nearest' }); } } else t.tabIndex = -1;
+    }
+    werkVak.querySelectorAll('tr[data-i]').forEach((tr) => tr.classList.toggle('aan', +tr.dataset.i === i && tr.dataset.cat === catId));
+    tekenInfo();
+    tekenVoet();
+  }
+
+  /** Arrow keys in the tile grid: move to the nearest tile in that direction. */
+  function pijl(richting) {
+    if (!tegels.length) return;
+    let idx = tegels.findIndex((t) => t.classList.contains('aan'));
+    if (idx < 0) { const r = resultaat[0]; kies(r.c.id, r.i, { focus: true }); return; }
+    if (richting === 'ArrowLeft') idx = Math.max(0, idx - 1);
+    else if (richting === 'ArrowRight') idx = Math.min(tegels.length - 1, idx + 1);
+    else if (richting === 'Home') idx = 0;
+    else if (richting === 'End') idx = tegels.length - 1;
+    else {
+      const a = tegels[idx].getBoundingClientRect(), cx = a.left + a.width / 2;
+      const omlaag = richting === 'ArrowDown' || richting === 'PageDown';
+      const stappen = richting.startsWith('Page') ? 4 : 1;
+      let rij = a.top, beste = idx;
+      for (let s = 0; s < stappen; s++) {
+        let volgendeRij = null, kand = -1, kandD = Infinity;
+        tegels.forEach((t, j) => {
+          const b = t.getBoundingClientRect();
+          if (omlaag ? b.top > rij + 4 : b.top < rij - 4) {
+            if (volgendeRij === null || (omlaag ? b.top < volgendeRij - 4 : b.top > volgendeRij + 4)) { volgendeRij = b.top; kand = -1; kandD = Infinity; }
+            if (Math.abs(b.top - volgendeRij) <= 4) { const d = Math.abs(b.left + b.width / 2 - cx); if (d < kandD) { kandD = d; kand = j; } }
+          }
+        });
+        if (kand < 0) break;
+        beste = kand; rij = volgendeRij;
+      }
+      idx = beste;
+    }
+    const r = resultaat[+tegels[idx].dataset.idx];
+    kies(r.c.id, r.i, { focus: true });
+  }
+
+  function tekenLijst() {
+    const c = nav.catId && cat(nav.catId);
+    const vak = maak('div', 's43l-lijst');
+    werkVak.appendChild(vak);
+    tegels = [];
+    const t = maak('table');
+    vak.appendChild(t);
+    if (!c) {
+      // Read-only list of the results across categories.
+      const velden = ['d', 'b', 'mass', 'grade', 'treatment'];
+      const kr = maak('tr');
+      for (const k of ['name', 'category', ...velden]) kr.appendChild(maak('th', '', k));
+      t.appendChild(kr);
+      for (const r of resultaat.slice(0, 2000)) {
+        const tr = maak('tr', gekozen && gekozen.catId === r.c.id && gekozen.i === r.i ? 'aan' : '');
+        tr.dataset.i = String(r.i); tr.dataset.cat = r.c.id;
+        for (const v of [r.it.name, r.c.name, ...velden.map((k) => r.it[k] ?? '')]) tr.appendChild(maak('td', 'ro', v === '' ? '' : getalTekst(v)));
+        tr.addEventListener('click', () => kies(r.c.id, r.i));
+        tr.addEventListener('dblclick', () => { kies(r.c.id, r.i); gaNaar({ catId: r.c.id }); });
+        t.appendChild(tr);
+      }
+      const tip = maak('div', '', 'Pick a category in Browse to edit its table: add or delete rows and columns, paste from Excel, rename.');
+      tip.style.cssText = 'padding:10px 12px;color:var(--zacht);';
+      vak.appendChild(tip);
+      return;
+    }
+    const kolommen = ['name', ...c.fields];
+    const kr = maak('tr');
+    for (const k of kolommen) kr.appendChild(maak('th', '', k));
+    t.appendChild(kr);
+    const zichtbaar = new Set(resultaat.map((r) => r.i));
+    c.items.forEach((it, i) => {
+      if (!zichtbaar.has(i)) return;
+      const tr = maak('tr', gekozen && gekozen.catId === c.id && gekozen.i === i ? 'aan' : '');
+      tr.dataset.i = String(i); tr.dataset.cat = c.id;
+      tr.addEventListener('click', () => { if (!(gekozen && gekozen.catId === c.id && gekozen.i === i)) kies(c.id, i); });
+      tr.addEventListener('dblclick', () => { if (c.kind !== 'table') { kies(c.id, i); plaatsGekozen('section'); } });
+      for (const k of kolommen) {
+        const td = maak('td');
+        const inp = maak('input', k === 'name' ? 'naam' : '');
+        inp.value = it[k] ?? '';
+        inp.setAttribute('aria-label', k);
+        inp.addEventListener('change', () => {
+          const v = waarde(inp.value.trim());
+          if (v === '') { if (k !== 'name') delete it[k]; } else it[k] = v;
+          markeer(); tekenInfo();
+        });
+        td.appendChild(inp);
+        tr.appendChild(td);
+      }
+      t.appendChild(tr);
+    });
+    const rk = maak('div', 's43l-rijknoppen');
+    rk.append(
+      knop('+ Row', () => { c.items.push({ name: 'New' }); gekozen = { catId: c.id, i: c.items.length - 1 }; markeer(); zoek = ''; zoekInvoer.value = ''; tekenWerk(); const v = werkVak.querySelector('.s43l-lijst'); if (v) v.scrollTop = 1e9; }),
+      knop('Duplicate row', () => { const g = gekozenItem(); if (!g || g.c !== c) return; c.items.splice(gekozen.i + 1, 0, { ...g.it, name: `${g.it.name} copy` }); gekozen.i++; markeer(); tekenWerk(); }),
+      knop('Delete row', () => { const g = gekozenItem(); if (!g || g.c !== c) return; if (!confirm(`Delete the row "${g.it.name}"?`)) return; c.items.splice(gekozen.i, 1); gekozen = null; markeer(); tekenAlles(); }),
+      knop('+ Column', () => { const k = (prompt('Column name (e.g. grade):') || '').trim(); if (!k || c.fields.includes(k) || k === 'name') return; c.fields.push(k); markeer(); tekenWerk(); }),
+      knop('Delete column', () => {
+        const k = (prompt(`Column to delete (${c.fields.join(', ')}):`) || '').trim();
+        if (!k || !c.fields.includes(k)) return;
+        if (!confirm(`Delete the column "${k}" and its values in ${c.items.length} rows?`)) return;
+        c.fields = c.fields.filter((f) => f !== k); for (const it of c.items) delete it[k]; markeer(); tekenWerk();
+      }),
+      knop('Import CSV', () => csvImport(c), '', 'Paste a table from Excel or a CSV file'),
+      knop('Delete category', () => {
+        if (!confirm(`Delete the category "${c.name}" and its ${c.items.length} rows?`)) return;
+        lib.categories = lib.categories.filter((x) => x !== c); gekozen = null; markeer(); gaNaar({ groep: nav.groep });
+      }),
+    );
+    werkVak.appendChild(rk);
   }
 
   function csvImport(c) {
-    const vak = maak('div', 'position:fixed;inset:0;z-index:3100;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;');
-    const doos = maak('div', 'width:min(700px,90vw);background:var(--theme-app-menu-bg,#fff);color:inherit;padding:12px;display:flex;flex-direction:column;gap:8px;border:1px solid #888;');
+    const vak = maak('div', 's43l-dialoog');
+    const doos = maak('div', 's43l');
+    doos.style.cssText = 'width:min(700px,92vw);height:auto;display:flex;flex-direction:column;gap:8px;padding:14px;';
     const uitleg = maak('div', '', `Paste a table (from Excel or a CSV file). The first row is the column names; a column called "name" is the row name. Rows with an existing name are updated, new names are added to "${c.name}".`);
-    const t = maak('textarea', INVOER + 'height:260px;font-family:Consolas,monospace;');
-    const k = maak('div', 'display:flex;gap:6px;justify-content:flex-end;');
-    k.append(knop('Cancel', () => vak.remove()), knop('Import', () => {
+    const t = maak('textarea'); t.style.cssText = 'height:260px;font-family:Consolas,monospace;';
+    const k = maak('div'); k.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
+    const weg = () => vak.remove();
+    k.append(knop('Cancel', weg), knop('Import', () => {
       const rijen = leesTabel(t.value);
       if (rijen.length < 2) { alert('Paste a header row and at least one data row.'); return; }
-      const kop = rijen[0];
-      const naamKol = Math.max(0, kop.findIndex((h) => h.toLowerCase() === 'name'));
-      for (const h of kop) if (h && h.toLowerCase() !== 'name' && !c.fields.includes(h)) c.fields.push(h);
+      const kp = rijen[0];
+      const naamKol = Math.max(0, kp.findIndex((h) => h.toLowerCase() === 'name'));
+      for (const h of kp) if (h && h.toLowerCase() !== 'name' && !c.fields.includes(h)) c.fields.push(h);
       let nieuw = 0, bij = 0;
       for (const r of rijen.slice(1)) {
         const naam = r[naamKol]; if (!naam) continue;
         let it = c.items.find((i) => i.name === naam);
         if (it) bij++; else { it = { name: naam }; c.items.push(it); nieuw++; }
-        kop.forEach((h, i) => { if (i !== naamKol && h && r[i] !== undefined && r[i] !== '') it[h] = waarde(r[i]); });
+        kp.forEach((h, i) => { if (i !== naamKol && h && r[i] !== undefined && r[i] !== '') it[h] = waarde(r[i]); });
       }
-      vak.remove(); markeer(); tekenAlles();
+      weg(); markeer(); tekenAlles();
       alert(`${nieuw} rows added, ${bij} updated.`);
-    }, PRIMAIR));
+    }, 'prim'));
+    vak.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); weg(); } });
     doos.append(uitleg, t, k);
     vak.appendChild(doos);
     document.body.appendChild(vak);
     t.focus();
   }
 
-  function tekenAlles() {
-    titel.textContent = `Element Library: ${lib.name || 'Library'}${gewijzigd ? ' *' : ''}`;
-    tekenLinks(); tekenKop(); tekenTabel(); tekenKnoppen();
+  // ── Details panel ──
+  function tekenInfo() {
+    infoScroll.innerHTML = '';
+    const g = gekozenItem();
+    if (!g) {
+      const c = nav.catId && cat(nav.catId);
+      infoScroll.append(maak('h3', '', c ? c.name : 'Element Library'));
+      const p = maak('div', 'cat', c ? `${c.items.length} items. Select one to see its properties.` : 'Select an element to see its preview and properties. Double-click a tile to place it as a section.');
+      infoScroll.append(p);
+      if (c?.note) infoScroll.append(maak('div', 's43l-bron', c.note));
+      else if (lib.source) infoScroll.append(maak('div', 's43l-bron', lib.source));
+      return;
+    }
+    const { c, it } = g;
+    const doek = maak('canvas');
+    infoScroll.append(doek);
+    requestAnimationFrame(() => tekenInDoek(doek, c, it, 0, { acc: themaKleur(venster, '--acc', '#0078d7'), lijn: 1.4, marge: 22, maten: true }));
+    infoScroll.append(maak('h3', '', it.name));
+    infoScroll.append(maak('div', 'cat', `${groepVan(c)}, ${c.name}${c.kind === 'section' ? `, ${VORMEN[c.shape] || c.shape}` : ''}`));
+    if (it.check) infoScroll.append(maak('div', 's43l-let', 'Taken from the Revit type name, not from a supplier table: check the sizes and grade before use.'));
+    const velden = maak('div', 's43l-velden');
+    const eenheid = lib.units || {};
+    const eenheidVan = (k) => (['d', 'b', 'tf', 'tw', 't', 'r1', 'ri', 'ro', 'lip', 'hole', 'minEdge', 'minPitch', 'af', 'nominal'].includes(k) ? eenheid.length || 'mm'
+      : k === 'mass' ? eenheid.mass : k === 'A' ? eenheid.area : /^I[xyw]?$|^J$/.test(k) ? (k === 'Iw' ? 'mm6' : eenheid.inertia) : /^[ZS][xy]$/.test(k) ? eenheid.modulus : '');
+    const sleutels = [...new Set([...c.fields, ...Object.keys(it)])].filter((k) => k !== 'name' && it[k] !== undefined && it[k] !== '');
+    for (const k of sleutels) {
+      const v = it[k];
+      velden.append(maak('span', '', k), maak('span', '', `${typeof v === 'boolean' ? (v ? 'yes' : 'no') : getalTekst(v)}${typeof v === 'number' && eenheidVan(k) ? ` ${eenheidVan(k)}` : ''}`));
+    }
+    infoScroll.append(velden);
+    const bron = maak('div', 's43l-bron');
+    bron.textContent = [c.note, lib.source].filter(Boolean).join(' ');
+    infoScroll.append(bron);
   }
 
-  kopbalk.append(titel,
-    knop('Rename', () => { const n = prompt('Library name:', lib.name || ''); if (n) { lib.name = n; markeer(); } }),
-    knop('Import library', () => {
-      const inp = maak('input'); inp.type = 'file'; inp.accept = '.json,application/json';
-      inp.addEventListener('change', async () => {
-        try {
-          const v = JSON.parse(await inp.files[0].text());
-          if (!geldigeBibliotheek(v)) throw new Error('not a Seed43 library file');
-          if (!confirm(`Replace the current library with "${v.name || inp.files[0].name}"? (Export the current one first if you want to keep it.)`)) return;
-          lib = v; catId = lib.categories[0]?.id; gekozenRij = -1; markeer(); tekenAlles();
-        } catch (e) { alert(`Could not import: ${e.message || e}`); }
-      });
-      inp.click();
-    }),
-    knop('Export library', () => {
-      const blob = new Blob([JSON.stringify(lib, null, 1)], { type: 'application/json' });
-      const a = maak('a'); a.href = URL.createObjectURL(blob);
-      a.download = `${(lib.name || 'library').replace(/[^A-Za-z0-9 _-]+/g, '')}.seed43lib.json`; a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    }),
-    knop('Reset to NZ Steel', async () => {
-      if (!confirm('Replace the library with the original NZ Steel library? Your changes are lost unless you exported them.')) return;
-      lib = await standaardBibliotheek(api); catId = lib.categories[0]?.id; gekozenRij = -1; markeer(); tekenAlles();
-    }),
-  );
-  voet.append(
-    maak('span', 'flex:1;opacity:.7;align-self:center;', lib.source || ''),
-    knop('Close', sluit),
-    knop('Save', () => { try { bewaarBibliotheek(lib); gewijzigd = false; tekenAlles(); } catch (e) { alert(e.message); } }, PRIMAIR),
-  );
+  // ── Footer ──
+  const status = maak('div', 'status');
+  const plaatsGroep = maak('div', 'groep');
+  function tekenVoet() {
+    voet.innerHTML = '';
+    plaatsGroep.innerHTML = '';
+    const g = gekozenItem();
+    status.textContent = g ? `${g.it.name}, ${g.c.name}` : 'Select an element to place it. Double-click or Enter places it as a section.';
+    voet.append(status);
+    if (!g || g.c.kind === 'table') {
+      const k = knop('Place as section', () => {}, 'prim');
+      k.disabled = true;
+      k.title = g ? 'Reference tables are not placed on the sheet' : 'Select an element first';
+      plaatsGroep.append(k);
+    } else if (g.c.kind === 'bolt') {
+      plaatsGroep.append(knop('Place bolt group', () => plaatsGekozen('section'), 'prim', 'Click on the sheet to place (Enter)'));
+    } else {
+      const greep = maak('select');
+      greep.title = 'The grip a member is placed by: click it first, then the other point';
+      for (const [k, t] of PLAATS_GREPEN) greep.append(new Option(t, k));
+      greep.value = ui.greep || 'A';
+      greep.addEventListener('change', () => { ui.greep = greep.value; bewaarUi(ui); });
+      plaatsGroep.append(maak('span', '', 'Place as:'),
+        knop('Section', () => plaatsGekozen('section'), 'prim', 'Click on the sheet to place the cross-section (Enter, double-click a tile)'),
+        knop('Elevation', () => plaatsGekozen('elevation'), 'prim', 'Click point A, then point B (Ctrl/Shift: horizontal or vertical)'),
+        knop('Plan', () => plaatsGekozen('plan'), 'prim', 'Click point A, then point B (Ctrl/Shift: horizontal or vertical)'),
+        maak('span', '', 'by'), greep);
+    }
+    voet.append(plaatsGroep,
+      knop('Close', sluit),
+      knop('Save', () => { try { bewaarBibliotheek(lib); gewijzigd = false; zetTitel(); } catch (e) { alert(e.message); } }, '', 'Save the library (Ctrl+S)'));
+  }
+
+  function plaatsGekozen(view = 'section') {
+    const g = gekozenItem();
+    if (!g) { alert('Select an element first.'); return; }
+    if (g.c.kind === 'table') return;
+    if (gewijzigd) try { bewaarBibliotheek(lib); gewijzigd = false; } catch (e) { alert(e.message); return; }
+    gewijzigd = false;
+    sluit();
+    plaats(api, g.c, g.it, view, ui.greep);
+  }
+
+  function tekenAlles() {
+    tekenKop(); tekenBalk(); tekenZij(); tekenWerk();
+  }
+
+  // ── Keyboard ──
+  const toetsen = (e) => {
+    const t = e.target;
+    if (!achter.isConnected || t?.closest?.('.s43l-dialoog')) return;
+    if (!(venster.contains(t) || t === document.body || t === document.documentElement)) return;
+    const typen = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    if (e.key === 'Escape') {
+      e.stopPropagation(); e.preventDefault();
+      if (t === zoekInvoer && zoekInvoer.value) { zoekInvoer.value = ''; zoek = ''; tekenWerk(); return; }
+      sluit(); return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); e.stopPropagation(); zoekInvoer.focus(); zoekInvoer.select(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); e.stopPropagation(); try { bewaarBibliotheek(lib); gewijzigd = false; zetTitel(); } catch (x) { alert(x.message); } return; }
+    if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); terug(); return; }
+    if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); vooruit(); return; }
+    if (typen || ui.weergave !== 'tegels') return;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); pijl(e.key); }
+    else if (e.key === 'Enter' && t?.tagName !== 'BUTTON') { e.preventDefault(); e.stopPropagation(); plaatsGekozen('section'); }
+    else if (e.key.length === 1 && /\S/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) { zoekInvoer.focus(); }
+  };
+  window.addEventListener('keydown', toetsen, true);
+  venster.addEventListener('keydown', (e) => e.stopPropagation());   // keys in the library do not reach the sheet
+
+  // ── Size: narrower windows fold the details and then the sidebar away ──
+  const grootte = new ResizeObserver(() => {
+    const w = venster.clientWidth;
+    venster.dataset.smal = w < 1000 ? '1' : '0';
+    venster.dataset.heelSmal = w < 700 ? '1' : '0';
+  });
+
   achter.addEventListener('mousedown', (e) => { if (e.target === achter) sluit(); });
   document.body.appendChild(achter);
+  grootte.observe(venster);
+  open = { focus: () => zoekInvoer.focus() };
   tekenAlles();
+  zoekInvoer.focus();
 }
