@@ -49,14 +49,13 @@ export async function activate(api) {
   }
 
   if (api.features?.ribbonTabs !== true) return;
-  const telling = () => TOOLS.filter(t => aan[t.id] !== false).length;
   tab = api.registerRibbonTab({
     id: 'main',
     label: 'Seed43',
     groups: [
       {
         id: 'tools',
-        label: { en: 'Tools (on/off)', nl: 'Tools (aan/uit)' },
+        label: { en: 'Tools', nl: 'Tools' },
         items: [
           ...TOOLS.map(t => ({
             type: 'action', id: `tool-${t.id}`, label: t.label, title: t.title, icon: t.icon,
@@ -67,10 +66,8 @@ export async function activate(api) {
               aan[t.id] = nu;
               bewaarAan(aan);
               tab?.update(`tool-${t.id}`, { active: nu });
-              tab?.update('count', { text: `${telling()} / ${TOOLS.length}`, tone: telling() ? 'success' : 'neutral' });
             },
           })),
-          { type: 'status', id: 'count', label: { en: 'On', nl: 'Aan' }, text: `${telling()} / ${TOOLS.length}`, tone: telling() ? 'success' : 'neutral' },
         ],
       },
     ],
