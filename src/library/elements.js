@@ -1,20 +1,30 @@
-// Library elements on the sheet: steel sections (to-scale outline), members
-// drawn from point A to point B in elevation or plan, and bolt groups (plate,
-// bolts and the edge / pitch checks from the library). Space rotates the
-// selected element (or the one being placed) by 90 degrees.
+// Library elements on the sheet: steel and timber sections (to-scale
+// outline), members drawn from point A to point B in elevation or plan, and
+// bolt groups (plate, bolts and the edge / pitch checks from the library).
+//
+// Placing a member works like the line tool: click point A, then point B
+// (press-drag-release also works). Ctrl or Shift keeps it horizontal or
+// vertical, both keys together also allow 45 degrees. While placing or
+// dragging a grip, points snap to other elements' grips: member ends A and
+// B, midpoints and centre lines, and section and bolt group centres. A
+// selected element shows its grips: drag A or B to stretch a member, the
+// midpoint or centre to move. Space rotates the selected element (or the
+// one being placed) by 90 degrees.
 
 import { laadBibliotheek, categorie } from './store.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, tekenLid, lidBounds, lidGeometrie } from './draw.js';
+import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
+import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
-export const SECTIE = 'seed43Section';
-export const BOUTEN = 'seed43BoltGroup';
-export const LID = 'seed43Member';
-const ONZE = [SECTIE, BOUTEN, LID];
+export { SECTIE, BOUTEN, LID };
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const PER_MM = { mm: 1, cm: 0.1, m: 0.001, in: 1 / 25.4, inch: 1 / 25.4, ft: 1 / 304.8 };
 const PT_PER_PAPER_MM = 72 / 25.4;
+const SNAP_PX = 10;        // snap radius in screen pixels
+const GREEP_PX = 8;        // grip pick radius in screen pixels
+const SLEEP_PX = 6;        // a press that moves this far is a drag
 
 /** Page points per real millimetre at (x, y): the sheet's scale, else 1:denom. */
 export function puntenPerMm(api, page, x, y, denom = 10) {
@@ -26,20 +36,51 @@ export function puntenPerMm(api, page, x, y, denom = 10) {
   return { ptsPerMm: PT_PER_PAPER_MM / denom, scaleText: `1:${denom}` };
 }
 
+// ── Placing state ──────────────────────────────────────────────────────────
+
+let plaatsing = null;   // the element being placed (tool overrides)
+let lidStart = null;    // first click of a member: { x, y, page, druk: { cx, cy } | null }
+let laatste = null;     // last pointer: { cx, cy, ctrlKey, shiftKey, metaKey }
+let geselecteerd = null;   // id of the selected Seed43 element
+let greepSleep = null;  // grip being dragged: { id, soort, page }
+
+const isPlaatsTool = (api) => ONZE.includes(api.getCurrentTool?.());
+
+function snapRadius(page, s) {
+  return SNAP_PX / (zoomVan(page) || s || 1.5);
+}
+
+/** A placing point: a Seed43 grip near the raw point wins, else the host's
+ *  own snapped point (PDF content, grid), else the raw point. */
+function kiesPunt(api, page, x, y, state, uitsluit) {
+  const snap = zoekSnap(api, page, x, y, snapRadius(page, state?.docScale), uitsluit);
+  if (snap) return { x: snap.x, y: snap.y, snap };
+  const hx = state?.startX, hy = state?.startY;
+  if (Number.isFinite(hx) && Number.isFinite(hy) && Math.hypot(hx - x, hy - y) < snapRadius(page, state?.docScale) * 1.5) return { x: hx, y: hy, snap: null };
+  return { x, y, snap: null };
+}
+
+function nieuwElement(api, soort, keuze, page, x, y) {
+  const schaal = puntenPerMm(api, page, x, y);
+  return soort === SECTIE
+    ? { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...schaal }
+    : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true, ...schaal };
+}
+
 function plaatsingsType(api, soort) {
   const maat = soort === SECTIE ? sectieMaat : boutMaat;
   return {
     drawMode: 'click',
     cursor: 'copy',
-    create(x, y, _x2, _y2, _e, state) {
+    create(x, y, _x2, _y2, e, state) {
       const keuze = state?.toolOverrides?.seed43Element;
       if (!keuze?.item) return null;
-      const schaal = puntenPerMm(api, state.currentPage || 1, x, y);
-      const element = soort === SECTIE
-        ? { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...schaal }
-        : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true, ...schaal };
+      const page = state.currentPage || 1;
+      meldStaat(state); ijk(e, x, y, page);
+      const p = kiesPunt(api, page, x, y, state);
+      const element = nieuwElement(api, soort, keuze, page, p.x, p.y);
       const m = maat(element);
-      return { type: soort, x: x - m.w / 2, y: y - m.h / 2, width: m.w, height: m.h, element, subject: element.item?.name || element.bolt?.name || '' };
+      return { type: soort, x: p.x - m.w / 2, y: p.y - m.h / 2, width: m.w, height: m.h, element, subject: element.item?.name || element.bolt?.name || '' };
     },
     render(ctx, ann) { (soort === SECTIE ? tekenSectie : tekenBoutGroep)(ctx, ann); },
     getBounds(ann) {
@@ -53,28 +94,52 @@ function plaatsingsType(api, soort) {
   };
 }
 
-/** A member from point A to point B (drag), drawn in elevation or plan. */
+function lidAnnotatie(api, keuze, page, a, b) {
+  const schaal = puntenPerMm(api, page, a.x, a.y);
+  const ann = {
+    type: LID, startX: a.x, startY: a.y, endX: b.x, endY: b.y,
+    element: { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), view: keuze.view || 'elevation', label: true, ...schaal },
+    subject: keuze.item.name,
+  };
+  const bb = lidBounds(ann);
+  return { ...ann, x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+}
+
+/** Second point of a member: square to the first with Ctrl / Shift, else snapped. */
+function tweedePunt(api, page, p1, x, y, mods, state) {
+  const stap = haaksStap(mods);
+  if (stap) return { ...haaks(p1.x, p1.y, x, y, stap), snap: null, haaks: stap };
+  return kiesPunt(api, page, x, y, state);
+}
+
+/** A member from point A to point B: click A, then click B (or press at A
+ *  and release at B), with a live preview in between. */
 function lidType(api) {
   return {
-    drawMode: 'drag',
+    drawMode: 'click',
     cursor: 'crosshair',
-    create(sx, sy, ex, ey, _e, state) {
+    create(x, y, _x2, _y2, e, state) {
       const keuze = state?.toolOverrides?.seed43Element;
-      if (!keuze?.item || Math.hypot(ex - sx, ey - sy) < 2) return null;
-      const schaal = puntenPerMm(api, state.currentPage || 1, sx, sy);
-      const ann = {
-        type: LID, startX: sx, startY: sy, endX: ex, endY: ey,
-        element: { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), view: keuze.view || 'elevation', label: true, ...schaal },
-        subject: keuze.item.name,
-      };
-      const b = lidBounds(ann);
-      return { ...ann, x: b.x, y: b.y, width: b.width, height: b.height };
+      if (!keuze?.item) return null;
+      const page = state.currentPage || 1;
+      meldStaat(state); ijk(e, x, y, page);
+      if (!lidStart || lidStart.page !== page) {
+        const p = kiesPunt(api, page, x, y, state);
+        lidStart = { x: p.x, y: p.y, page, druk: e ? { cx: e.clientX, cy: e.clientY } : null };
+        herteken(api);
+        return null;
+      }
+      const p2 = tweedePunt(api, page, lidStart, x, y, e, state);
+      if (Math.hypot(p2.x - lidStart.x, p2.y - lidStart.y) < 1) return null;   // same point: wait for B
+      const { a, b } = lidPunten(keuze.greep, lidStart, p2);
+      lidStart = null;
+      herteken(api);
+      return lidAnnotatie(api, keuze, page, a, b);
     },
     preview(ctx, sx, sy, cx, cy, state) {
       const keuze = state?.toolOverrides?.seed43Element;
       if (!keuze?.item || Math.hypot(cx - sx, cy - sy) < 2) return;
-      const schaal = puntenPerMm(api, state.currentPage || 1, sx, sy);
-      tekenLid(ctx, { startX: sx, startY: sy, endX: cx, endY: cy, element: { shape: keuze.shape, item: keuze.item, view: keuze.view || 'elevation', ...schaal } });
+      tekenLid(ctx, lidAnnotatie(api, keuze, state.currentPage || 1, { x: sx, y: sy }, { x: cx, y: cy }));
     },
     render(ctx, ann) { tekenLid(ctx, ann); },
     getBounds(ann) { return ann.element ? lidBounds(ann) : { x: ann.x, y: ann.y, width: ann.width || 0, height: ann.height || 0 }; },
@@ -86,6 +151,220 @@ function lidType(api) {
       return t >= -tol && t <= g.L + tol && n <= (g.p.breedte * g.k) / 2 + tol;
     },
   };
+}
+
+// ── Live layer: preview, snap marker, grips ────────────────────────────────
+
+function geselecteerdeAnn(api) {
+  if (!geselecteerd) return null;
+  return api.getAnnotations().find((a) => a.id === geselecteerd && ONZE.includes(a.type)) || null;
+}
+
+/** The element with one grip moved to (x, y): the changes for the host. */
+function greepWijziging(ann, soort, x, y) {
+  if (ann.type === LID) {
+    const c = {};
+    if (soort === 'A') Object.assign(c, { startX: x, startY: y });
+    else if (soort === 'B') Object.assign(c, { endX: x, endY: y });
+    else {
+      const dx = x - (ann.startX + ann.endX) / 2, dy = y - (ann.startY + ann.endY) / 2;
+      Object.assign(c, { startX: ann.startX + dx, startY: ann.startY + dy, endX: ann.endX + dx, endY: ann.endY + dy });
+    }
+    const b = lidBounds({ ...ann, ...c });
+    return Object.assign(c, { x: b.x, y: b.y, width: b.width, height: b.height });
+  }
+  const m = (ann.type === SECTIE ? sectieMaat : boutMaat)(ann.element);
+  return { x: x - m.w / 2, y: y - m.h / 2 };
+}
+
+/** Where a dragged grip goes: snapped, or square to the fixed end with Ctrl / Shift. */
+function greepPunt(api, ann, soort, p) {
+  const stap = haaksStap(laatste);
+  if (stap && ann.type === LID && (soort === 'A' || soort === 'B')) {
+    const vast = soort === 'A' ? { x: ann.endX, y: ann.endY } : { x: ann.startX, y: ann.startY };
+    return { ...haaks(vast.x, vast.y, p.x, p.y, stap), snap: null };
+  }
+  const snap = zoekSnap(api, ann.page, p.x, p.y, SNAP_PX / p.s, ann.id);
+  return snap ? { x: snap.x, y: snap.y, snap } : { x: p.x, y: p.y, snap: null };
+}
+
+function tekenTekst(c, s, x, y, tekst) {
+  c.save();
+  c.font = `${11 / s}px Arial, sans-serif`;
+  c.textBaseline = 'top';
+  const w = c.measureText(tekst).width, pad = 3 / s;
+  c.fillStyle = 'rgba(17, 24, 39, 0.78)';
+  c.fillRect(x + 14 / s - pad, y + 14 / s - pad, w + 2 * pad, 11 / s + 2 * pad);
+  c.fillStyle = '#fff';
+  c.fillText(tekst, x + 14 / s, y + 14 / s);
+  c.restore();
+}
+
+function herteken(api) {
+  const p = laatste ? naarPagina({ clientX: laatste.cx, clientY: laatste.cy }) : null;
+  const tool = api.getCurrentTool?.();
+
+  // Dragging a grip of the selected element
+  if (greepSleep) {
+    const ann = api.getAnnotations().find((a) => a.id === greepSleep.id);
+    if (!ann || !p || p.page !== ann.page) { teken(ann?.page || greepSleep.page, () => {}); return; }
+    const q = greepPunt(api, ann, greepSleep.soort, p);
+    const nieuw = { ...ann, ...greepWijziging(ann, greepSleep.soort, q.x, q.y) };
+    teken(ann.page, (c, s) => {
+      c.globalAlpha = 0.75;
+      (ann.type === LID ? tekenLid : ann.type === SECTIE ? tekenSectie : tekenBoutGroep)(c, nieuw);
+      c.globalAlpha = 1;
+      tekenGrepen(c, s, grepen(nieuw), null);
+      tekenSnap(c, s, q.snap);
+      if (ann.type === LID) {
+        const L = Math.hypot(nieuw.endX - nieuw.startX, nieuw.endY - nieuw.startY) / (ann.element.ptsPerMm || 1);
+        tekenTekst(c, s, q.x, q.y, `${GREEP_NAAM[greepSleep.soort]}  L=${Math.round(L)}`);
+      }
+    });
+    return;
+  }
+
+  // Placing an element
+  if (ONZE.includes(tool) && plaatsing?.item) {
+    if (lidStart && tool !== LID) lidStart = null;
+    if (!p) { teken(lidStart?.page, lidStart ? (c, s) => tekenSnap(c, s, { ...lidStart, soort: 'A' }) : null); return; }
+    const page = p.page;
+    teken(page, (c, s) => {
+      if (tool === LID) {
+        if (lidStart && lidStart.page === page) {
+          const q = tweedePunt(api, page, lidStart, p.x, p.y, laatste, { docScale: s });
+          const { a, b } = lidPunten(plaatsing.greep, lidStart, q);
+          if (Math.hypot(b.x - a.x, b.y - a.y) > 0.5) {
+            c.globalAlpha = 0.8;
+            tekenLid(c, lidAnnotatie(api, plaatsing, page, a, b));
+            c.globalAlpha = 1;
+          }
+          tekenElastiek(c, s, lidStart, q);
+          tekenSnap(c, s, q.snap);
+          const L = Math.hypot(b.x - a.x, b.y - a.y) / (puntenPerMm(api, page, a.x, a.y).ptsPerMm || 1);
+          const naam = plaatsing.greep === 'B' ? 'point A' : plaatsing.greep === 'mid' ? 'an end' : 'point B';
+          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '' : '  (Ctrl/Shift: square)'}`);
+        } else {
+          const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
+          tekenSnap(c, s, q.snap);
+          const naam = plaatsing.greep === 'B' ? 'point B' : plaatsing.greep === 'mid' ? 'the midpoint' : 'point A';
+          tekenTekst(c, s, q.x, q.y, `Click ${naam} of ${plaatsing.item.name}`);
+        }
+      } else {
+        const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
+        const soort = tool === SECTIE ? SECTIE : BOUTEN;
+        const element = nieuwElement(api, soort, plaatsing, page, q.x, q.y);
+        const m = (soort === SECTIE ? sectieMaat : boutMaat)(element);
+        c.globalAlpha = 0.55;
+        (soort === SECTIE ? tekenSectie : tekenBoutGroep)(c, { x: q.x - m.w / 2, y: q.y - m.h / 2, element });
+        c.globalAlpha = 1;
+        tekenSnap(c, s, q.snap);
+      }
+    });
+    return;
+  }
+  if (lidStart && !ONZE.includes(tool)) lidStart = null;
+
+  // Grips of the selected element
+  const ann = tool === 'select' ? geselecteerdeAnn(api) : null;
+  if (!ann) { teken(null); return; }
+  let actief = null;
+  if (p && p.page === ann.page) {
+    let best = GREEP_PX / p.s;
+    for (const g of grepen(ann)) { const d = Math.hypot(g.x - p.x, g.y - p.y); if (d <= best) { best = d; actief = g; } }
+  }
+  teken(ann.page, (c, s) => tekenGrepen(c, s, grepen(ann), actief));
+}
+
+let lusAan = false;
+function startLus(api) {
+  if (lusAan) return;
+  lusAan = true;
+  const stap = () => {
+    if (!lusAan) return;
+    const bezig = greepSleep || lidStart || geselecteerd || (isPlaatsTool(api) && laatste);
+    herteken(api);
+    if (bezig) requestAnimationFrame(stap); else lusAan = false;
+  };
+  requestAnimationFrame(stap);
+}
+
+function onthoudAanwijzer(e) {
+  laatste = { cx: e.clientX, cy: e.clientY, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, metaKey: e.metaKey };
+}
+
+function luisteraars(api) {
+  const beweeg = (e) => {
+    onthoudAanwijzer(e);
+    if (greepSleep) { e.stopPropagation(); e.preventDefault(); }
+    startLus(api);
+  };
+  const druk = (e) => {
+    if (e.button !== 0) return;
+    onthoudAanwijzer(e);
+    if (api.getCurrentTool?.() !== 'select') return;
+    const p = naarPagina(e);
+    if (!p) return;
+    const ann = geselecteerdeAnn(api);
+    if (ann && ann.page === p.page && !e.ctrlKey && !e.altKey) {
+      let best = GREEP_PX / p.s, greep = null;
+      for (const g of grepen(ann)) { const d = Math.hypot(g.x - p.x, g.y - p.y); if (d <= best) { best = d; greep = g; } }
+      if (greep) {
+        greepSleep = { id: ann.id, soort: greep.soort, page: ann.page };
+        e.stopImmediatePropagation(); e.preventDefault();
+        startLus(api);
+        return;
+      }
+    }
+    // A press elsewhere on the sheet: the host reports the new selection
+    // (the same element again if it is pressed).
+    geselecteerd = null;
+  };
+  const los = (e) => {
+    if (greepSleep) {
+      e.stopImmediatePropagation(); e.preventDefault();
+      onthoudAanwijzer(e);
+      const sl = greepSleep;
+      greepSleep = null;
+      const ann = api.getAnnotations().find((a) => a.id === sl.id);
+      const p = naarPagina(e);
+      if (ann && p && p.page === ann.page) {
+        const q = greepPunt(api, ann, sl.soort, p);
+        try { api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: greepWijziging(ann, sl.soort, q.x, q.y) }]); api.redrawAnnotations?.(); }
+        catch (err) { console.warn('[seed43] grip drag:', err); }
+      }
+      startLus(api);
+      return;
+    }
+    // Press at A, drag, release at B: place the member in one gesture.
+    if (lidStart?.druk && api.getCurrentTool?.() === LID && plaatsing?.item) {
+      const d = lidStart.druk;
+      lidStart.druk = null;
+      if (Math.hypot(e.clientX - d.cx, e.clientY - d.cy) < SLEEP_PX) return;   // a click: wait for B
+      const p = naarPagina(e);
+      if (!p || p.page !== lidStart.page) return;
+      const q = tweedePunt(api, p.page, lidStart, p.x, p.y, e, { docScale: p.s });
+      const { a, b } = lidPunten(plaatsing.greep, lidStart, q);
+      const ann = lidAnnotatie(api, plaatsing, p.page, a, b);
+      lidStart = null;
+      try { api.applyAnnotationBatch([{ op: 'create', annotation: { ...ann, page: p.page, seed43Element: plaatsing } }]); api.redrawAnnotations?.(); }
+      catch (err) { console.warn('[seed43] member not placed:', err); }
+      startLus(api);
+    }
+  };
+  const toets = (e) => {
+    if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Meta') {
+      if (laatste) { laatste.ctrlKey = e.ctrlKey; laatste.shiftKey = e.shiftKey; laatste.metaKey = e.metaKey; }
+      startLus(api);
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (greepSleep) { greepSleep = null; e.stopPropagation(); }
+      lidStart = null;
+      startLus(api);
+    }
+  };
+  return { beweeg, druk, los, toets };
 }
 
 // ── Properties panels ──────────────────────────────────────────────────────
@@ -106,6 +385,13 @@ function veld(el, label, invoer) {
   r.append(l, invoer);
   el.appendChild(r);
   return invoer;
+}
+
+function tip(tekst) {
+  const t = document.createElement('div');
+  t.style.cssText = 'opacity:.7;margin-top:4px;';
+  t.textContent = tekst;
+  return t;
 }
 
 function getal(waarde, wijzig, stap = 1) {
@@ -182,6 +468,7 @@ function sectiePaneel() {
       tabel.append(a, b);
     }
     el.appendChild(tabel);
+    el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
     requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
@@ -233,6 +520,7 @@ function boutPaneel(api) {
     schaalVeld(el, ann, update, boutMaat);
     toonStatus();
     el.appendChild(status);
+    el.appendChild(tip('Drag the centre grip to move the group; it snaps to member ends, midpoints and centre lines.'));
     requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
@@ -259,18 +547,13 @@ function lidPaneel() {
       (v) => zet((x) => { x.label = v !== '0'; x.showLength = v === '1'; })));
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
-    const tip = document.createElement('div');
-    tip.style.cssText = 'opacity:.7;margin-top:4px;';
-    tip.textContent = 'Drag the member to move it. Space turns it 90 degrees about its middle.';
-    el.appendChild(tip);
+    el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
     requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
 }
 
 // ── Space bar: turn the selected element (or the one being placed) ────────
-
-let geselecteerd = null;   // id of the selected Seed43 element
 
 function draaiGeselecteerd(api, stap) {
   const ann = api.getAnnotations().find((a) => a.id === geselecteerd);
@@ -298,8 +581,6 @@ function draaiGeselecteerd(api, stap) {
   return true;
 }
 
-let plaatsing = null;   // the element being placed (tool overrides)
-
 function spatieToets(api) {
   return (e) => {
     if (e.code !== 'Space' || e.ctrlKey || e.altKey || e.metaKey) return;
@@ -312,6 +593,7 @@ function spatieToets(api) {
         plaatsing.rotation = ((((plaatsing.rotation || 0) + stap) % 360) + 360) % 360;
         api.setToolOverrides({ seed43Element: plaatsing });
         e.preventDefault(); e.stopPropagation();
+        startLus(api);
       }
       return;
     }
@@ -320,6 +602,7 @@ function spatieToets(api) {
 }
 
 let toets = null;
+let pointer = null;
 
 export function startElementen(api) {
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
@@ -328,22 +611,47 @@ export function startElementen(api) {
   api.registerPropertyPanel(SECTIE, sectiePaneel());
   api.registerPropertyPanel(BOUTEN, boutPaneel(api));
   api.registerPropertyPanel(LID, lidPaneel());
-  for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; });
-  if (toets) window.removeEventListener('keydown', toets, true);
+  for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
+  stopElementen();
+  startOverlay(api);
   toets = spatieToets(api);
   window.addEventListener('keydown', toets, true);
+  pointer = luisteraars(api);
+  window.addEventListener('pointermove', pointer.beweeg, true);
+  window.addEventListener('pointerdown', pointer.druk, true);
+  window.addEventListener('pointerup', pointer.los, true);
+  window.addEventListener('keydown', pointer.toets, true);
+  window.addEventListener('keyup', pointer.toets, true);
 }
 
 export function stopElementen() {
   if (toets) window.removeEventListener('keydown', toets, true);
   toets = null;
+  if (pointer) {
+    window.removeEventListener('pointermove', pointer.beweeg, true);
+    window.removeEventListener('pointerdown', pointer.druk, true);
+    window.removeEventListener('pointerup', pointer.los, true);
+    window.removeEventListener('keydown', pointer.toets, true);
+    window.removeEventListener('keyup', pointer.toets, true);
+  }
+  pointer = null;
+  lusAan = false;
+  lidStart = null; greepSleep = null;
+  stopOverlay();
 }
 
+/** Place-by grips for a member: A (click A then B), the midpoint (click the
+ *  middle, then an end) or B (click B then A). */
+export const PLAATS_GREPEN = [['A', 'End A'], ['mid', 'Midpoint'], ['B', 'End B']];
+
 /** Arm the placing tool for a library item: view 'section' (click), or
- *  'elevation' / 'plan' (drag from point A to point B). Bolts: click. */
-export function plaats(api, cat, it, view = 'section') {
+ *  'elevation' / 'plan' (click point A, then point B). Bolts: click.
+ *  greep: the grip a member is placed by ('A', 'mid' or 'B'). */
+export function plaats(api, cat, it, view = 'section', greep = 'A') {
   const soort = cat.kind === 'bolt' ? BOUTEN : view === 'section' ? SECTIE : LID;
-  plaatsing = { category: cat.name, shape: cat.shape, item: kopie(it), view, rotation: 0 };
+  plaatsing = { category: cat.name, shape: cat.shape, item: kopie(it), view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A' };
+  lidStart = null;
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });
+  startLus(api);
 }
