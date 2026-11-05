@@ -14,6 +14,8 @@ await build({
 });
 for (const f of ['det_ppocrv4_mobile.onnx', 'cls_mobile_v2.onnx', 'rec_en_ppocrv5.onnx', 'rec_en_dict.txt']) fs.copyFileSync(`models/${f}`, `${pkg}/models/${f}`);
 fs.copyFileSync('node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', `${pkg}/ort/ort-wasm-simd-threaded.wasm`);
+fs.mkdirSync(`${pkg}/data`, { recursive: true });
+fs.copyFileSync('data/nz-steel.seed43lib.json', `${pkg}/data/nz-steel.seed43lib.json`);
 fs.copyFileSync('plugin.json', `${pkg}/plugin.json`);
 for (const f of ['LICENSE', 'NOTICE.md', 'ort-LICENSE.txt']) if (fs.existsSync(f)) fs.copyFileSync(f, `${pkg}/${f}`);
 execFileSync('python', ['-I', '-c', `

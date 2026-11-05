@@ -57,6 +57,7 @@ function waardenInBestand(api, familie) {
 
 function paneel(api) {
   return (ann) => {
+    if (!ann) return document.createElement('div');   // the host calls this on deselect too
     const stamp = ann.stamp;
     const fam = stamp?.family;
     const el = document.createElement('div');
