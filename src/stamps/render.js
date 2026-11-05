@@ -12,7 +12,7 @@ export function maat(familie) {
 function datumTekst(v) {
   if (!v) return '';
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString();
+  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('en-NZ');
 }
 
 /** The text a field shows on a stamp. */
@@ -24,7 +24,9 @@ export function waardeTekst(veld, stamp, ann, context) {
     return '';
   }
   const v = stamp.values?.[veld.key] ?? '';
-  return veld.kind === 'date' ? datumTekst(v) : String(v);
+  // A date that was not set shows the date this stamp was placed.
+  if (veld.kind === 'date') return datumTekst(v || stamp.placed);
+  return String(v);
 }
 
 function rondeRechthoek(ctx, x, y, w, h, r) {

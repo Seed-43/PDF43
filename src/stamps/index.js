@@ -92,15 +92,34 @@ function paneel(api) {
         invoer.type = veld.kind === 'date' ? 'date' : 'text';
         invoer.value = stamp.values?.[veld.key] ?? '';
       }
+      const zet = async (waarde) => {
+        await werkFamilieBij(api, fam.id, (s) => { s.values = { ...(s.values || {}), [veld.key]: waarde }; return s; });
+        api.redrawAnnotations?.();
+      };
+      if (veld.kind === 'date') {
+        // Not set: each stamp shows the date it was placed.
+        const geplaatst = (stamp.placed || '').slice(0, 10);
+        if (!invoer.value) { invoer.value = geplaatst; invoer.title = 'Date placed (not set)'; }
+        const knoppen = document.createElement('div');
+        knoppen.style.cssText = 'display:flex;gap:4px;margin-top:2px;';
+        const knop = (tekst, titel, waarde) => {
+          const b = document.createElement('button');
+          b.textContent = tekst; b.title = titel;
+          b.style.cssText = 'font:inherit;padding:2px 8px;cursor:pointer;';
+          b.addEventListener('click', async (e) => { e.preventDefault(); invoer.value = waarde() || geplaatst; await zet(waarde()); });
+          return b;
+        };
+        knoppen.append(
+          knop('Today', `Set ${veld.label} to today on every ${fam.name} stamp`, () => new Date().toISOString().slice(0, 10)),
+          knop('Placed', `Show the date each ${fam.name} stamp was placed`, () => ''),
+        );
+        rij.append(l, invoer, knoppen);
+      }
       if (veld.kind !== 'auto') {
         invoer.style.cssText = 'font:inherit;padding:3px 5px;';
-        invoer.addEventListener('change', async () => {
-          const waarde = invoer.value;
-          await werkFamilieBij(api, fam.id, (s) => { s.values = { ...(s.values || {}), [veld.key]: waarde }; return s; });
-          api.redrawAnnotations?.();
-        });
+        invoer.addEventListener('change', () => zet(invoer.value));
       }
-      rij.appendChild(invoer);
+      if (veld.kind !== 'date') rij.appendChild(invoer);
       el.appendChild(rij);
     }
     return el;
