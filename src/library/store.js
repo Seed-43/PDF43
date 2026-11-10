@@ -6,7 +6,8 @@
 
 const OPSLAG = 'seed43.library';
 let huidig = null;
-const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
+const HOUT_VLAG = 'seed43.library.timber2025';
+const OUDE_TABELLEN =new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 
 export const SOORTEN = { section: 'Section', bolt: 'Bolt', table: 'Table' };
 export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Rectangle (timber)', ijoist: 'I-joist (timber)' };
@@ -26,7 +27,24 @@ export async function laadBibliotheek(api) {
       // were never used by any tool; drop them from saved copies too.
       const voor = v.categories.length;
       v.categories = v.categories.filter((c) => !OUDE_TABELLEN.has(c.id));
-      if (v.categories.length !== voor) { try { localStorage.setItem(OPSLAG, JSON.stringify(v)); } catch {} }
+      let gewijzigd = v.categories.length !== voor;
+      // Timber from the supplier tables: placeholder categories taken from
+      // the Revit type names (rows marked check) are replaced, and timber
+      // categories the saved copy does not have yet are added, once.
+      if (localStorage.getItem(HOUT_VLAG) !== '1') {
+        try {
+          const std = await standaardBibliotheek(api);
+          for (const c of std.categories.filter((x) => x.group === 'Timber' && x.id !== 'timber-gauged')) {
+            const i = v.categories.findIndex((x) => x.id === c.id);
+            if (i < 0) v.categories.push(c);
+            else if (v.categories[i].items.some((it) => it.check)) v.categories[i] = c;
+            else continue;
+            gewijzigd = true;
+          }
+          localStorage.setItem(HOUT_VLAG, '1');
+        } catch (e) { console.warn('[seed43] timber not added to the saved library:', e); }
+      }
+      if (gewijzigd) { try { localStorage.setItem(OPSLAG, JSON.stringify(v)); } catch {} }
       return (huidig = v);
     }
   } catch {}
