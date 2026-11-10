@@ -14,8 +14,11 @@ import { registreerOcr, stopOcr } from './ocr/engine.js';
 import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
+import { openAbout } from './about.js';
 
 const OPSLAG = 'seed43.tools';
+const ZICHTBAAR = 'seed43.ribbon';
+const ICOON_ABOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
 
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
 const ICOON_BOUWER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M3 8h18"/><path d="M7 12h6"/><path d="M15 20l2-2 3 3"/><path d="M17 18l3-3"/></svg>';
@@ -67,10 +70,29 @@ export async function activate(api) {
   try { startElementen(api); } catch (e) { console.warn('[seed43] element library did not start:', e); }
 
   if (api.features?.ribbonTabs !== true) return;
-  tab = api.registerRibbonTab({
-    id: 'main',
-    label: 'Seed43',
-    groups: [
+  bouwTab(api, aan);
+}
+
+// ── Ribbon: which tools show (chosen in About) ───────────────────────────
+
+const ABOUT_TOOLS = [
+  { id: 'ocr', label: 'Paddle OCR', beschrijving: 'OCR engine for scans and page labels; the ribbon button switches it on or off', icon: ICOON_OCR },
+  { id: 'stamps', label: 'Smart Stamps', beschrijving: 'Stamp families with shared parameters, and the Stamp Builder', icon: ICOON_STEMPEL },
+  { id: 'library', label: 'Element Library', beschrijving: 'Steel, timber, fixings and bolts placed to scale', icon: ICOON_BIBLIOTHEEK },
+  { id: 'bracing', label: 'Bracing', beschrijving: 'Bracing legend lines with type and length in metres', icon: ICOON_BRACING },
+];
+
+function leesZichtbaar() {
+  try { const v = JSON.parse(localStorage.getItem(ZICHTBAAR) || 'null'); if (v && typeof v === 'object') return v; } catch {}
+  return {};
+}
+const isZichtbaar = (id) => leesZichtbaar()[id] !== false;
+
+function bouwTab(api, aan) {
+  const toon = leesZichtbaar();
+  const zie = (id) => toon[id] !== false;
+  try { tab?.dispose?.(); } catch {}
+  const alle = [
       {
         id: 'tools',
         label: { en: 'Tools', nl: 'Tools' },
@@ -124,9 +146,26 @@ export async function activate(api) {
           },
         ],
       },
-    ],
-  });
-  try { tab.update('smart-stamps', { active: await paletOpen(api) }); } catch {}
+  ];
+  // Hide the tools switched off in About; a group with nothing left goes.
+  const welk = { 'tool-ocr': 'ocr', 'smart-stamps': 'stamps', 'stamp-builder': 'stamps', 'element-library': 'library', 'bracing-line': 'bracing' };
+  const groups = [
+    {
+      id: 'seed43', label: 'Seed43',
+      items: [{
+        type: 'action', id: 'about', label: { en: 'About', nl: 'Over' }, icon: ICOON_ABOUT, size: 'large',
+        title: { en: 'Seed43 version, updates, what changed, and which tools show on this tab.', nl: 'Seed43-versie, updates en welke tools op dit tabblad staan.' },
+        onRun: () => openAbout({
+          tools: ABOUT_TOOLS,
+          zichtbaar: isZichtbaar,
+          zet: (id, v) => { const z = leesZichtbaar(); z[id] = v; try { localStorage.setItem(ZICHTBAAR, JSON.stringify(z)); } catch {} bouwTab(api, aan); },
+        }),
+      }],
+    },
+    ...alle.map((g) => ({ ...g, items: g.items.filter((it) => zie(welk[it.id] || it.id)) })).filter((g) => g.items.length),
+  ];
+  tab = api.registerRibbonTab({ id: 'main', label: 'Seed43', groups });
+  paletOpen(api).then((o) => { try { tab.update('smart-stamps', { active: o }); } catch {} }).catch(() => {});
 }
 
 export async function deactivate(api) {

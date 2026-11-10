@@ -1,0 +1,52 @@
+[
+  {
+    "version": "0.6.0",
+    "date": "2026-11-10",
+    "notes": {
+      "New": [
+        "About: version, update check, what changed and which Seed43 tools show on the ribbon",
+        "Bracing: a bracing legend line along a braced wall with its type and length in metres, like the Revit Bracing Legend Tag",
+        "Fixings: Lumberlok joist, LVL, I-beam and split hangers, Tylok and Nailon plates, angles and cleats, galvanised and stainless, drawn to scale in section or elevation",
+        "Timber from the supplier tables: SG8, hySPAN, hy90, hyONE, hyCHORD, hyJOIST, Prolam PL8 and PL12 beams, posts and PLX",
+        "Timber section looks: glulam laminations, LVL veneer lines, sawn timber cross or blocking diagonal",
+        "Members are placed like a line: click A, then B; Ctrl or Shift keeps them square",
+        "Snapping to member ends, midpoints and centres; grips to stretch and move"
+      ],
+      "General": [
+        "Element Library window redesigned: browse tree under New Zealand, search, preview tiles or list, details panel",
+        "Browse groups fold up and open with a click, and start folded",
+        "Smart Stamps open their own panel where the app has no palette switch"
+      ],
+      "Removed": [
+        "The unused NZ gauge and base plate reference tables"
+      ]
+    }
+  },
+  {
+    "version": "0.5.0",
+    "date": "2026-11-05",
+    "notes": {
+      "New": [
+        "Members from point A to point B in elevation or plan; any rotation; Space rotates"
+      ]
+    }
+  },
+  {
+    "version": "0.4.0",
+    "date": "2026-11-04",
+    "notes": {
+      "New": [
+        "Element Library with NZ Steel: sections and bolt groups placed to scale"
+      ]
+    }
+  },
+  {
+    "version": "0.3.2",
+    "date": "2026-11-04",
+    "notes": {
+      "New": [
+        "Smart Stamps: stamp families with shared parameters, a builder and placed-date defaults"
+      ]
+    }
+  }
+]
