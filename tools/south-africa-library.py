@@ -169,6 +169,35 @@ def main():
         'South African glulam, grade 7 (grades up to 12 on order), sizes from RSB Group: thickness 38 to 165, depth 67 to 622. Not every combination is made; check with the supplier. Section properties are geometric.',
         [dict({'name': f'{d}x{b}', 'd': d, 'b': b, 'grade': 'Grade 7'}, **rechthoek(d, b)) for b in dikte for d in hoogte if d > b], 'Timber')
 
+    # Fixings: MiTek South Africa eCo truss hangers and strap hangers. Widths,
+    # steel thickness and angles are from SA retailer listings (Cashbuild,
+    # Buco, Eco Hardware, Global Hardware); MiTek SA publishes no dimension
+    # table online, so the heights d, side plate L and flange F are estimated.
+    th = [
+        ('ETH38X1M', 'Truss hanger 38 x 1.0, 90, mini', 38, 90, 1.0, 30),
+        ('TH38-1.0S', 'Truss hanger 38 x 1.0, 90, short', 38, 100, 1.0, 30),
+        ('TH38-1.0L', 'Truss hanger 38 x 1.0, 90, long', 38, 150, 1.0, 30),
+        ('TH38-1.2', 'Truss hanger 38 x 1.2, 90', 38, 120, 1.2, 30),
+        ('TH38-1.6', 'Truss hanger 38 x 1.6, 90', 38, 120, 1.6, 30),
+        ('TH50-1.0S', 'Truss hanger 50 x 1.0, 90, short', 50, 100, 1.0, 30),
+        ('TH50-1.0L', 'Truss hanger 50 x 1.0, 90, long', 50, 150, 1.0, 30),
+        ('TH76-1.2', 'Truss hanger 76 x 1.2, 90', 76, 150, 1.2, 30),
+        ('TH38-45L', 'Truss hanger 38, 45, left', 38, 120, 1.2, 30),
+        ('TH38-45R', 'Truss hanger 38, 45, right', 38, 120, 1.2, 30),
+        ('TH50-45L', 'Truss hanger 50, 45, left', 50, 120, 1.2, 30),
+        ('TH50-45R', 'Truss hanger 50, 45, right', 50, 120, 1.2, 30),
+        ('SH38-90', 'Strap hanger 38 x 90', 38, 120, 1.0, 0),
+        ('SH50-90', 'Strap hanger 50 x 90', 50, 120, 1.0, 0),
+        ('SH38-45', 'Strap hanger 38 x 45 (left or right)', 38, 120, 1.0, 0),
+    ]
+    cat('za-mitek-truss-hangers', 'Truss hangers (MiTek SA)', 'hanger', ['b', 'd', 't', 'L', 'F', 'description', 'material', 'fixing', 'estimated'],
+        'MiTek South Africa eCo truss hangers (38, 50 and 76 wide; 1.0, 1.2 and 1.6 mm; 90 and 45 degrees) and strap hangers (1.0 mm). '
+        'Widths and thicknesses from SA retailer listings; MiTek SA publishes no dimension table, so the height d, side plate L and face flange F '
+        'are estimated (a 45 degree hanger is drawn square). The codes other than ETH38X1M are descriptive, not MiTek part numbers. '
+        'Replace with the MiTek SA truss hanger brochure when available.',
+        [{'name': code, 'description': oms, 'b': b, 'd': d, 't': t, 'L': 40, 'F': f, 'material': 'Galvanised',
+          'fixing': 'nails as per MiTek SA', 'estimated': 'd, L, F'} for code, oms, b, d, t, f in th], 'Fixings')
+
     bouten = copy.deepcopy(nz['bolts'])
     bouten.update({'id': 'za-bolts', 'region': ZA})
     bouten['note'] = ((bouten.get('note') or '') + ' The same metric bolts are used in South Africa (grades 4.8 and 8.8).').strip()
