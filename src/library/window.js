@@ -239,6 +239,8 @@ export async function openBibliotheek(api) {
   let lib = kopie(await laadBibliotheek(api));
   const ui = leesUi();
   let nav = { regio: null, groep: null, catId: null };
+  // Browse rows opened in this window; every row starts folded up.
+  const uitgeklapt = new Set();
   const geschiedenis = [nav]; let positie = 0;
   const filter = { soorten: new Set(Object.keys(SOORTEN)), vorm: '' };
   let zoek = '';
@@ -294,6 +296,8 @@ export async function openBibliotheek(api) {
     nav = { regio: n.regio || null, groep: n.groep || null, catId: n.catId || null };
     if (nav.catId) { const c = cat(nav.catId) || {}; nav.groep = groepVan(c) || nav.groep; nav.regio = regioVan(c); }
     if (nav.groep && !nav.regio) nav.regio = 'New Zealand';
+    // Going to a category (search, double-click) opens its rows in Browse.
+    if (nav.catId) { uitgeklapt.add(nav.regio); uitgeklapt.add(`${nav.regio}/${nav.groep}`); }
     if (opslaan) { geschiedenis.splice(positie + 1); geschiedenis.push(nav); positie = geschiedenis.length - 1; }
     if (venster.dataset.zij === '1') venster.dataset.zij = '0';
     tekenAlles();
@@ -426,19 +430,20 @@ export async function openBibliotheek(api) {
     // One foldable row: click opens and shows it, click again folds it up;
     // the arrow only folds. `sleutel` keeps the fold state per row.
     const rij = (tekst, aantal, sleutel, isHier, niveau, doel) => {
-      const dicht = ui.dicht.includes(sleutel);
+      const dicht = !uitgeklapt.has(sleutel);
       const k = maak('div', `s43l-knoop${niveau ? ' kind' : ''}${isHier ? ' aan' : ''}${dicht ? ' dicht' : ''}`);
       if (niveau) k.style.paddingLeft = `${8 + 16 * niveau}px`;
       k.setAttribute('role', 'treeitem');
       const pijl = maak('span', 'pijl', '▾');
       pijl.addEventListener('click', (e) => {
         e.stopPropagation();
-        ui.dicht = dicht ? ui.dicht.filter((x) => x !== sleutel) : [...ui.dicht, sleutel]; bewaarUi(ui); tekenZij();
+        if (dicht) uitgeklapt.add(sleutel); else uitgeklapt.delete(sleutel);
+        tekenZij();
       });
       k.append(pijl, maak('span', '', tekst), maak('span', 'n', aantal));
       k.addEventListener('click', () => {
-        if (isHier && !dicht) { ui.dicht = [...ui.dicht, sleutel]; bewaarUi(ui); tekenZij(); return; }
-        ui.dicht = ui.dicht.filter((x) => x !== sleutel); bewaarUi(ui);
+        if (isHier && !dicht) { uitgeklapt.delete(sleutel); tekenZij(); return; }
+        uitgeklapt.add(sleutel);
         gaNaar(doel);
       });
       boom.appendChild(k);
