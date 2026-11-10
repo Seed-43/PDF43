@@ -6,6 +6,7 @@
 
 const OPSLAG = 'seed43.library';
 let huidig = null;
+const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 
 export const SOORTEN = { section: 'Section', bolt: 'Bolt', table: 'Table' };
 export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Rectangle (timber)', ijoist: 'I-joist (timber)' };
@@ -20,7 +21,14 @@ export async function laadBibliotheek(api) {
   if (huidig) return huidig;
   try {
     const v = JSON.parse(localStorage.getItem(OPSLAG) || 'null');
-    if (geldigeBibliotheek(v)) return (huidig = v);
+    if (geldigeBibliotheek(v)) {
+      // The NZ gauge and base plate reference tables shipped up to 0.6.0
+      // were never used by any tool; drop them from saved copies too.
+      const voor = v.categories.length;
+      v.categories = v.categories.filter((c) => !OUDE_TABELLEN.has(c.id));
+      if (v.categories.length !== voor) { try { localStorage.setItem(OPSLAG, JSON.stringify(v)); } catch {} }
+      return (huidig = v);
+    }
   } catch {}
   return (huidig = await standaardBibliotheek(api));
 }
