@@ -424,7 +424,7 @@ export async function openBibliotheek(api) {
     const volgorde = [...groepen.keys()].sort((a, b) => ((GROEP_VOLGORDE.indexOf(a) + 1 || 99) - (GROEP_VOLGORDE.indexOf(b) + 1 || 99)) || a.localeCompare(b));
     for (const g of volgorde) {
       const lijst = groepen.get(g);
-      const dicht = ui.dicht.includes(g) && nav.groep !== g;
+      const dicht = ui.dicht.includes(g);
       const k = maak('div', `s43l-knoop${nav.groep === g && !nav.catId ? ' aan' : ''}${dicht ? ' dicht' : ''}`);
       k.setAttribute('role', 'treeitem');
       const pijl = maak('span', 'pijl', '▾');
@@ -433,7 +433,15 @@ export async function openBibliotheek(api) {
         ui.dicht = dicht ? ui.dicht.filter((x) => x !== g) : [...ui.dicht, g]; bewaarUi(ui); tekenZij();
       });
       k.append(pijl, maak('span', '', g), maak('span', 'n', String(lijst.reduce((s, c) => s + c.items.length, 0))));
-      k.addEventListener('click', () => gaNaar({ groep: g }));
+      // Click a group to open it and show it; click it again to fold it up.
+      k.addEventListener('click', () => {
+        if (nav.groep === g && !nav.catId && !dicht) {
+          ui.dicht = [...ui.dicht, g]; bewaarUi(ui); tekenZij();
+          return;
+        }
+        ui.dicht = ui.dicht.filter((x) => x !== g); bewaarUi(ui);
+        gaNaar({ groep: g });
+      });
       boom.appendChild(k);
       if (dicht) continue;
       for (const c of lijst) {
