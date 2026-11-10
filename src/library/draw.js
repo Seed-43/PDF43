@@ -40,6 +40,15 @@ export function sectieVorm(shape, it) {
         [hb, -hd + lip], [hb, -hd], [-hb, -hd], [-hb, hd], [hb, hd], [hb, hd - lip], [hb - t, hd - lip], [hb - t, hd - t],
         [-hb + t, hd - t], [-hb + t, -hd + t], [hb - t, -hd + t], [hb - t, -hd + lip]]] };
     }
+    case 'lipped-z': {
+      // Lipped Zed purlin: top flange e to one side, bottom flange f to the
+      // other, lips at both ends, web t thick.
+      const e = num(it.e) || b, f = num(it.f) || b, lip = num(it.lip), w = e + f - t, hw = w / 2;
+      const xw = -hw + f - t;
+      return { w, h: d, polys: [[
+        [-hw, hd - lip], [-hw, hd], [xw + t, hd], [xw + t, -hd + t], [hw - t, -hd + t], [hw - t, -hd + lip],
+        [hw, -hd + lip], [hw, -hd], [xw, -hd], [xw, hd - t], [-hw + t, hd - t], [-hw + t, hd - lip]]] };
+    }
     case 'rect': {
       // Sawn timber: the section with a cross, or one diagonal for blocking;
       // 2/ = pieces side by side.
@@ -288,14 +297,14 @@ export function lidProfiel(shape, it, view) {
     if (shape === 'I') lijnen.push({ o: -tw / 2, dash: true }, { o: tw / 2, dash: true });
     else if (shape === 'channel') lijnen.push({ o: -b / 2 + tw, dash: true });
     else if (shape === 'angle') lijnen.push({ o: -b / 2 + t, dash: true });
-    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c') lijnen.push({ o: -breedte / 2 + t, dash: true }, { o: breedte / 2 - t, dash: true });
+    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c' || shape === 'lipped-z') lijnen.push({ o: -breedte / 2 + t, dash: true }, { o: breedte / 2 - t, dash: true });
     else if (shape === 'rect') { const n = Math.max(1, Math.round(num(it.plies) || 1)); for (let i = 1; i < n; i++) lijnen.push({ o: -b / 2 + (b * i) / n }); }
     else if (shape === 'ijoist') { const w = num(it.tw); if (w > 0) lijnen.push({ o: -w / 2, dash: true }, { o: w / 2, dash: true }); else lijnen.push({ o: 0, dash: true }); }
   } else {
     breedte = d;
     if (shape === 'I' || shape === 'channel') lijnen.push({ o: -d / 2 + tf }, { o: d / 2 - tf });
     else if (shape === 'angle') lijnen.push({ o: -d / 2 + t });
-    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c') lijnen.push({ o: -d / 2 + t, dash: true }, { o: d / 2 - t, dash: true });
+    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c' || shape === 'lipped-z') lijnen.push({ o: -d / 2 + t, dash: true }, { o: d / 2 - t, dash: true });
     else if (shape === 'ijoist' && num(it.tf) > 0) lijnen.push({ o: -d / 2 + num(it.tf) }, { o: d / 2 - num(it.tf) });
   }
   return { breedte, lijnen };

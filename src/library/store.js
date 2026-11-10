@@ -7,12 +7,13 @@
 const OPSLAG = 'seed43.library';
 let huidig = null;
 const HOUT_VLAG = 'seed43.library.timber2025b';
+const AU_VLAG = 'seed43.library.au2026a';
 const FIXING_VLAG = 'seed43.library.fixings2024a';
 const HOUT_VERVANG = /^(timber-sg8|lvl-|prolam-|hyjoist$)/;
 const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 
 export const SOORTEN = { section: 'Section', bolt: 'Bolt', table: 'Table' };
-export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)', hanger: 'Hanger (fixing)', plate: 'Plate (fixing)', fangle: 'Angle cleat (fixing)' };
+export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', 'lipped-z': 'Lipped Z (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)', hanger: 'Hanger (fixing)', plate: 'Plate (fixing)', fangle: 'Angle cleat (fixing)' };
 
 export function geldigeBibliotheek(b) {
   return b && typeof b === 'object' && Array.isArray(b.categories)
@@ -60,6 +61,16 @@ export async function laadBibliotheek(api) {
           }
           localStorage.setItem(FIXING_VLAG, '1');
         } catch (e) { console.warn('[seed43] fixings not added to the saved library:', e); }
+      }
+      // Australia (same kinds of elements as New Zealand): shipped Australian
+      // categories the saved copy does not have yet are added, once.
+      if (localStorage.getItem(AU_VLAG) !== '1') {
+        try {
+          const std = await standaardBibliotheek(api);
+          const ids = new Set(v.categories.map((c) => c.id));
+          for (const c of std.categories.filter((x) => x.region === 'Australia' && !ids.has(x.id))) { v.categories.push(c); gewijzigd = true; }
+          localStorage.setItem(AU_VLAG, '1');
+        } catch (e) { console.warn('[seed43] Australia not added to the saved library:', e); }
       }
       // The library note still describing the removed gauge tables.
       if (/Gauge tables/.test(v.source || '')) {
