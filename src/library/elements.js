@@ -528,8 +528,9 @@ function boutPaneel(api) {
     const o = boutOpties(e);
     veld(el, 'Kind', keuze([['bolt', 'Bolt (hex head)'], ['rod', 'Threaded rod']], o.kind, (v) => wb((x) => { x.kind = v; })));
     veld(el, 'Nuts', keuze(o.kind === 'rod'
-      ? [['0', 'None'], ['1', 'One end'], ['2', 'Both ends']]
-      : [['0', 'None (bolt only)'], ['1', 'Nut'], ['2', 'Nut + lock nut']], String(o.nuts), (v) => wb((x) => { x.nuts = Number(v); })));
+      ? [['0', 'None'], ['1', 'One end'], ['2', 'Both ends'], ['1d', 'Double nuts, one end'], ['2d', 'Double nuts, both ends']]
+      : [['0', 'None (bolt only)'], ['1', 'Nut'], ['2', 'Double nut']], o.dubbel ? `${o.nuts}d` : String(o.nuts),
+      (v) => wb((x) => { x.nuts = v.endsWith('d') ? v : Number(v); })));
     veld(el, 'Washers', keuze([['round', 'Round'], ['square', 'Square'], ['none', 'None']], o.washer, (v) => wb((x) => { x.washer = v; })));
     if (o.washer !== 'none') {
       veld(el, 'Washer at', keuze([['nut', 'Nut side only'], ['both', o.kind === 'rod' ? 'Both ends' : 'Under the head too']], o.washerAt,

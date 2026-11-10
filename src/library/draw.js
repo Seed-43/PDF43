@@ -246,15 +246,19 @@ const BOUT_DELEN = {
 /**
  * Options of a bolt group (both views):
  *   kind     'bolt' (hex head) | 'rod' (threaded rod)
- *   nuts     0 | 1 | 2   bolt: none, a nut, nut + lock nut; rod: none, one end, both ends
+ *   nuts     0 | 1 | 2   bolt: none, a nut, double nut; rod: none, one end, both ends
+ *            '1d' | '2d'   rod: double nuts at one end, at both ends
  *   washer   'none' | 'round' | 'square'
  *   washerAt 'nut' (under the nuts only) | 'both' (also under the head or at the other end)
  */
 export function boutOpties(el) {
-  const nuts = [0, 1, 2].includes(+el.nuts) ? +el.nuts : 1;
+  const ruw = String(el.nuts ?? '1');
+  const dubbel = ruw.endsWith('d');
+  const nuts = [0, 1, 2].includes(parseInt(ruw, 10)) ? parseInt(ruw, 10) : 1;
   return {
     kind: el.kind === 'rod' ? 'rod' : 'bolt',
     nuts,
+    dubbel: dubbel && nuts > 0,
     washer: ['none', 'round', 'square'].includes(el.washer) ? el.washer : 'round',
     washerAt: el.washerAt === 'both' ? 'both' : 'nut',
   };
@@ -282,7 +286,8 @@ export function boutZijaanzicht(el) {
   // Bottom (nut side): washer, nut(s), thread past the nut.
   const onder = [];
   if (o.nuts > 0 && ring) onder.push(ring);
-  const onderNoten = o.kind === 'rod' ? (o.nuts > 0 ? 1 : 0) : o.nuts;
+  const perEind = o.dubbel ? 2 : 1;
+  const onderNoten = o.kind === 'rod' ? (o.nuts > 0 ? perEind : 0) : o.nuts;
   for (let i = 0; i < onderNoten; i++) onder.push(moer);
   onder.push(draad);
   // Top: a bolt head, or the other end of the rod.
@@ -291,7 +296,7 @@ export function boutZijaanzicht(el) {
     if (ring && o.washerAt === 'both') boven.push(ring);
     boven.push({ soort: 'head', h: a.k, w: a.e });
   } else {
-    if (o.nuts === 2) { if (ring && o.washerAt === 'both') boven.push(ring); boven.push(moer); }
+    if (o.nuts === 2) { if (ring && o.washerAt === 'both') boven.push(ring); for (let i = 0; i < perEind; i++) boven.push(moer); }
     boven.push(draad);
   }
   const som = (lijst) => lijst.reduce((t, x) => t + x.h, 0);
