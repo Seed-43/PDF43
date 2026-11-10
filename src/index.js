@@ -11,7 +11,7 @@
 //            checked against the library's edge distance and pitch
 
 import { registreerOcr, stopOcr } from './ocr/engine.js';
-import { startStamps, wisselPalet, bouwer } from './stamps/index.js';
+import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 
@@ -95,7 +95,10 @@ export async function activate(api) {
             type: 'action', id: 'smart-stamps', label: 'Smart Stamps', icon: ICOON_STEMPEL, size: 'large',
             title: { en: 'Open or close the Smart Stamps panel: pick a stamp, then click on the sheet.', nl: 'Het paneel Slimme stempels openen of sluiten: kies een stempel en klik op het blad.' },
             active: false,
-            onRun: async () => { const open = await wisselPalet(api); tab?.update('smart-stamps', { active: open }); },
+            onRun: async () => {
+              const open = await wisselPalet(api, () => tab?.update('smart-stamps', { active: false }));
+              tab?.update('smart-stamps', { active: open });
+            },
           },
           {
             type: 'action', id: 'stamp-builder', label: { en: 'Stamp Builder', nl: 'Stempelbouwer' }, icon: ICOON_BOUWER, size: 'large',
@@ -117,7 +120,7 @@ export async function activate(api) {
       },
     ],
   });
-  try { tab.update('smart-stamps', { active: !!(await api.isToolPaletteVisible?.('smart-stamps')) }); } catch {}
+  try { tab.update('smart-stamps', { active: await paletOpen(api) }); } catch {}
 }
 
 export async function deactivate(api) {

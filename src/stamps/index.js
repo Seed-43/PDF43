@@ -6,6 +6,7 @@
 import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO } from './families.js';
 import { maat, teken } from './render.js';
 import { openBouwer } from './builder.js';
+import { openPaneel, sluitPaneel, werkPaneelBij, paneelOpen } from './panel.js';
 
 export const TYPE = 'seed43Stamp';
 export const PALET = 'smart-stamps';
@@ -168,6 +169,7 @@ export async function startStamps(api) {
 export async function stopStamps(api) {
   if (!actief) return;
   actief = false;
+  sluitPaneel();
   try { await api?.setToolPaletteVisible?.(PALET, false); } catch {}
   try { api?.unregisterToolPalette?.(PALET); } catch {}
   try { api?.unregisterPropertyPanel?.(TYPE); } catch {}
@@ -176,12 +178,33 @@ export async function stopStamps(api) {
 
 export function isActief() { return actief; }
 
-/** Open or close the Smart Stamps palette. Returns whether it is now open. */
-export async function wisselPalet(api) {
+/**
+ * Open or close the Smart Stamps palette. Returns whether it is now open.
+ * A host without api.setToolPaletteVisible (the official app) cannot open an
+ * extension palette at all; there Seed43 shows its own panel (panel.js).
+ * `bijSluiten` runs when the user closes that panel with its own button.
+ */
+export async function wisselPalet(api, bijSluiten) {
   if (!actief) return false;
-  const open = await api.isToolPaletteVisible?.(PALET);
-  await api.setToolPaletteVisible?.(PALET, !open);
-  return !open;
+  if (typeof api.setToolPaletteVisible === 'function') {
+    const open = await api.isToolPaletteVisible?.(PALET);
+    await api.setToolPaletteVisible(PALET, !open);
+    return !open;
+  }
+  if (paneelOpen()) { sluitPaneel(); return false; }
+  openPaneel({
+    families,
+    icoon: familieIcoon,
+    kies: (f) => { api.setTool(TYPE); api.setToolOverrides({ seed43Family: f.id }); },
+    bijSluiten,
+  });
+  return true;
+}
+
+/** Is the palette (or the fallback panel) open? */
+export async function paletOpen(api) {
+  if (typeof api?.isToolPaletteVisible === 'function') return !!(await api.isToolPaletteVisible(PALET));
+  return paneelOpen();
 }
 
 export function bouwer(api) {
@@ -190,6 +213,7 @@ export function bouwer(api) {
     families = nieuw;
     bewaarFamilies(families);
     registreerPalet(api);
+    werkPaneelBij(families);
     // Placed stamps of a changed family take its new design; values stay.
     for (const f of gewijzigd) {
       await werkFamilieBij(api, f.id, (s) => {
