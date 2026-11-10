@@ -460,7 +460,7 @@ export async function openBibliotheek(api) {
       shape = VORMEN[v] ? v : 'I';
     }
     const id = naam.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString(36).slice(-4);
-    const fields = k === 'bolt' ? ['d', 'category', 'hole', 'minEdge', 'minPitch'] : shape === 'rect' ? ['d', 'b', 'grade', 'treatment'] : ['d', 'b'];
+    const fields = k === 'bolt' ? ['d', 'category', 'hole', 'minEdge', 'minPitch'] : ['rect', 'glulam', 'lvl'].includes(shape) ? ['d', 'b', 'grade', 'treatment'] : ['d', 'b'];
     const c = { id, name: naam, kind: k, fields, items: [] };
     if (shape) c.shape = shape;
     if (nav.groep && !['Steel', 'Timber', 'Bolts', 'Reference tables'].includes(nav.groep)) c.group = nav.groep;

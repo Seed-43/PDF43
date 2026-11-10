@@ -8791,7 +8791,7 @@
    "name": "hySPAN LVL",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "lvl",
    "fields": [
     "d",
     "b",
@@ -9006,7 +9006,7 @@
    "name": "hy90 LVL",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "lvl",
    "fields": [
     "d",
     "b",
@@ -9130,7 +9130,7 @@
    "name": "hyONE LVL",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "lvl",
    "fields": [
     "d",
     "b",
@@ -9204,7 +9204,7 @@
    "name": "hyCHORD LVL",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "lvl",
    "fields": [
     "d",
     "b",
@@ -9362,7 +9362,7 @@
    "name": "Glulam beams PL8 (Prolam)",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "glulam",
    "fields": [
     "d",
     "b",
@@ -11037,7 +11037,7 @@
    "name": "Glulam beams PL12 (Prolam)",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "glulam",
    "fields": [
     "d",
     "b",
@@ -12712,7 +12712,7 @@
    "name": "Glulam posts (Prolam)",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "glulam",
    "fields": [
     "d",
     "b",
@@ -12953,7 +12953,7 @@
    "name": "PLX20 and PLX Column (Prolam)",
    "group": "Timber",
    "kind": "section",
-   "shape": "rect",
+   "shape": "glulam",
    "fields": [
     "d",
     "b",

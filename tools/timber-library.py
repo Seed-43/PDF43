@@ -71,7 +71,7 @@ def main():
     ]
     for cid, naam, prod, maten, beh in lvl:
         cats.append({
-            'id': cid, 'name': naam, 'group': 'Timber', 'kind': 'section', 'shape': 'rect', 'fields': rect_velden,
+            'id': cid, 'name': naam, 'group': 'Timber', 'kind': 'section', 'shape': 'lvl', 'fields': rect_velden,
             'note': fb, 'items': lvl_items(maten, massa.get(prod, {}), {'grade': prod, 'treatment': beh}),
         })
 
@@ -102,7 +102,7 @@ def main():
                                'code': f'{diepte[d]}{breedte[b]}', 'treatment': 'H1.2 / H3.2'}, **rechthoek(d, b)))
         cats.append({
             'id': f'prolam-{graad.lower()}', 'name': f'Glulam beams {graad} (Prolam)', 'group': 'Timber',
-            'kind': 'section', 'shape': 'rect',
+            'kind': 'section', 'shape': 'glulam',
             'fields': ['d', 'b', 'grade', 'finish', 'code', 'treatment', 'A', 'Ix', 'Iy', 'Zx', 'Zy'],
             'note': f'Prolam {graad} glulam beams, finished sizes from the Prolam Product List 2025. code is the nominal size in the product code (PLVL{graad[2:]}H3-300100 = 290x88 visual H3.2). Visual widths 42 to 260, non-visual 42, 63, 90 and 140. Section properties are geometric. H5, untreated and custom sizes on request.',
             'items': items,
@@ -118,14 +118,14 @@ def main():
     for nom, m in posten[:3]:
         items.append(dict({'name': f'PLP4H4-{nom}', 'd': m, 'b': m, 'nominal': nom, 'grade': 'Landscaping', 'treatment': 'H4'}, **rechthoek(m, m)))
     cats.append({
-        'id': 'prolam-posts', 'name': 'Glulam posts (Prolam)', 'group': 'Timber', 'kind': 'section', 'shape': 'rect',
+        'id': 'prolam-posts', 'name': 'Glulam posts (Prolam)', 'group': 'Timber', 'kind': 'section', 'shape': 'glulam',
         'fields': ['d', 'b', 'nominal', 'grade', 'treatment', 'A', 'Ix', 'Zx'],
         'note': 'Prolam laminated posts, finished sizes from the Prolam Product List 2025: H5 visual posts in PL8 and PL12, H4 landscaping posts. The number in the code is the nominal size.',
         'items': items,
     })
 
     cats.append({
-        'id': 'prolam-plx', 'name': 'PLX20 and PLX Column (Prolam)', 'group': 'Timber', 'kind': 'section', 'shape': 'rect',
+        'id': 'prolam-plx', 'name': 'PLX20 and PLX Column (Prolam)', 'group': 'Timber', 'kind': 'section', 'shape': 'glulam',
         'fields': ['d', 'b', 'code', 'treatment'],
         'note': 'Prolam PLX steel-reinforced glulam, non-visual H1.2, Prolam Product List 2025. Drawn as the timber outline; check capacities with Prolam.',
         'items': [{'name': 'PLX20 240x90', 'd': 240, 'b': 90, 'code': 'PLX20H1-250100', 'treatment': 'H1.2'},

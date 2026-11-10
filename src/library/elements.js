@@ -459,10 +459,15 @@ function sectiePaneel() {
     schaalVeld(el, ann, update, sectieMaat);
     veld(el, 'Label', keuze([['1', 'Show'], ['0', 'Hide']], e.label === false ? '0' : '1',
       (v) => werkBij(ann, update, sectieMaat, (x) => { x.label = v === '1'; })));
+    if (e.shape === 'rect') {
+      // Sawn timber: a cross for a member in section, one diagonal for blocking.
+      veld(el, 'Look', keuze([['0', 'Timber (cross)'], ['1', 'Blocking (diagonal)']], e.item.blocking ? '1' : '0',
+        (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
+    }
     const tabel = document.createElement('div');
     tabel.style.cssText = 'display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin-top:4px;font-variant-numeric:tabular-nums;';
     for (const [k, v] of Object.entries(e.item)) {
-      if (k === 'name') continue;
+      if (k === 'name' || k === 'blocking') continue;
       const a = document.createElement('span'); a.textContent = k; a.style.opacity = '0.7';
       const b = document.createElement('span'); b.textContent = typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v);
       tabel.append(a, b);

@@ -6,11 +6,12 @@
 
 const OPSLAG = 'seed43.library';
 let huidig = null;
-const HOUT_VLAG = 'seed43.library.timber2025';
-const OUDE_TABELLEN =new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
+const HOUT_VLAG = 'seed43.library.timber2025b';
+const HOUT_VERVANG = /^(timber-sg8|lvl-|prolam-|hyjoist$)/;
+const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 
 export const SOORTEN = { section: 'Section', bolt: 'Bolt', table: 'Table' };
-export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Rectangle (timber)', ijoist: 'I-joist (timber)' };
+export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)' };
 
 export function geldigeBibliotheek(b) {
   return b && typeof b === 'object' && Array.isArray(b.categories)
@@ -36,8 +37,10 @@ export async function laadBibliotheek(api) {
           const std = await standaardBibliotheek(api);
           for (const c of std.categories.filter((x) => x.group === 'Timber' && x.id !== 'timber-gauged')) {
             const i = v.categories.findIndex((x) => x.id === c.id);
+            // Supplier timber shipped since 0.6.0 is replaced as a whole (new
+            // section looks); a Revit placeholder only while still unchecked.
             if (i < 0) v.categories.push(c);
-            else if (v.categories[i].items.some((it) => it.check)) v.categories[i] = c;
+            else if (HOUT_VERVANG.test(c.id) || v.categories[i].items.some((it) => it.check)) v.categories[i] = c;
             else continue;
             gewijzigd = true;
           }
@@ -77,7 +80,7 @@ export function groepVan(c) {
   if (c.group) return c.group;
   if (c.kind === 'bolt') return 'Bolts';
   if (c.kind === 'table') return 'Reference tables';
-  return c.shape === 'rect' || c.shape === 'ijoist' ? 'Timber' : 'Steel';
+  return ['rect', 'glulam', 'lvl', 'ijoist'].includes(c.shape) ? 'Timber' : 'Steel';
 }
 
 /** Categories of the shipped library that a saved library does not have yet. */

@@ -4,6 +4,12 @@
 
 const num = (v) => (Number.isFinite(+v) ? +v : 0);
 
+/** Timber shapes, drawn in brown. */
+export const HOUTVORMEN = ['rect', 'glulam', 'lvl', 'ijoist'];
+/** Glulam lamination thickness and LVL veneer line spacing, mm (drawing only). */
+const LAMEL = 45;
+const VINEER = 10;
+
 /** Outline of a section in mm, centred: { polys: [[x,y]...][], circles: [{r, hole}], w, h }. */
 export function sectieVorm(shape, it) {
   const d = num(it.d), b = num(it.b) || d, tf = num(it.tf) || num(it.t), tw = num(it.tw) || num(it.t), t = num(it.t) || tf;
@@ -31,11 +37,25 @@ export function sectieVorm(shape, it) {
         [-hb + t, hd - t], [-hb + t, -hd + t], [hb - t, -hd + t], [hb - t, -hd + lip]]] };
     }
     case 'rect': {
-      // Timber: the section with a cross; 2/ = pieces side by side.
+      // Sawn timber: the section with a cross, or one diagonal for blocking;
+      // 2/ = pieces side by side.
       const n = Math.max(1, Math.round(num(it.plies) || 1));
-      const lijnen = [[[-hb, -hd], [hb, hd]], [[hb, -hd], [-hb, hd]]];
+      const lijnen = it.blocking ? [[[-hb, -hd], [hb, hd]]] : [[[-hb, -hd], [hb, hd]], [[hb, -hd], [-hb, hd]]];
       for (let i = 1; i < n; i++) { const x = -hb + (b * i) / n; lijnen.push([[x, -hd], [x, hd]]); }
       return { w: b, h: d, hout: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    case 'glulam': {
+      // Glulam: laminations across the depth, LAMEL mm thick from the
+      // bottom; what is left over is the top lamination.
+      const lijnen = [];
+      for (let y = hd - LAMEL; y > -hd + 1; y -= LAMEL) lijnen.push([[-hb, y], [hb, y]]);
+      return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    case 'lvl': {
+      // LVL: veneer lines down the depth, VINEER mm apart from the left.
+      const lijnen = [];
+      for (let x = -hb + VINEER; x < hb - 1; x += VINEER) lijnen.push([[x, -hd], [x, hd]]);
+      return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
     }
     case 'ijoist': {
       // I-joist: true outline once tf and tw are known, else the outline
@@ -63,11 +83,12 @@ export function gedraaid(w, h, graden) {
 }
 
 const STAAL = '#1d4ed8';
+const DUN = '#9ca3af';
 const HOUT = '#92400e';
 const HOUT_VUL = 'rgba(180, 120, 50, 0.16)';
 
 /** Timber shapes are drawn in brown. */
-export const isHout = (shape) => shape === 'rect' || shape === 'ijoist';
+export const isHout = (shape) => HOUTVORMEN.includes(shape);
 
 /** Fill and stroke a section outline (mm) at cx, cy, k page points per mm. */
 function tekenVorm(ctx, v, cx, cy, k, rot, kleur, vul) {
@@ -96,7 +117,7 @@ function tekenVorm(ctx, v, cx, cy, k, rot, kleur, vul) {
     ctx.setLineDash([]);
     ctx.lineWidth = lw;
   };
-  lijn(v.lijnen, false);
+  if (v.dun) { const k0 = ctx.strokeStyle; ctx.strokeStyle = DUN; lijn(v.lijnen, false); ctx.strokeStyle = k0; } else lijn(v.lijnen, false);
   lijn(v.streep, true);
 }
 
