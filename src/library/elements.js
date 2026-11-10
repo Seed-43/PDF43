@@ -66,7 +66,7 @@ function nieuwElement(api, soort, keuze, page, x, y) {
   return soort === SECTIE
     ? { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...schaal }
     : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true,
-      view: keuze.view === 'elevation' ? 'elevation' : 'face', grip: 20, along: 'gauge', ...schaal };
+      view: ['elevation', 'plan'].includes(keuze.view) ? keuze.view : 'face', grip: 20, along: 'gauge', ...schaal };
 }
 
 function plaatsingsType(api, soort) {
@@ -522,7 +522,7 @@ function boutPaneel(api) {
     });
     // Face (plan) or elevation (side on, through the plies).
     const zij = e.view === 'elevation';
-    veld(el, 'View', keuze([['face', 'Face (plan)'], ['elevation', 'Elevation (side on)']], zij ? 'elevation' : 'face',
+    veld(el, 'View', keuze([['face', 'Face (holes)'], ['plan', 'Plan (heads)'], ['elevation', 'Elevation (side on)']], ['elevation', 'plan'].includes(e.view) ? e.view : 'face',
       (v) => { wb((x) => { x.view = v; }); }));
     // Bolt or threaded rod, nuts and washers.
     const o = boutOpties(e);

@@ -391,20 +391,49 @@ export function tekenBoutGroep(ctx, ann) {
   // Face view: the washer seen from the head side (round or square), if any.
   const ringZicht = el.washer === 'square' || el.washer === 'round' ? el.washer : 'none';
   const ringMaat = boutAfmetingen(el);
+  // Plan: what is seen from the top end (the head of a bolt, or the other end of a rod).
+  const bovenaanzicht = el.view === 'plan';
+  const opt = boutOpties(el);
+  const bovenZeskant = opt.kind === 'bolt' || opt.nuts === 2;
+  const bovenRing = opt.washer !== 'none' && opt.washerAt === 'both' && bovenZeskant ? opt.washer : 'none';
   for (let i = 0; i < g.rows; i++) {
     for (let j = 0; j < g.cols; j++) {
       const x = -g.gauge * (g.cols - 1) / 2 + j * g.gauge, y = -g.pitch * (g.rows - 1) / 2 + i * g.pitch;
       const [px, py] = P(x, y);
-      ctx.beginPath(); ctx.arc(px, py, r * k, 0, Math.PI * 2); ctx.stroke();
-      if (ringZicht === 'round') { ctx.beginPath(); ctx.arc(px, py, (ringMaat.wd / 2) * k, 0, Math.PI * 2); ctx.stroke(); }
-      else if (ringZicht === 'square') {
-        const hs = ringMaat.sq / 2;
+      const ring = (straal) => { ctx.beginPath(); ctx.arc(px, py, straal * k, 0, Math.PI * 2); ctx.stroke(); };
+      const vierkant = (hs) => {
         ctx.beginPath();
         [[-hs, -hs], [hs, -hs], [hs, hs], [-hs, hs]].forEach(([dx, dy], q) => { const [qx, qy] = P(x + dx, y + dy); q ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy); });
         ctx.closePath(); ctx.stroke();
+      };
+      const kruis = (rr) => {
+        ctx.beginPath(); ctx.moveTo(px - rr * k * 1.3, py); ctx.lineTo(px + rr * k * 1.3, py);
+        ctx.moveTo(px, py - rr * k * 1.3); ctx.lineTo(px, py + rr * k * 1.3); ctx.stroke();
+      };
+      if (bovenaanzicht) {
+        // Plan: looking down on the top end: washer (if one is there),
+        // then the hexagon of the head or nut, or the end of the rod.
+        if (bovenRing === 'round') ring(ringMaat.wd / 2); else if (bovenRing === 'square') vierkant(ringMaat.sq / 2);
+        if (bovenZeskant) {
+          const R = ringMaat.e / 2;
+          ctx.beginPath();
+          for (let q = 0; q < 6; q++) {
+            const hoek = (Math.PI / 3) * q;   // corners left and right, flats top and bottom
+            const [qx, qy] = P(x + R * Math.cos(hoek), y + R * Math.sin(hoek));
+            q ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy);
+          }
+          ctx.closePath(); ctx.stroke();
+          ring(ringMaat.af / 2 * 0.95);
+        } else {
+          ring(ringMaat.d / 2);
+        }
+        kruis(ringMaat.d / 2);
+        continue;
       }
-      ctx.beginPath(); ctx.moveTo(px - r * k * 1.3, py); ctx.lineTo(px + r * k * 1.3, py);
-      ctx.moveTo(px, py - r * k * 1.3); ctx.lineTo(px, py + r * k * 1.3); ctx.stroke();
+      ring(r);
+      if (ringZicht === 'round') ring(ringMaat.wd / 2);
+      else if (ringZicht === 'square') vierkant(ringMaat.sq / 2);
+      kruis(r);
     }
   }
   // Label and check result
@@ -413,7 +442,7 @@ export function tekenBoutGroep(ctx, ann) {
   ctx.font = '7px Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText(`${g.rows * g.cols}-${el.bolt?.name || 'bolt'}`, cx, cy + h / 2 + 2);
+  ctx.fillText(`${g.rows * g.cols}-${opt.kind === 'rod' ? `M${ringMaat.d} threaded rod` : (el.bolt?.name || 'bolt')}`, cx, cy + h / 2 + 2);
   if (fout) ctx.fillText(g.fouten.join(', '), cx, cy + h / 2 + 11);
   ctx.restore();
 }

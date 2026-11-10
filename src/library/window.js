@@ -789,6 +789,7 @@ export async function openBibliotheek(api) {
     } else if (g.c.kind === 'bolt') {
       plaatsGroep.append(maak('span', '', 'Place bolt group:'),
         knop('Face', () => plaatsGekozen('section'), 'prim', 'Bolt heads seen face on, with the plate (Enter)'),
+        knop('Plan', () => plaatsGekozen('plan'), 'prim', 'Looking down on the bolt heads (or nuts), with washers'),
         knop('Elevation', () => plaatsGekozen('elevation'), 'prim', 'Bolts side on: head, plies, washer and nut, with the bolt length'));
     } else {
       const greep = maak('select');
