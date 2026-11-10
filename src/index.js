@@ -12,7 +12,7 @@
 
 import { registreerOcr, stopOcr } from './ocr/engine.js';
 import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
-import { startElementen, stopElementen } from './library/elements.js';
+import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 
 const OPSLAG = 'seed43.tools';
@@ -20,6 +20,7 @@ const OPSLAG = 'seed43.tools';
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
 const ICOON_BOUWER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M3 8h18"/><path d="M7 12h6"/><path d="M15 20l2-2 3 3"/><path d="M17 18l3-3"/></svg>';
 
+const ICOON_BRACING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17h18" stroke-dasharray="3 2"/><path d="M3 20h18"/><path d="M7 9h10"/><path d="M7 6h3"/></svg>';
 const ICOON_BIBLIOTHEEK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14"/><path d="M5 20h14"/><path d="M12 4v16"/><path d="M8 8h8"/><path d="M8 16h8"/></svg>';
 
 const ICOON_OCR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h3"/><path d="M17 4h3v3"/><path d="M20 17v3h-3"/><path d="M7 20H4v-3"/><path d="M8 9h8"/><path d="M8 12h8"/><path d="M8 15h5"/></svg>';
@@ -115,6 +116,11 @@ export async function activate(api) {
             type: 'action', id: 'element-library', label: { en: 'Element Library', nl: 'Elementenbibliotheek' }, icon: ICOON_BIBLIOTHEEK, size: 'large',
             title: { en: 'Sections, bolts and your own elements: edit the library, then place to scale. Bolt groups are checked against the edge distance and pitch in the library.', nl: 'Profielen, bouten en eigen elementen: bewerk de bibliotheek en plaats op schaal.' },
             onRun: () => openBibliotheek(api).catch((e) => console.warn('[seed43] library window:', e)),
+          },
+          {
+            type: 'action', id: 'bracing-line', label: { en: 'Bracing', nl: 'Schoren' }, icon: ICOON_BRACING, size: 'large',
+            title: { en: 'Bracing legend line: click A, then B along a braced wall. Shows the bracing type and its length in metres; Ctrl or Shift keeps it square.', nl: 'Schoorlijn: klik A en dan B langs een geschoorde wand.' },
+            onRun: () => plaatsBracing(api),
           },
         ],
       },

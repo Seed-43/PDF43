@@ -12,6 +12,7 @@
 // one being placed) by 90 degrees.
 
 import { laadBibliotheek, categorie } from './store.js';
+import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
@@ -543,6 +544,7 @@ function lidPaneel() {
     el.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding:8px;font-size:12px;border-top:2px solid #1d4ed8;';
     if (!e) return el;
     const g = lidGeometrie(ann);
+    if (e.shape === 'bracing') { bracingPaneel(el, ann, update, e, g); return el; }
     kop(el, e.item.name, `${e.category} member, ${e.view === 'plan' ? 'plan' : 'elevation'}, ${e.scaleText || ''}`, '#1d4ed8');
     const zet = (wijzig) => {
       const x = kopie(ann.element); wijzig(x); update('element', x);
@@ -560,6 +562,59 @@ function lidPaneel() {
     requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
+}
+
+// ── Bracing legend tag ──────────────────────────────────────────────────
+
+let laatsteBracing = { ...BRACING_STANDAARD };
+
+function bracingPaneel(el, ann, update, e, g) {
+  const it = { ...BRACING_STANDAARD, ...e.item };
+  el.style.borderTopColor = '#2563eb';
+  kop(el, `${it.tag || 'Bracing'} (${bracingLengte(g.L / g.k, it.round05).tekst})`, `Bracing line, ${e.scaleText || ''}`, '#2563eb');
+  const zet = (wijzig) => {
+    const x = kopie(ann.element);
+    x.item = { ...BRACING_STANDAARD, ...x.item };
+    wijzig(x.item);
+    x.item.name = x.item.tag || 'Bracing';
+    laatsteBracing = { ...x.item };
+    update('element', x);
+    const b = lidBounds({ ...ann, element: x }); update('x', b.x); update('y', b.y); update('width', b.width); update('height', b.height);
+  };
+  const tag = document.createElement('input');
+  tag.value = it.tag || '';
+  tag.setAttribute('list', 'seed43-bracing-codes');
+  tag.style.cssText = 'width:100%;box-sizing:border-box;';
+  if (!document.getElementById('seed43-bracing-codes')) {
+    const dl = document.createElement('datalist'); dl.id = 'seed43-bracing-codes';
+    for (const c of BRACING_CODES) { const o = document.createElement('option'); o.value = c; dl.appendChild(o); }
+    document.body.appendChild(dl);
+  }
+  tag.addEventListener('change', () => zet((x) => { x.tag = tag.value.trim(); }));
+  veld(el, 'Tag', tag);
+  const lengte = document.createElement('span');
+  lengte.textContent = `${Math.round(g.L / g.k)} mm, shown as ${bracingLengte(g.L / g.k, it.round05).tekst}`;
+  veld(el, 'Length', lengte);
+  veld(el, 'Round down to', keuze([['0', '0.01 m'], ['1', '0.05 m']], it.round05 ? '1' : '0', (v) => zet((x) => { x.round05 = v === '1'; })));
+  veld(el, 'Layout', keuze([['0', 'TAG (2.81m)'], ['1', 'Tag above length']], it.above ? '1' : '0', (v) => zet((x) => { x.above = v === '1'; })));
+  veld(el, 'Side', keuze([['0', 'Normal'], ['1', 'Flipped']], it.flip ? '1' : '0', (v) => zet((x) => { x.flip = v === '1'; })));
+  veld(el, 'Both sides', keuze([['0', 'No'], ['1', 'Yes (line each side)']], it.both ? '1' : '0', (v) => zet((x) => { x.both = v === '1'; })));
+  veld(el, 'Wall offset (paper mm)', getal(it.wallOffset, (n) => zet((x) => { x.wallOffset = n; }), 0.5));
+  veld(el, 'Tag offset (paper mm)', getal(it.tagOffset, (n) => zet((x) => { x.tagOffset = n; }), 0.5));
+  veld(el, 'Tag from end A (mm, 0 = middle)', getal(it.fromEnd, (n) => zet((x) => { x.fromEnd = Math.max(0, n); }), 50));
+  const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
+  veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) { const x = kopie(ann.element); x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; update('element', x); } }));
+  el.appendChild(tip('Drag end A or B to change the braced length (Ctrl/Shift keeps it square). New bracing lines take the last tag and settings.'));
+}
+
+/** Arm the bracing line tool: click A, then B along the braced wall. */
+export function plaatsBracing(api) {
+  const item = { ...laatsteBracing, name: laatsteBracing.tag || 'Bracing' };
+  plaatsing = { category: 'Bracing', shape: 'bracing', item, view: 'elevation', rotation: 0, greep: 'A' };
+  lidStart = null;
+  api.setTool(LID);
+  api.setToolOverrides({ seed43Element: plaatsing });
+  startLus(api);
 }
 
 // ── Space bar: turn the selected element (or the one being placed) ────────

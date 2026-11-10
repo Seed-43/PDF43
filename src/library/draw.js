@@ -2,6 +2,8 @@
 // the element's centre, then turned and scaled to page points
 // (ptsPerMm, stored on the element when it is placed).
 
+import { tekenBracing, bracingBounds } from './bracing.js';
+
 const num = (v) => (Number.isFinite(+v) ? +v : 0);
 
 /** Timber shapes, drawn in brown. */
@@ -311,6 +313,7 @@ export function lidGeometrie(ann) {
 }
 
 export function lidBounds(ann) {
+  if (ann.element?.shape === 'bracing') return bracingBounds(ann);
   const g = lidGeometrie(ann);
   const xs = g.hoeken.map((h) => h[0]), ys = g.hoeken.map((h) => h[1]);
   const x = Math.min(...xs), y = Math.min(...ys);
@@ -320,6 +323,7 @@ export function lidBounds(ann) {
 export function tekenLid(ctx, ann) {
   const el = ann.element;
   if (!el) return;
+  if (el.shape === 'bracing') { tekenBracing(ctx, ann); return; }
   const g = lidGeometrie(ann);
   const kleur = el.color || (isHout(el.shape) ? HOUT : STAAL);
   ctx.save();
