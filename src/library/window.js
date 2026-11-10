@@ -393,7 +393,7 @@ export async function openBibliotheek(api) {
   const knopTerug = knop('‹', terug, 'ikoon', 'Back (Alt+Left)');
   const knopVooruit = knop('›', vooruit, 'ikoon', 'Forward (Alt+Right)');
   const knopThuis = knop('⌂', thuis, 'ikoon', 'All elements');
-  const knopZij = knop('☰', () => { venster.dataset.zij = venster.dataset.zij === '1' ? '0' : '1'; }, 'ikoon alleen-smal zij', 'Filter and browse');
+  const knopZij = knop('☰', () => { venster.dataset.zij = venster.dataset.zij === '1' ? '0' : '1'; }, 'ikoon alleen-smal zij', 'Browse');
   const nav1 = maak('div', 's43l-nav'); nav1.append(knopZij, knopTerug, knopVooruit, knopThuis);
   balk.append(nav1, kruimel, zoekVak, aantal);
 
@@ -408,36 +408,9 @@ export async function openBibliotheek(api) {
     delen.forEach((d, i) => { if (i) kruimel.append(maak('span', '', '›')); kruimel.append(d); });
   }
 
-  // ── Sidebar: filter and browse ──
+  // ── Sidebar: browse ──
   function tekenZij() {
     zijScroll.innerHTML = '';
-    zijScroll.append(maak('div', 's43l-sectie', 'Filter'));
-    const f = maak('div', 's43l-filter');
-    const chips = maak('div', 's43l-chips');
-    for (const [k] of Object.entries(SOORTEN)) {
-      const n = lib.categories.filter((c) => c.kind === k).reduce((s, c) => s + c.items.length, 0);
-      const b = knop(`${SOORT_MEERVOUD[k] || k} ${n}`, () => {
-        if (filter.soorten.has(k) && filter.soorten.size > 1) filter.soorten.delete(k); else filter.soorten.add(k);
-        tekenZij(); tekenWerk();
-      }, `s43l-chip${filter.soorten.has(k) ? ' aan' : ''}`, `Show ${SOORT_MEERVOUD[k] || k}`);
-      b.setAttribute('aria-pressed', String(filter.soorten.has(k)));
-      chips.appendChild(b);
-    }
-    const vorm = maak('select');
-    vorm.setAttribute('aria-label', 'Shape');
-    const vormen = new Set(lib.categories.filter((c) => c.kind === 'section').map((c) => c.shape));
-    vorm.append(new Option('All shapes', ''));
-    for (const [k, t] of Object.entries(VORMEN)) if (vormen.has(k)) vorm.append(new Option(t, k));
-    vorm.value = filter.vorm;
-    vorm.addEventListener('change', () => { filter.vorm = vorm.value; tekenWerk(); });
-    const catKeuze = maak('select');
-    catKeuze.setAttribute('aria-label', 'Category');
-    catKeuze.append(new Option('All categories', ''));
-    for (const c of lib.categories) catKeuze.append(new Option(`${c.name} (${c.items.length})`, c.id));
-    catKeuze.value = nav.catId || '';
-    catKeuze.addEventListener('change', () => gaNaar(catKeuze.value ? { catId: catKeuze.value } : {}));
-    f.append(maak('div', '', 'Kind'), chips, maak('div', '', 'Shape'), vorm, maak('div', '', 'Category'), catKeuze);
-    zijScroll.append(f);
 
     zijScroll.append(maak('div', 's43l-sectie', 'Browse'));
     const boom = maak('div', 's43l-boom');
@@ -560,7 +533,7 @@ export async function openBibliotheek(api) {
     werkVak.appendChild(grid);
     tegels = [];
     if (!resultaat.length) {
-      grid.appendChild(maak('div', 's43l-leeg', zoek ? `Nothing matches "${zoek}". Try a size such as 310 or 90x45, or clear the filter.` : 'This category is empty. Switch to List to add rows.'));
+      grid.appendChild(maak('div', 's43l-leeg', zoek ? `Nothing matches "${zoek}". Try a size such as 310 or 90x45, or clear the search.` : 'This category is empty. Switch to List to add rows.'));
       return;
     }
     // Common scale per category (to scale): the largest item fills its tile.
