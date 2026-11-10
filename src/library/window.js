@@ -13,7 +13,7 @@ import { tekenVoorbeeld, sectieVorm, isHout } from './draw.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const UI_OPSLAG = 'seed43.library.ui';
-const GROEP_VOLGORDE = ['Steel', 'Timber', 'Bolts', 'Reference tables'];
+const GROEP_VOLGORDE = ['Steel', 'Timber', 'Fixings', 'Bolts', 'Reference tables'];
 const SOORT_MEERVOUD = { section: 'Sections', bolt: 'Bolts', table: 'Tables' };
 
 // ── Styles (once, scoped under .s43l) ──────────────────────────────────────
@@ -490,7 +490,7 @@ export async function openBibliotheek(api) {
     const fields = k === 'bolt' ? ['d', 'category', 'hole', 'minEdge', 'minPitch'] : ['rect', 'glulam', 'lvl'].includes(shape) ? ['d', 'b', 'grade', 'treatment'] : ['d', 'b'];
     const c = { id, name: naam, kind: k, fields, items: [] };
     if (shape) c.shape = shape;
-    if (nav.groep && !['Steel', 'Timber', 'Bolts', 'Reference tables'].includes(nav.groep)) c.group = nav.groep;
+    if (nav.groep && !['Steel', 'Timber', 'Fixings', 'Bolts', 'Reference tables'].includes(nav.groep)) c.group = nav.groep;
     if (nav.regio && nav.regio !== 'New Zealand') c.region = nav.regio;
     lib.categories.push(c);
     ui.weergave = 'lijst'; bewaarUi(ui);

@@ -12,7 +12,7 @@
 // one being placed) by 90 degrees.
 
 import { laadBibliotheek, categorie } from './store.js';
-import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, tekenLid, lidBounds, lidGeometrie } from './draw.js';
+import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
@@ -459,6 +459,10 @@ function sectiePaneel() {
     schaalVeld(el, ann, update, sectieMaat);
     veld(el, 'Label', keuze([['1', 'Show'], ['0', 'Hide']], e.label === false ? '0' : '1',
       (v) => werkBij(ann, update, sectieMaat, (x) => { x.label = v === '1'; })));
+    if (BEVESTIGINGEN.includes(e.shape)) {
+      veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (side on)']], e.item.view === 'elevation' ? 'elevation' : 'section',
+        (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
+    }
     if (e.shape === 'rect') {
       // Sawn timber: a cross for a member in section, one diagonal for blocking.
       veld(el, 'Look', keuze([['0', 'Timber (cross)'], ['1', 'Blocking (diagonal)']], e.item.blocking ? '1' : '0',
@@ -467,7 +471,7 @@ function sectiePaneel() {
     const tabel = document.createElement('div');
     tabel.style.cssText = 'display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin-top:4px;font-variant-numeric:tabular-nums;';
     for (const [k, v] of Object.entries(e.item)) {
-      if (k === 'name' || k === 'blocking') continue;
+      if (k === 'name' || k === 'blocking' || k === 'view') continue;
       const a = document.createElement('span'); a.textContent = k; a.style.opacity = '0.7';
       const b = document.createElement('span'); b.textContent = typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v);
       tabel.append(a, b);
@@ -653,8 +657,12 @@ export const PLAATS_GREPEN = [['A', 'End A'], ['mid', 'Midpoint'], ['B', 'End B'
  *  'elevation' / 'plan' (click point A, then point B). Bolts: click.
  *  greep: the grip a member is placed by ('A', 'mid' or 'B'). */
 export function plaats(api, cat, it, view = 'section', greep = 'A') {
-  const soort = cat.kind === 'bolt' ? BOUTEN : view === 'section' ? SECTIE : LID;
-  plaatsing = { category: cat.name, shape: cat.shape, item: kopie(it), view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A' };
+  // Fixings are placed by a click in either view; the view sets their look.
+  const fixing = BEVESTIGINGEN.includes(cat.shape);
+  const soort = cat.kind === 'bolt' ? BOUTEN : (view === 'section' || fixing) ? SECTIE : LID;
+  const item = kopie(it);
+  if (fixing) item.view = view === 'section' ? 'section' : 'elevation';
+  plaatsing = { category: cat.name, shape: cat.shape, item, view: fixing ? 'section' : view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A' };
   lidStart = null;
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });

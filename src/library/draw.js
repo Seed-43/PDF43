@@ -6,6 +6,8 @@ const num = (v) => (Number.isFinite(+v) ? +v : 0);
 
 /** Timber shapes, drawn in brown. */
 export const HOUTVORMEN = ['rect', 'glulam', 'lvl', 'ijoist'];
+/** Fixings (brackets, hangers, plates): placed by a click, in section or elevation. */
+export const BEVESTIGINGEN = ['hanger', 'plate', 'fangle'];
 /** Glulam lamination thickness and LVL veneer line spacing, mm (drawing only). */
 const LAMEL = 45;
 const VINEER = 10;
@@ -56,6 +58,40 @@ export function sectieVorm(shape, it) {
       const lijnen = [];
       for (let x = -hb + VINEER; x < hb - 1; x += VINEER) lijnen.push([[x, -hd], [x, hd]]);
       return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    // ── Fixings (Lumberlok, Bowmac): it.view 'section' (end on) or 'elevation' (side on) ──
+    case 'hanger': {
+      // Joist hanger: inside width b, height h, steel t, side plate L along
+      // the joist, face flanges F wide. Section: the U around the joist with
+      // the face flanges either side. Elevation: the side plate, with the
+      // flange on the supporting face as a heavy line at the left.
+      const t = Math.max(num(it.t), 0.5), L = num(it.L) || 40, F = num(it.F) || 30;
+      if (it.view === 'elevation') {
+        const hw = L / 2;
+        return { w: L, h: d, staal: true, polys: [[[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]]],
+          lijnen: [[[-hw + t, -hd], [-hw + t, hd]]] };
+      }
+      const bi = b / 2, bo = bi + t, ho = hd, hi = hd - t;
+      return { w: b + 2 * t + 2 * F, h: d, staal: true, polys: [
+        [[-bo, -ho], [-bi, -ho], [-bi, hi], [bi, hi], [bi, -ho], [bo, -ho], [bo, ho], [-bo, ho]],
+        [[-bo - F, -ho], [-bo, -ho], [-bo, ho], [-bo - F, ho]],
+        [[bo, -ho], [bo + F, -ho], [bo + F, ho], [bo, ho]],
+      ] };
+    }
+    case 'plate': {
+      // Flat plate or strap: width b, length d (it.d), thickness t. Elevation:
+      // the plate face on; section: the plate edge on.
+      const t = Math.max(num(it.t), 0.5);
+      if (it.view === 'elevation') return { w: b, h: d, staal: true, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+      return { w: b, h: t, staal: true, polys: [[[-hb, -t / 2], [hb, -t / 2], [hb, t / 2], [-hb, t / 2]]] };
+    }
+    case 'fangle': {
+      // Angle cleat or bracket: legs a (up) and c (across), length l, t.
+      // Section: the L end on. Elevation: leg a face on, l long.
+      const a = num(it.a), c = num(it.c), l = num(it.l), t = Math.max(num(it.t), 0.5);
+      if (it.view === 'elevation') return { w: l, h: a, staal: true, polys: [[[-l / 2, -a / 2], [l / 2, -a / 2], [l / 2, a / 2], [-l / 2, a / 2]]] };
+      const x0 = -c / 2, y0 = a / 2;
+      return { w: c, h: a, staal: true, polys: [[[x0, -y0], [x0 + t, -y0], [x0 + t, y0 - t], [x0 + c, y0 - t], [x0 + c, y0], [x0, y0]]] };
     }
     case 'ijoist': {
       // I-joist: true outline once tf and tw are known, else the outline

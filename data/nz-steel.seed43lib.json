@@ -12991,6 +12991,974 @@
      "treatment": "H1.2"
     }
    ]
+  },
+  {
+   "id": "ll-joist-hangers",
+   "name": "Joist hangers (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "hanger",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "L",
+    "F",
+    "material",
+    "fixing",
+    "estimated"
+   ],
+   "note": "LUMBERLOK joist hangers, 0.91 mm G300 Z275 or 0.9 mm stainless 304-2B. JH47 x 90 = 47 inside width, 90 high. 52 wide for rough sawn. L (side plate along the joist) and F (face flange) are estimated from the catalogue drawing. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7 and 55.",
+   "items": [
+    {
+     "name": "JH47x90",
+     "b": 47,
+     "d": 90,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH47x90",
+     "b": 47,
+     "d": 90,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH47x120",
+     "b": 47,
+     "d": 120,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH47x120",
+     "b": 47,
+     "d": 120,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH47x190",
+     "b": 47,
+     "d": 190,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH47x190",
+     "b": 47,
+     "d": 190,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH70x180",
+     "b": 70,
+     "d": 180,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH70x180",
+     "b": 70,
+     "d": 180,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH95x165",
+     "b": 95,
+     "d": 165,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH95x165",
+     "b": 95,
+     "d": 165,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH52x90",
+     "b": 52,
+     "d": 90,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH52x90",
+     "b": 52,
+     "d": 90,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH52x120",
+     "b": 52,
+     "d": 120,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH52x120",
+     "b": 52,
+     "d": 120,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "JH52x190",
+     "b": 52,
+     "d": 190,
+     "t": 0.91,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSJH52x190",
+     "b": 52,
+     "d": 190,
+     "t": 0.9,
+     "L": 40,
+     "F": 28,
+     "fixing": "30 x 3.15 product nails or 17-12g x 35 screws",
+     "estimated": "L, F",
+     "material": "Stainless 304"
+    }
+   ]
+  },
+  {
+   "id": "ll-lvl-hangers",
+   "name": "LVL hangers (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "hanger",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "L",
+    "F",
+    "material",
+    "fixing",
+    "estimated"
+   ],
+   "note": "LUMBERLOK LVL hangers for 45, 63 and 90 LVL, 270 high, 0.91 mm galvanised; not for exterior use. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 64 and 65.",
+   "items": [
+    {
+     "name": "JH47270",
+     "b": 47,
+     "d": 270,
+     "t": 0.91,
+     "L": 55,
+     "F": 55,
+     "fixing": "12 nails or 6 screws (17-14g x 35) per flange",
+     "estimated": "L",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "JH65270",
+     "b": 65,
+     "d": 270,
+     "t": 0.91,
+     "L": 55,
+     "F": 55,
+     "fixing": "12 nails or 6 screws (17-14g x 35) per flange",
+     "estimated": "L",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "JH95270",
+     "b": 95,
+     "d": 270,
+     "t": 0.91,
+     "L": 55,
+     "F": 55,
+     "fixing": "12 nails or 6 screws (17-14g x 35) per flange",
+     "estimated": "L",
+     "material": "Galvanised Z275"
+    }
+   ]
+  },
+  {
+   "id": "ll-ibeam-hangers",
+   "name": "I-beam hangers (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "hanger",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "L",
+    "F",
+    "material",
+    "fixing",
+    "estimated"
+   ],
+   "note": "LUMBERLOK I-beam hangers, 1.15 mm G300 Z275. IBHF = face fix to a timber beam, IBHT = top fix over a timber plate on a steel beam. IBHF30065 = 300 high, 65 wide. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 57 and 58.",
+   "items": [
+    {
+     "name": "IBHF20090",
+     "b": 90,
+     "d": 200,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF24050",
+     "b": 50,
+     "d": 240,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF24055",
+     "b": 55,
+     "d": 240,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF24065",
+     "b": 65,
+     "d": 240,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF24090",
+     "b": 90,
+     "d": 240,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF30050",
+     "b": 50,
+     "d": 300,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF30065",
+     "b": 65,
+     "d": 300,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF30090",
+     "b": 90,
+     "d": 300,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF36065",
+     "b": 65,
+     "d": 360,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF36090",
+     "b": 90,
+     "d": 360,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHF40090",
+     "b": 90,
+     "d": 400,
+     "t": 1.15,
+     "L": 50,
+     "F": 30,
+     "fixing": "face fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT20050",
+     "b": 50,
+     "d": 200,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT24065",
+     "b": 65,
+     "d": 240,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT24090",
+     "b": 90,
+     "d": 240,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT30050",
+     "b": 50,
+     "d": 300,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT30065",
+     "b": 65,
+     "d": 300,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT30090",
+     "b": 90,
+     "d": 300,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT36065",
+     "b": 65,
+     "d": 360,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT36090",
+     "b": 90,
+     "d": 360,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    },
+    {
+     "name": "IBHT40090",
+     "b": 90,
+     "d": 400,
+     "t": 1.15,
+     "L": 50,
+     "F": 0,
+     "fixing": "top fix, 40 x 3.75 nails (supplied)",
+     "material": "Galvanised Z275",
+     "estimated": "L, F"
+    }
+   ]
+  },
+  {
+   "id": "ll-split-hangers",
+   "name": "Split hangers (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "fangle",
+   "fields": [
+    "a",
+    "c",
+    "l",
+    "t",
+    "material",
+    "fixing"
+   ],
+   "note": "LUMBERLOK split hangers for wide or double members, always in pairs. a = height, c = 72 side, l = 52 flange. 1.55 mm galvanised or 1.5 mm stainless 304-2B. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 10 and 59.",
+   "items": [
+    {
+     "name": "SPH140",
+     "a": 137,
+     "c": 72,
+     "l": 52,
+     "t": 1.55,
+     "fixing": "17-14g x 35 screws, used in pairs (LH and RH)",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSSPH140",
+     "a": 137,
+     "c": 72,
+     "l": 52,
+     "t": 1.5,
+     "fixing": "17-14g x 35 screws, used in pairs (LH and RH)",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "SPH180",
+     "a": 177,
+     "c": 72,
+     "l": 52,
+     "t": 1.55,
+     "fixing": "17-14g x 35 screws, used in pairs (LH and RH)",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSSPH180",
+     "a": 177,
+     "c": 72,
+     "l": 52,
+     "t": 1.5,
+     "fixing": "17-14g x 35 screws, used in pairs (LH and RH)",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "SPH220",
+     "a": 217,
+     "c": 72,
+     "l": 52,
+     "t": 1.55,
+     "fixing": "17-14g x 35 screws, used in pairs (LH and RH)",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSSPH220",
+     "a": 217,
+     "c": 72,
+     "l": 52,
+     "t": 1.5,
+     "fixing": "17-14g x 35 screws, used in pairs (LH and RH)",
+     "material": "Stainless 304"
+    }
+   ]
+  },
+  {
+   "id": "ll-cleats",
+   "name": "Angles and cleats (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "fangle",
+   "fields": [
+    "a",
+    "c",
+    "l",
+    "t",
+    "material",
+    "fixing"
+   ],
+   "note": "LUMBERLOK Tylok angles, concealed purlin cleats (CPC), concrete fixing cleats (CF) and Multigrip. a = upright leg, c = leg across, l = length. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7, 11, 19 and 21.",
+   "items": [
+    {
+     "name": "3A6",
+     "a": 35,
+     "c": 35,
+     "l": 90,
+     "t": 0.95,
+     "fixing": "Tylok angle, teeth (hammer on)",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "5A6",
+     "a": 35,
+     "c": 35,
+     "l": 150,
+     "t": 0.95,
+     "fixing": "Tylok angle, teeth (hammer on)",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "CPC40",
+     "a": 86,
+     "c": 29,
+     "l": 40,
+     "t": 1.55,
+     "fixing": "17-14g screws + 30 x 3.15 nails; 50 rafters",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSCPC40",
+     "a": 86,
+     "c": 29,
+     "l": 40,
+     "t": 1.5,
+     "fixing": "17-14g screws + 30 x 3.15 nails; 50 rafters",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "CPC40S",
+     "a": 43,
+     "c": 29,
+     "l": 40,
+     "t": 1.55,
+     "fixing": "17-14g screws + 30 x 3.15 nails; 50 rafters",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSCPC40S",
+     "a": 43,
+     "c": 29,
+     "l": 40,
+     "t": 1.5,
+     "fixing": "17-14g screws + 30 x 3.15 nails; 50 rafters",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "CPC80",
+     "a": 86,
+     "c": 29,
+     "l": 80,
+     "t": 1.55,
+     "fixing": "17-14g screws + 30 x 3.15 nails; 100 rafters",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SSCPC80",
+     "a": 86,
+     "c": 29,
+     "l": 80,
+     "t": 1.5,
+     "fixing": "17-14g screws + 30 x 3.15 nails; 100 rafters",
+     "material": "Stainless 304"
+    },
+    {
+     "name": "CF1",
+     "a": 120,
+     "c": 48,
+     "l": 100,
+     "t": 1.55,
+     "fixing": "nails or 17-14g screws + M12 bolt to concrete",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "CF2X",
+     "a": 200,
+     "c": 48,
+     "l": 100,
+     "t": 1.55,
+     "fixing": "nails or 17-14g screws + M12 bolt to concrete",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "Multigrip",
+     "a": 125,
+     "c": 38,
+     "l": 38,
+     "t": 0.91,
+     "fixing": "30 x 3.15 nails or 17-14g screws",
+     "material": "Galvanised Z275"
+    },
+    {
+     "name": "SS Multigrip",
+     "a": 125,
+     "c": 38,
+     "l": 38,
+     "t": 0.9,
+     "fixing": "30 x 3.15 nails or 17-14g screws",
+     "material": "Stainless 304"
+    }
+   ]
+  },
+  {
+   "id": "ll-plates",
+   "name": "Plates (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "plate",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "material",
+    "fixing"
+   ],
+   "note": "LUMBERLOK Tylok plates (6T10 = 6 rows of teeth long x 10 wide), Nailon plates (drawn 240 long; cut to length) and Strap Nail. b = width, d = length. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7, 9, 13 and 18.",
+   "items": [
+    {
+     "name": "2T5",
+     "b": 34,
+     "d": 60,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "4T5",
+     "b": 34,
+     "d": 120,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "6T5",
+     "b": 34,
+     "d": 180,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "8T5",
+     "b": 34,
+     "d": 240,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "10T5",
+     "b": 34,
+     "d": 300,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "12T5",
+     "b": 34,
+     "d": 360,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "14T5",
+     "b": 34,
+     "d": 420,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "16T5",
+     "b": 34,
+     "d": 480,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "2T10",
+     "b": 68,
+     "d": 60,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "4T10",
+     "b": 68,
+     "d": 120,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "6T10",
+     "b": 68,
+     "d": 180,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "8T10",
+     "b": 68,
+     "d": 240,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "10T10",
+     "b": 68,
+     "d": 300,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "12T10",
+     "b": 68,
+     "d": 360,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "14T10",
+     "b": 68,
+     "d": 420,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "16T10",
+     "b": 68,
+     "d": 480,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "4T15",
+     "b": 102,
+     "d": 120,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "6T15",
+     "b": 102,
+     "d": 180,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "8T15",
+     "b": 102,
+     "d": 240,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "10T15",
+     "b": 102,
+     "d": 300,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "12T15",
+     "b": 102,
+     "d": 360,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "6T20",
+     "b": 136,
+     "d": 180,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "8T20",
+     "b": 136,
+     "d": 240,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "10T20",
+     "b": 136,
+     "d": 300,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "12T20",
+     "b": 136,
+     "d": 360,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "14T20",
+     "b": 136,
+     "d": 420,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "Tylok teeth (hammer or press)"
+    },
+    {
+     "name": "Nailon 110 x 1",
+     "b": 110,
+     "d": 240,
+     "t": 1.0,
+     "material": "Galvanised Z275",
+     "fixing": "30 x 3.15 nails or 17-14g screws; cut to length, 40 mm steps (80 to 2400)"
+    },
+    {
+     "name": "Nailon 113 x 2",
+     "b": 113,
+     "d": 240,
+     "t": 2.0,
+     "material": "Galvanised Z275",
+     "fixing": "30 x 3.15 nails or 17-14g screws; cut to length, 40 mm steps (80 to 2400)"
+    },
+    {
+     "name": "Nailon 150 x 2",
+     "b": 150,
+     "d": 240,
+     "t": 2.0,
+     "material": "Galvanised Z275",
+     "fixing": "30 x 3.15 nails or 17-14g screws; cut to length, 40 mm steps (80 to 2400)"
+    },
+    {
+     "name": "Nailon 130 x 3",
+     "b": 130,
+     "d": 240,
+     "t": 3.0,
+     "material": "Black steel",
+     "fixing": "30 x 3.15 nails or 17-14g screws; cut to length, 40 mm steps (80 to 2400)"
+    },
+    {
+     "name": "Nailon 240 x 3",
+     "b": 240,
+     "d": 240,
+     "t": 3.0,
+     "material": "Black steel",
+     "fixing": "30 x 3.15 nails or 17-14g screws; cut to length, 40 mm steps (80 to 2400)"
+    },
+    {
+     "name": "SS Nailon 110 x 0.9",
+     "b": 110,
+     "d": 240,
+     "t": 0.9,
+     "material": "Stainless 304",
+     "fixing": "stainless nails or screws; cut to length, 40 mm steps"
+    },
+    {
+     "name": "Strap Nail",
+     "b": 39,
+     "d": 76,
+     "t": 0.95,
+     "material": "Galvanised Z275",
+     "fixing": "teeth plus nails"
+    }
+   ]
   }
  ]
 }

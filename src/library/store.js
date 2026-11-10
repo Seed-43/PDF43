@@ -7,11 +7,12 @@
 const OPSLAG = 'seed43.library';
 let huidig = null;
 const HOUT_VLAG = 'seed43.library.timber2025b';
+const FIXING_VLAG = 'seed43.library.fixings2024a';
 const HOUT_VERVANG = /^(timber-sg8|lvl-|prolam-|hyjoist$)/;
 const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 
 export const SOORTEN = { section: 'Section', bolt: 'Bolt', table: 'Table' };
-export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)' };
+export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)', hanger: 'Hanger (fixing)', plate: 'Plate (fixing)', fangle: 'Angle cleat (fixing)' };
 
 export function geldigeBibliotheek(b) {
   return b && typeof b === 'object' && Array.isArray(b.categories)
@@ -46,6 +47,19 @@ export async function laadBibliotheek(api) {
           }
           localStorage.setItem(HOUT_VLAG, '1');
         } catch (e) { console.warn('[seed43] timber not added to the saved library:', e); }
+      }
+      // Fixings (Lumberlok, Bowmac): shipped fixing categories are added or
+      // replaced once per catalogue edition.
+      if (localStorage.getItem(FIXING_VLAG) !== '1') {
+        try {
+          const std = await standaardBibliotheek(api);
+          for (const c of std.categories.filter((x) => x.group === 'Fixings')) {
+            const i = v.categories.findIndex((x) => x.id === c.id);
+            if (i < 0) v.categories.push(c); else v.categories[i] = c;
+            gewijzigd = true;
+          }
+          localStorage.setItem(FIXING_VLAG, '1');
+        } catch (e) { console.warn('[seed43] fixings not added to the saved library:', e); }
       }
       if (gewijzigd) { try { localStorage.setItem(OPSLAG, JSON.stringify(v)); } catch {} }
       return (huidig = v);
@@ -85,6 +99,7 @@ export function groepVan(c) {
   if (c.group) return c.group;
   if (c.kind === 'bolt') return 'Bolts';
   if (c.kind === 'table') return 'Reference tables';
+  if (['hanger', 'plate', 'fangle'].includes(c.shape)) return 'Fixings';
   return ['rect', 'glulam', 'lvl', 'ijoist'].includes(c.shape) ? 'Timber' : 'Steel';
 }
 
