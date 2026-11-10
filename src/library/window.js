@@ -279,11 +279,12 @@ export async function openBibliotheek(api) {
 
   const cat = (id) => lib.categories.find((c) => c.id === id) || null;
   const gekozenItem = () => { const c = gekozen && cat(gekozen.catId); const it = c?.items[gekozen.i]; return it ? { c, it } : null; };
-  const zetTitel = () => { titel.innerHTML = ''; titel.append('Element Library', maak('span', '', `${lib.name || 'Library'}${gewijzigd ? ' *' : ''}`)); };
+  const zetTitel = () => { titel.innerHTML = ''; titel.append('Element Library'); };
   const markeer = () => { gewijzigd = true; zetTitel(); };
 
+  // Edits made in the list view are kept: closing saves them.
   const sluit = () => {
-    if (gewijzigd && !confirm('Close without saving your changes?')) return;
+    if (gewijzigd) { try { bewaarBibliotheek(lib); gewijzigd = false; } catch (e) { alert(e.message); return; } }
     waarnemer?.disconnect();
     grootte.disconnect();
     window.removeEventListener('keydown', toetsen, true);
@@ -338,38 +339,7 @@ export async function openBibliotheek(api) {
   function tekenKop() {
     kop.innerHTML = '';
     zetTitel();
-    const nieuw = knop('Add new defaults', async () => {
-      const extra = await nieuweStandaardCategorieen(api, lib);
-      if (!extra.length) { alert('Your library already has every category of the default library.'); return; }
-      if (!confirm(`Add ${extra.length} categories from the default library (${extra.map((c) => c.name).join(', ')})? Your own categories and rows stay as they are.`)) return;
-      lib.categories.push(...kopie(extra)); markeer(); tekenAlles();
-    }, '', 'Add the categories of the shipped library that your saved library does not have yet (for example Timber)');
-    nieuw.style.display = 'none';
-    nieuweStandaardCategorieen(api, lib).then((x) => { if (x.length) { nieuw.style.display = ''; nieuw.textContent = `Add new defaults (${x.length})`; } }).catch(() => {});
-    kop.append(titel, nieuw,
-      knop('Rename', () => { const n = prompt('Library name:', lib.name || ''); if (n) { lib.name = n; markeer(); } }),
-      knop('Import library', () => {
-        const inp = maak('input'); inp.type = 'file'; inp.accept = '.json,application/json';
-        inp.addEventListener('change', async () => {
-          try {
-            const v = JSON.parse(await inp.files[0].text());
-            if (!geldigeBibliotheek(v)) throw new Error('not a Seed43 library file');
-            if (!confirm(`Replace the current library with "${v.name || inp.files[0].name}"? (Export the current one first if you want to keep it.)`)) return;
-            lib = v; gekozen = null; markeer(); thuis();
-          } catch (e) { alert(`Could not import: ${e.message || e}`); }
-        });
-        inp.click();
-      }),
-      knop('Export library', () => {
-        const blob = new Blob([JSON.stringify(lib, null, 1)], { type: 'application/json' });
-        const a = maak('a'); a.href = URL.createObjectURL(blob);
-        a.download = `${(lib.name || 'library').replace(/[^A-Za-z0-9 _-]+/g, '')}.seed43lib.json`; a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      }),
-      knop('Reset to default', async () => {
-        if (!confirm('Replace the library with the original NZ Steel and Timber library? Your changes are lost unless you exported them.')) return;
-        lib = await standaardBibliotheek(api); gekozen = null; markeer(); thuis();
-      }, '', 'Go back to the library shipped with the extension'),
+    kop.append(titel,
       knop('✕', sluit, 'ikoon', 'Close (Esc)'),
     );
   }
@@ -474,7 +444,7 @@ export async function openBibliotheek(api) {
     }
     zijScroll.append(boom);
     zijVoet.innerHTML = '';
-    zijVoet.append(knop('+ Category', nieuweCategorie, '', 'Add a category of your own (sections, bolts or a reference table)'));
+    zijVoet.style.display = 'none';
   }
 
   function nieuweCategorie() {
@@ -827,9 +797,7 @@ export async function openBibliotheek(api) {
         knop('Plan', () => plaatsGekozen('plan'), 'prim', 'Click point A, then point B (Ctrl/Shift: horizontal or vertical)'),
         maak('span', '', 'by'), greep);
     }
-    voet.append(plaatsGroep,
-      knop('Close', sluit),
-      knop('Save', () => { try { bewaarBibliotheek(lib); gewijzigd = false; zetTitel(); } catch (e) { alert(e.message); } }, '', 'Save the library (Ctrl+S)'));
+    voet.append(plaatsGroep);
   }
 
   function plaatsGekozen(view = 'section') {

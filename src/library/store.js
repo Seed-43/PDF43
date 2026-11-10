@@ -61,6 +61,10 @@ export async function laadBibliotheek(api) {
           localStorage.setItem(FIXING_VLAG, '1');
         } catch (e) { console.warn('[seed43] fixings not added to the saved library:', e); }
       }
+      // The library note still describing the removed gauge tables.
+      if (/Gauge tables/.test(v.source || '')) {
+        try { v.source = (await standaardBibliotheek(api)).source; gewijzigd = true; } catch {}
+      }
       if (gewijzigd) { try { localStorage.setItem(OPSLAG, JSON.stringify(v)); } catch {} }
       return (huidig = v);
     }
