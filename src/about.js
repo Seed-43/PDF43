@@ -8,6 +8,7 @@
 
 import pakket from '../plugin.json';
 import wijzigingen from '../data/changelog.json';
+import { openLink } from './extern.js';
 
 export const VERSIE = pakket.version;
 const REPO = 'Seed-43/PDF43';
@@ -153,7 +154,7 @@ export function openAbout({ tools, zichtbaar, zet }) {
   window.addEventListener('keydown', toets, true);
   achter.addEventListener('mousedown', (e) => { if (e.target === achter) sluit(); });
   $('.s43a-x').addEventListener('click', sluit);
-  $('.s43a-issue').addEventListener('click', () => window.open(ISSUES, '_blank', 'noopener'));
+  $('.s43a-issue').addEventListener('click', () => openLink(ISSUES));
 
   let release = null;
   const toonUpdate = () => {
@@ -186,8 +187,8 @@ export function openAbout({ tools, zichtbaar, zet }) {
         ${release.oppx ? '<button class="s43a-dl">Download seed43.oppx</button>' : ''}
         <button class="s43a-rel">Release notes</button>
       </div>`;
-    k.querySelector('.s43a-dl')?.addEventListener('click', () => window.open(release.oppx, '_blank', 'noopener'));
-    k.querySelector('.s43a-rel').addEventListener('click', () => window.open(release.url, '_blank', 'noopener'));
+    k.querySelector('.s43a-dl')?.addEventListener('click', () => openLink(release.oppx));
+    k.querySelector('.s43a-rel').addEventListener('click', () => openLink(release.url));
   });
   controleer();
 }

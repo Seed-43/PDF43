@@ -4,6 +4,7 @@
 // right), edit and save it like a CAD block library, and place sections,
 // members and bolt groups from it.
 
+import { openLink, bibliotheekVerzoekUrl } from '../extern.js';
 import {
   laadBibliotheek, bewaarBibliotheek, standaardBibliotheek, geldigeBibliotheek, nieuweStandaardCategorieen,
   groepVan, regioVan, SOORTEN, VORMEN,
@@ -340,6 +341,8 @@ export async function openBibliotheek(api) {
     kop.innerHTML = '';
     zetTitel();
     kop.append(titel,
+      knop('Request a library', () => openLink(bibliotheekVerzoekUrl(nav.regio || '')), '',
+        'Ask for elements to be added (another country, supplier or product range): opens a request form on GitHub'),
       knop('✕', sluit, 'ikoon', 'Close (Esc)'),
     );
   }
