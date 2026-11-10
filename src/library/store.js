@@ -75,6 +75,11 @@ export function item(b, catId, naam) {
   return categorie(b, catId)?.items.find((i) => i.name === naam) || null;
 }
 
+/** Region in the library browser (the shipped library is New Zealand). */
+export function regioVan(c) {
+  return c?.region || 'New Zealand';
+}
+
 /** Group in the library browser: Steel, Timber, Bolts or Reference tables (or the category's own group). */
 export function groepVan(c) {
   if (c.group) return c.group;

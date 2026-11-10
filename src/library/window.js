@@ -6,7 +6,7 @@
 
 import {
   laadBibliotheek, bewaarBibliotheek, standaardBibliotheek, geldigeBibliotheek, nieuweStandaardCategorieen,
-  groepVan, SOORTEN, VORMEN,
+  groepVan, regioVan, SOORTEN, VORMEN,
 } from './store.js';
 import { plaats, PLAATS_GREPEN } from './elements.js';
 import { tekenVoorbeeld, sectieVorm, isHout } from './draw.js';
@@ -238,7 +238,7 @@ export async function openBibliotheek(api) {
   zorgVoorCss();
   let lib = kopie(await laadBibliotheek(api));
   const ui = leesUi();
-  let nav = { groep: null, catId: null };
+  let nav = { regio: null, groep: null, catId: null };
   const geschiedenis = [nav]; let positie = 0;
   const filter = { soorten: new Set(Object.keys(SOORTEN)), vorm: '' };
   let zoek = '';
@@ -291,8 +291,9 @@ export async function openBibliotheek(api) {
 
   // ── Navigation ──
   function gaNaar(n, { opslaan = true } = {}) {
-    nav = { groep: n.groep || null, catId: n.catId || null };
-    if (nav.catId) nav.groep = groepVan(cat(nav.catId) || {}) || nav.groep;
+    nav = { regio: n.regio || null, groep: n.groep || null, catId: n.catId || null };
+    if (nav.catId) { const c = cat(nav.catId) || {}; nav.groep = groepVan(c) || nav.groep; nav.regio = regioVan(c); }
+    if (nav.groep && !nav.regio) nav.regio = 'New Zealand';
     if (opslaan) { geschiedenis.splice(positie + 1); geschiedenis.push(nav); positie = geschiedenis.length - 1; }
     if (venster.dataset.zij === '1') venster.dataset.zij = '0';
     tekenAlles();
@@ -318,6 +319,7 @@ export async function openBibliotheek(api) {
       if (!filter.soorten.has(c.kind)) continue;
       if (filter.vorm && (c.kind !== 'section' || c.shape !== filter.vorm)) continue;
       if (nav.catId && c.id !== nav.catId) continue;
+      if (nav.regio && regioVan(c) !== nav.regio) continue;
       if (nav.groep && groepVan(c) !== nav.groep) continue;
       c.items.forEach((it, i) => {
         if (!woorden.length) { uit.push({ c, it, i }); return; }
@@ -402,8 +404,9 @@ export async function openBibliotheek(api) {
     knopVooruit.disabled = positie >= geschiedenis.length - 1;
     kruimel.innerHTML = '';
     const link = (tekst, n) => { const a = maak('a', '', tekst); a.addEventListener('click', () => gaNaar(n)); return a; };
-    const delen = [nav.groep || nav.catId ? link('Library', {}) : maak('b', '', 'Library')];
-    if (nav.groep) delen.push(nav.catId ? link(nav.groep, { groep: nav.groep }) : maak('b', '', nav.groep));
+    const delen = [nav.regio ? link('Library', {}) : maak('b', '', 'Library')];
+    if (nav.regio) delen.push(nav.groep ? link(nav.regio, { regio: nav.regio }) : maak('b', '', nav.regio));
+    if (nav.groep) delen.push(nav.catId ? link(nav.groep, { regio: nav.regio, groep: nav.groep }) : maak('b', '', nav.groep));
     if (nav.catId) delen.push(maak('b', '', cat(nav.catId)?.name || ''));
     delen.forEach((d, i) => { if (i) kruimel.append(maak('span', '', '›')); kruimel.append(d); });
   }
@@ -415,42 +418,53 @@ export async function openBibliotheek(api) {
     zijScroll.append(maak('div', 's43l-sectie', 'Browse'));
     const boom = maak('div', 's43l-boom');
     boom.setAttribute('role', 'tree');
-    const alles = maak('div', `s43l-knoop${!nav.groep && !nav.catId ? ' aan' : ''}`);
+    const alles = maak('div', `s43l-knoop${!nav.regio ? ' aan' : ''}`);
     alles.append(maak('span', 'pijl', ''), maak('span', '', 'All elements'), maak('span', 'n', String(lib.categories.reduce((s, c) => s + c.items.length, 0))));
     alles.addEventListener('click', () => gaNaar({}));
     boom.appendChild(alles);
-    const groepen = new Map();
-    for (const c of lib.categories) { const g = groepVan(c); if (!groepen.has(g)) groepen.set(g, []); groepen.get(g).push(c); }
-    const volgorde = [...groepen.keys()].sort((a, b) => ((GROEP_VOLGORDE.indexOf(a) + 1 || 99) - (GROEP_VOLGORDE.indexOf(b) + 1 || 99)) || a.localeCompare(b));
-    for (const g of volgorde) {
-      const lijst = groepen.get(g);
-      const dicht = ui.dicht.includes(g);
-      const k = maak('div', `s43l-knoop${nav.groep === g && !nav.catId ? ' aan' : ''}${dicht ? ' dicht' : ''}`);
+    const telItems = (lijst) => String(lijst.reduce((s, c) => s + c.items.length, 0));
+    // One foldable row: click opens and shows it, click again folds it up;
+    // the arrow only folds. `sleutel` keeps the fold state per row.
+    const rij = (tekst, aantal, sleutel, isHier, niveau, doel) => {
+      const dicht = ui.dicht.includes(sleutel);
+      const k = maak('div', `s43l-knoop${niveau ? ' kind' : ''}${isHier ? ' aan' : ''}${dicht ? ' dicht' : ''}`);
+      if (niveau) k.style.paddingLeft = `${8 + 16 * niveau}px`;
       k.setAttribute('role', 'treeitem');
       const pijl = maak('span', 'pijl', '▾');
       pijl.addEventListener('click', (e) => {
         e.stopPropagation();
-        ui.dicht = dicht ? ui.dicht.filter((x) => x !== g) : [...ui.dicht, g]; bewaarUi(ui); tekenZij();
+        ui.dicht = dicht ? ui.dicht.filter((x) => x !== sleutel) : [...ui.dicht, sleutel]; bewaarUi(ui); tekenZij();
       });
-      k.append(pijl, maak('span', '', g), maak('span', 'n', String(lijst.reduce((s, c) => s + c.items.length, 0))));
-      // Click a group to open it and show it; click it again to fold it up.
+      k.append(pijl, maak('span', '', tekst), maak('span', 'n', aantal));
       k.addEventListener('click', () => {
-        if (nav.groep === g && !nav.catId && !dicht) {
-          ui.dicht = [...ui.dicht, g]; bewaarUi(ui); tekenZij();
-          return;
-        }
-        ui.dicht = ui.dicht.filter((x) => x !== g); bewaarUi(ui);
-        gaNaar({ groep: g });
+        if (isHier && !dicht) { ui.dicht = [...ui.dicht, sleutel]; bewaarUi(ui); tekenZij(); return; }
+        ui.dicht = ui.dicht.filter((x) => x !== sleutel); bewaarUi(ui);
+        gaNaar(doel);
       });
       boom.appendChild(k);
-      if (dicht) continue;
-      for (const c of lijst) {
-        const r = maak('div', `s43l-knoop kind${c.id === nav.catId ? ' aan' : ''}`);
-        r.setAttribute('role', 'treeitem');
-        r.title = c.note || c.name;
-        r.append(maak('span', '', c.name), maak('span', 'n', String(c.items.length)));
-        r.addEventListener('click', () => gaNaar({ catId: c.id }));
-        boom.appendChild(r);
+      return dicht;
+    };
+    const regios = new Map();
+    for (const c of lib.categories) { const r = regioVan(c); if (!regios.has(r)) regios.set(r, []); regios.get(r).push(c); }
+    for (const [regio, inRegio] of [...regios].sort((a, b) => a[0].localeCompare(b[0]))) {
+      const hier = nav.regio === regio && !nav.groep && !nav.catId;
+      if (rij(regio, telItems(inRegio), regio, hier, 0, { regio })) continue;
+      const groepen = new Map();
+      for (const c of inRegio) { const g = groepVan(c); if (!groepen.has(g)) groepen.set(g, []); groepen.get(g).push(c); }
+      const volgorde = [...groepen.keys()].sort((a, b) => ((GROEP_VOLGORDE.indexOf(a) + 1 || 99) - (GROEP_VOLGORDE.indexOf(b) + 1 || 99)) || a.localeCompare(b));
+      for (const g of volgorde) {
+        const lijst = groepen.get(g);
+        const gHier = nav.regio === regio && nav.groep === g && !nav.catId;
+        if (rij(g, telItems(lijst), `${regio}/${g}`, gHier, 1, { regio, groep: g })) continue;
+        for (const c of lijst) {
+          const r = maak('div', `s43l-knoop kind${c.id === nav.catId ? ' aan' : ''}`);
+          r.style.paddingLeft = '40px';
+          r.setAttribute('role', 'treeitem');
+          r.title = c.note || c.name;
+          r.append(maak('span', '', c.name), maak('span', 'n', String(c.items.length)));
+          r.addEventListener('click', () => gaNaar({ catId: c.id }));
+          boom.appendChild(r);
+        }
       }
     }
     zijScroll.append(boom);
@@ -472,6 +486,7 @@ export async function openBibliotheek(api) {
     const c = { id, name: naam, kind: k, fields, items: [] };
     if (shape) c.shape = shape;
     if (nav.groep && !['Steel', 'Timber', 'Bolts', 'Reference tables'].includes(nav.groep)) c.group = nav.groep;
+    if (nav.regio && nav.regio !== 'New Zealand') c.region = nav.regio;
     lib.categories.push(c);
     ui.weergave = 'lijst'; bewaarUi(ui);
     markeer(); gaNaar({ catId: id });
@@ -507,7 +522,7 @@ export async function openBibliotheek(api) {
         werkKop.append(maak('span', '', 'Shape'), vorm);
       }
     } else {
-      werkKop.append(maak('b', '', c ? c.name : nav.groep || 'All elements'));
+      werkKop.append(maak('b', '', c ? c.name : nav.groep || nav.regio || 'All elements'));
       if (c) werkKop.append(maak('span', '', `${SOORTEN[c.kind] || c.kind}${c.kind === 'section' ? `, ${VORMEN[c.shape] || c.shape}` : ''}`));
     }
     const wg = maak('div', 's43l-weergave');
@@ -707,7 +722,7 @@ export async function openBibliotheek(api) {
       knop('Import CSV', () => csvImport(c), '', 'Paste a table from Excel or a CSV file'),
       knop('Delete category', () => {
         if (!confirm(`Delete the category "${c.name}" and its ${c.items.length} rows?`)) return;
-        lib.categories = lib.categories.filter((x) => x !== c); gekozen = null; markeer(); gaNaar({ groep: nav.groep });
+        lib.categories = lib.categories.filter((x) => x !== c); gekozen = null; markeer(); gaNaar({ regio: nav.regio, groep: nav.groep });
       }),
     );
     werkVak.appendChild(rk);
