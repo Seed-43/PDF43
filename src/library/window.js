@@ -744,7 +744,7 @@ export async function openBibliotheek(api) {
       const p = maak('div', 'cat', c ? `${c.items.length} items. Select one to see its properties.` : 'Select an element to see its preview and properties. Double-click a tile to place it as a section.');
       infoScroll.append(p);
       if (c?.note) infoScroll.append(maak('div', 's43l-bron', c.note));
-      else if (lib.source) infoScroll.append(maak('div', 's43l-bron', lib.source));
+      // (no library source note on the start panel)
       return;
     }
     const { c, it } = g;
@@ -765,7 +765,7 @@ export async function openBibliotheek(api) {
     }
     infoScroll.append(velden);
     const bron = maak('div', 's43l-bron');
-    bron.textContent = [c.note, lib.source].filter(Boolean).join(' ');
+    bron.textContent = c.note || '';
     infoScroll.append(bron);
   }
 
