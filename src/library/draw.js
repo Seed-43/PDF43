@@ -2,7 +2,17 @@
 // the element's centre, then turned and scaled to page points
 // (ptsPerMm, stored on the element when it is placed).
 
+import { tekenBracing, bracingBounds } from './bracing.js';
+
 const num = (v) => (Number.isFinite(+v) ? +v : 0);
+
+/** Timber shapes, drawn in brown. */
+export const HOUTVORMEN = ['rect', 'glulam', 'lvl', 'ijoist'];
+/** Fixings (brackets, hangers, plates): placed by a click, in section or elevation. */
+export const BEVESTIGINGEN = ['hanger', 'plate', 'fangle'];
+/** Glulam lamination thickness and LVL veneer line spacing, mm (drawing only). */
+const LAMEL = 45;
+const VINEER = 10;
 
 /** Outline of a section in mm, centred: { polys: [[x,y]...][], circles: [{r, hole}], w, h }. */
 export function sectieVorm(shape, it) {
@@ -30,6 +40,78 @@ export function sectieVorm(shape, it) {
         [hb, -hd + lip], [hb, -hd], [-hb, -hd], [-hb, hd], [hb, hd], [hb, hd - lip], [hb - t, hd - lip], [hb - t, hd - t],
         [-hb + t, hd - t], [-hb + t, -hd + t], [hb - t, -hd + t], [hb - t, -hd + lip]]] };
     }
+    case 'lipped-z': {
+      // Lipped Zed purlin: top flange e to one side, bottom flange f to the
+      // other, lips at both ends, web t thick.
+      const e = num(it.e) || b, f = num(it.f) || b, lip = num(it.lip), w = e + f - t, hw = w / 2;
+      const xw = -hw + f - t;
+      return { w, h: d, polys: [[
+        [-hw, hd - lip], [-hw, hd], [xw + t, hd], [xw + t, -hd + t], [hw - t, -hd + t], [hw - t, -hd + lip],
+        [hw, -hd + lip], [hw, -hd], [xw, -hd], [xw, hd - t], [-hw + t, hd - t], [-hw + t, hd - lip]]] };
+    }
+    case 'rect': {
+      // Sawn timber: the section with a cross, or one diagonal for blocking;
+      // 2/ = pieces side by side.
+      const n = Math.max(1, Math.round(num(it.plies) || 1));
+      const lijnen = it.blocking ? [[[-hb, -hd], [hb, hd]]] : [[[-hb, -hd], [hb, hd]], [[hb, -hd], [-hb, hd]]];
+      for (let i = 1; i < n; i++) { const x = -hb + (b * i) / n; lijnen.push([[x, -hd], [x, hd]]); }
+      return { w: b, h: d, hout: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    case 'glulam': {
+      // Glulam: laminations across the depth, LAMEL mm thick from the
+      // bottom; what is left over is the top lamination.
+      const lijnen = [];
+      for (let y = hd - LAMEL; y > -hd + 1; y -= LAMEL) lijnen.push([[-hb, y], [hb, y]]);
+      return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    case 'lvl': {
+      // LVL: veneer lines down the depth, VINEER mm apart from the left.
+      const lijnen = [];
+      for (let x = -hb + VINEER; x < hb - 1; x += VINEER) lijnen.push([[x, -hd], [x, hd]]);
+      return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
+    // ── Fixings (Lumberlok, Bowmac): it.view 'section' (end on) or 'elevation' (side on) ──
+    case 'hanger': {
+      // Joist hanger: inside width b, height h, steel t, side plate L along
+      // the joist, face flanges F wide. Section: the U around the joist with
+      // the face flanges either side. Elevation: the side plate, with the
+      // flange on the supporting face as a heavy line at the left.
+      const t = Math.max(num(it.t), 0.5), L = num(it.L) || 40, F = num(it.F) || 30;
+      if (it.view === 'elevation') {
+        const hw = L / 2;
+        return { w: L, h: d, staal: true, polys: [[[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]]],
+          lijnen: [[[-hw + t, -hd], [-hw + t, hd]]] };
+      }
+      const bi = b / 2, bo = bi + t, ho = hd, hi = hd - t;
+      return { w: b + 2 * t + 2 * F, h: d, staal: true, polys: [
+        [[-bo, -ho], [-bi, -ho], [-bi, hi], [bi, hi], [bi, -ho], [bo, -ho], [bo, ho], [-bo, ho]],
+        [[-bo - F, -ho], [-bo, -ho], [-bo, ho], [-bo - F, ho]],
+        [[bo, -ho], [bo + F, -ho], [bo + F, ho], [bo, ho]],
+      ] };
+    }
+    case 'plate': {
+      // Flat plate or strap: width b, length d (it.d), thickness t. Elevation:
+      // the plate face on; section: the plate edge on.
+      const t = Math.max(num(it.t), 0.5);
+      if (it.view === 'elevation') return { w: b, h: d, staal: true, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+      return { w: b, h: t, staal: true, polys: [[[-hb, -t / 2], [hb, -t / 2], [hb, t / 2], [-hb, t / 2]]] };
+    }
+    case 'fangle': {
+      // Angle cleat or bracket: legs a (up) and c (across), length l, t.
+      // Section: the L end on. Elevation: leg a face on, l long.
+      const a = num(it.a), c = num(it.c), l = num(it.l), t = Math.max(num(it.t), 0.5);
+      if (it.view === 'elevation') return { w: l, h: a, staal: true, polys: [[[-l / 2, -a / 2], [l / 2, -a / 2], [l / 2, a / 2], [-l / 2, a / 2]]] };
+      const x0 = -c / 2, y0 = a / 2;
+      return { w: c, h: a, staal: true, polys: [[[x0, -y0], [x0 + t, -y0], [x0 + t, y0 - t], [x0 + c, y0 - t], [x0 + c, y0], [x0, y0]]] };
+    }
+    case 'ijoist': {
+      // I-joist: true outline once tf and tw are known, else the outline
+      // with the web dashed.
+      const f = num(it.tf), w = num(it.tw);
+      if (f > 0 && w > 0) return { ...sectieVorm('I', { d, b, tf: f, tw: w }), hout: true };
+      return { w: b, h: d, hout: true, streep: [[[0, -hd], [0, hd]]],
+        polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
+    }
     case 'flat':
     default:
       return { w: b, h: d, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
@@ -45,6 +127,60 @@ function draai([x, y], graden) {
 export function gedraaid(w, h, graden) {
   const r = ((graden || 0) * Math.PI) / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
   return { w: w * c + h * s, h: w * s + h * c };
+}
+
+const STAAL = '#1d4ed8';
+const DUN = '#9ca3af';
+const HOUT = '#92400e';
+const HOUT_VUL = 'rgba(180, 120, 50, 0.16)';
+
+/** Timber shapes are drawn in brown. */
+export const isHout = (shape) => HOUTVORMEN.includes(shape);
+
+/** Fill and stroke a section outline (mm) at cx, cy, k page points per mm. */
+function tekenVorm(ctx, v, cx, cy, k, rot, kleur, vul) {
+  const P = (p) => { const [x, y] = draai(p, rot); return [cx + x * k, cy + y * k]; };
+  ctx.strokeStyle = kleur;
+  ctx.fillStyle = vul;
+  ctx.beginPath();
+  for (const poly of v.polys || []) {
+    poly.forEach((p, i) => { const [x, y] = P(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.closePath();
+  }
+  for (const c of v.circles || []) {
+    ctx.moveTo(cx + c.r * k, cy);
+    ctx.arc(cx, cy, c.r * k, 0, Math.PI * 2, !!c.hole);
+  }
+  ctx.fill('evenodd');
+  ctx.stroke();
+  const lijn = (lijst, streep) => {
+    if (!lijst?.length) return;
+    const lw = ctx.lineWidth;
+    ctx.lineWidth = lw * 0.6;
+    ctx.setLineDash(streep ? [lw * 4, lw * 3] : []);
+    ctx.beginPath();
+    for (const [a, b] of lijst) { const [x1, y1] = P(a), [x2, y2] = P(b); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = lw;
+  };
+  if (v.dun) { const k0 = ctx.strokeStyle; ctx.strokeStyle = DUN; lijn(v.lijnen, false); ctx.strokeStyle = k0; } else lijn(v.lijnen, false);
+  lijn(v.streep, true);
+}
+
+/** A section fitted into a w x h box (library previews), proportions kept. */
+export function tekenVoorbeeld(ctx, shape, it, w, h, opties = {}) {
+  const v = sectieVorm(shape, it);
+  if (!(v.w > 0) || !(v.h > 0)) return false;
+  const marge = opties.marge ?? 6;
+  const k = opties.k || Math.min((w - 2 * marge) / v.w, (h - 2 * marge) / v.h);
+  ctx.save();
+  ctx.lineWidth = opties.lijn || 1;
+  ctx.lineJoin = 'round';
+  const kleur = opties.kleur || (v.hout ? HOUT : STAAL);
+  tekenVorm(ctx, v, w / 2, h / 2, k, 0, kleur, v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.16)');
+  ctx.restore();
+  return true;
 }
 
 export function sectieMaat(el) {
@@ -63,25 +199,11 @@ export function tekenSectie(ctx, ann) {
   const cx = ann.x + m.w / 2, cy = ann.y + m.h / 2;
   ctx.save();
   ctx.lineWidth = 0.6;
-  ctx.strokeStyle = el.color || '#1d4ed8';
-  ctx.fillStyle = 'rgba(29, 78, 216, 0.18)';
-  ctx.beginPath();
-  for (const poly of v.polys || []) {
-    poly.forEach((p, i) => {
-      const [x, y] = draai(p, el.rotation || 0);
-      i ? ctx.lineTo(cx + x * k, cy + y * k) : ctx.moveTo(cx + x * k, cy + y * k);
-    });
-    ctx.closePath();
-  }
-  for (const c of v.circles || []) {
-    ctx.moveTo(cx + c.r * k, cy);
-    ctx.arc(cx, cy, c.r * k, 0, Math.PI * 2, !!c.hole);
-  }
-  ctx.fill('evenodd');
-  ctx.stroke();
+  const kleur = el.color || (v.hout ? HOUT : STAAL);
+  tekenVorm(ctx, v, cx, cy, k, el.rotation || 0, kleur, v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.18)');
   if (el.label !== false) {
     const { h } = m;
-    ctx.fillStyle = el.color || '#1d4ed8';
+    ctx.fillStyle = kleur;
     ctx.font = '7px Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -175,12 +297,15 @@ export function lidProfiel(shape, it, view) {
     if (shape === 'I') lijnen.push({ o: -tw / 2, dash: true }, { o: tw / 2, dash: true });
     else if (shape === 'channel') lijnen.push({ o: -b / 2 + tw, dash: true });
     else if (shape === 'angle') lijnen.push({ o: -b / 2 + t, dash: true });
-    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c') lijnen.push({ o: -breedte / 2 + t, dash: true }, { o: breedte / 2 - t, dash: true });
+    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c' || shape === 'lipped-z') lijnen.push({ o: -breedte / 2 + t, dash: true }, { o: breedte / 2 - t, dash: true });
+    else if (shape === 'rect') { const n = Math.max(1, Math.round(num(it.plies) || 1)); for (let i = 1; i < n; i++) lijnen.push({ o: -b / 2 + (b * i) / n }); }
+    else if (shape === 'ijoist') { const w = num(it.tw); if (w > 0) lijnen.push({ o: -w / 2, dash: true }, { o: w / 2, dash: true }); else lijnen.push({ o: 0, dash: true }); }
   } else {
     breedte = d;
     if (shape === 'I' || shape === 'channel') lijnen.push({ o: -d / 2 + tf }, { o: d / 2 - tf });
     else if (shape === 'angle') lijnen.push({ o: -d / 2 + t });
-    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c') lijnen.push({ o: -d / 2 + t, dash: true }, { o: d / 2 - t, dash: true });
+    else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c' || shape === 'lipped-z') lijnen.push({ o: -d / 2 + t, dash: true }, { o: d / 2 - t, dash: true });
+    else if (shape === 'ijoist' && num(it.tf) > 0) lijnen.push({ o: -d / 2 + num(it.tf) }, { o: d / 2 - num(it.tf) });
   }
   return { breedte, lijnen };
 }
@@ -197,6 +322,7 @@ export function lidGeometrie(ann) {
 }
 
 export function lidBounds(ann) {
+  if (ann.element?.shape === 'bracing') return bracingBounds(ann);
   const g = lidGeometrie(ann);
   const xs = g.hoeken.map((h) => h[0]), ys = g.hoeken.map((h) => h[1]);
   const x = Math.min(...xs), y = Math.min(...ys);
@@ -206,12 +332,13 @@ export function lidBounds(ann) {
 export function tekenLid(ctx, ann) {
   const el = ann.element;
   if (!el) return;
+  if (el.shape === 'bracing') { tekenBracing(ctx, ann); return; }
   const g = lidGeometrie(ann);
-  const kleur = el.color || '#1d4ed8';
+  const kleur = el.color || (isHout(el.shape) ? HOUT : STAAL);
   ctx.save();
   ctx.strokeStyle = kleur;
   ctx.lineWidth = 0.6;
-  ctx.fillStyle = 'rgba(29, 78, 216, 0.10)';
+  ctx.fillStyle = isHout(el.shape) ? HOUT_VUL : 'rgba(29, 78, 216, 0.10)';
   ctx.beginPath();
   g.hoeken.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.closePath();

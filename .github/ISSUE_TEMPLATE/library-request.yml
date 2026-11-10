@@ -1,0 +1,56 @@
+name: Library request
+description: Ask for elements to be added to the Seed43 Element Library (steel, timber, fixings, bolts) for a country or supplier.
+title: "Library request: "
+labels: ["library request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking. Tell us which elements you want in the Element Library and where the sizes come from.
+        Please do not attach client drawings or anything confidential.
+  - type: input
+    id: region
+    attributes:
+      label: Country or region
+      placeholder: e.g. New Zealand, Australia, United Kingdom
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of element
+      multiple: true
+      options:
+        - Steel sections
+        - Cold-formed purlins and girts
+        - Timber (sawn)
+        - Engineered timber (LVL, glulam, I-joists)
+        - Fixings (hangers, brackets, plates)
+        - Bolts and anchors
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: supplier
+    attributes:
+      label: Manufacturer or supplier
+      placeholder: e.g. Lysaght, Pryda, Hyne, Carter Holt Harvey
+  - type: textarea
+    id: products
+    attributes:
+      label: Products and sizes
+      description: The product range or the sizes you need.
+      placeholder: e.g. Pryda framing anchors, all sizes; Stramit C and Z purlins
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Link to the catalogue or size table
+      description: A public product page or PDF with the dimensions.
+      placeholder: https://
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: How you want them drawn, grades or treatments, or which ones matter most.
