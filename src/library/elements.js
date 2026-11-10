@@ -13,7 +13,7 @@
 
 import { laadBibliotheek, categorie } from './store.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
-import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
+import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
@@ -65,7 +65,8 @@ function nieuwElement(api, soort, keuze, page, x, y) {
   const schaal = puntenPerMm(api, page, x, y);
   return soort === SECTIE
     ? { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...schaal }
-    : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true, ...schaal };
+    : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true,
+      view: keuze.view === 'elevation' ? 'elevation' : 'face', grip: 20, along: 'gauge', ...schaal };
 }
 
 function plaatsingsType(api, soort) {
@@ -519,6 +520,19 @@ function boutPaneel(api) {
       const it = categorie(lib, cid)?.items.find((i) => i.name === naam);
       if (it) wb((x) => { x.bolt = kopie(it); });
     });
+    // Face (plan) or elevation (side on, through the plies).
+    const zij = e.view === 'elevation';
+    veld(el, 'View', keuze([['face', 'Face (plan)'], ['elevation', 'Elevation (side on)']], zij ? 'elevation' : 'face',
+      (v) => { wb((x) => { x.view = v; }); }));
+    if (zij) {
+      const z = boutZijaanzicht(e);
+      veld(el, 'Grip (mm)', getal(z.grip, (n) => wb((x) => { x.grip = Math.max(1, n); }), 1));
+      veld(el, 'Bolts seen', keuze([['gauge', 'Across the gauge (columns)'], ['pitch', 'Along the pitch (rows)']], e.along === 'pitch' ? 'pitch' : 'gauge',
+        (v) => wb((x) => { x.along = v; })));
+      const lengte = document.createElement('span');
+      lengte.textContent = `${z.L} mm (grip + washer + nut + thread)`;
+      veld(el, 'Bolt length', lengte);
+    }
     veld(el, 'Rows', getal(g.rows, (n) => wb((x) => { x.rows = Math.max(1, Math.round(n)); })));
     veld(el, 'Columns', getal(g.cols, (n) => wb((x) => { x.cols = Math.max(1, Math.round(n)); })));
     veld(el, 'Pitch (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));

@@ -233,14 +233,89 @@ export function boutGroep(el) {
   };
 }
 
+// ── Bolt group in elevation (side on) ─────────────────────────────────
+// ISO 4014/4032 and AS 1252 proportions, mm: head height k, nut height m,
+// washer thickness wt and outside diameter wd. Other sizes scale from d.
+const BOUT_DELEN = {
+  12: { k: 7.5, m: 10.8, wt: 2.5, wd: 24 }, 16: { k: 10, m: 14.8, wt: 3, wd: 30 }, 20: { k: 12.5, m: 18, wt: 3, wd: 37 },
+  24: { k: 15, m: 21.5, wt: 4, wd: 44 }, 30: { k: 18.7, m: 25.6, wt: 4, wd: 56 }, 36: { k: 22.5, m: 31, wt: 5, wd: 66 },
+};
+
+/** Side view of a bolt group: the bolts seen across the gauge (columns) or along the pitch (rows). */
+export function boutZijaanzicht(el) {
+  const g = boutGroep(el);
+  const d = num(el.bolt?.d) || 20;
+  const p = BOUT_DELEN[d] || { k: 0.64 * d, m: 0.86 * d, wt: Math.max(2.5, 0.16 * d), wd: 1.85 * d };
+  const af = num(el.bolt?.af) || 1.5 * d;
+  const e = af * 1.155;                       // hexagon seen across the corners
+  const langs = el.along === 'pitch';
+  const n = langs ? g.rows : g.cols, s = langs ? g.pitch : g.gauge, rand = langs ? g.ey : g.ex;
+  const grip = num(el.grip) || 20;
+  const uitsteek = Math.max(3, Math.round(0.4 * d));
+  const L = Math.ceil((grip + p.wt + p.m + uitsteek) / 5) * 5;
+  const breedte = Math.max((n - 1) * s + 2 * rand, Math.max(e, p.wd) + 4);
+  return { ...g, d, ...p, af, e, n, s, grip, L, w: breedte, h: p.k + L, langs };
+}
+
 export function boutMaat(el) {
-  const g = boutGroep(el), k = el.ptsPerMm || 1;
+  const g = el.view === 'elevation' ? boutZijaanzicht(el) : boutGroep(el), k = el.ptsPerMm || 1;
   return gedraaid(g.w * k, g.h * k, el.rotation);
+}
+
+function tekenBoutZijaanzicht(ctx, ann) {
+  const el = ann.element;
+  const z = boutZijaanzicht(el), k = el.ptsPerMm || 1;
+  const m = boutMaat(el);
+  const cx = ann.x + m.w / 2, cy = ann.y + m.h / 2, rot = el.rotation || 0;
+  const fout = z.fouten.length > 0;
+  const kleur = fout ? '#dc2626' : (el.color || '#0f766e');
+  const P = (x, y) => { const [a, b] = draai([x, y], rot); return [cx + a * k, cy + b * k]; };
+  const lijn = (pts, sluiten = false) => { ctx.beginPath(); pts.forEach(([x, y], i) => { const [px, py] = P(x, y); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); if (sluiten) ctx.closePath(); };
+  const rechthoek = (x0, y0, w, h, vul) => { lijn([[x0, y0], [x0 + w, y0], [x0 + w, y0 + h], [x0, y0 + h]], true); if (vul) { ctx.fillStyle = vul; ctx.fill(); } ctx.stroke(); };
+  ctx.save();
+  ctx.lineWidth = 0.6;
+  ctx.strokeStyle = kleur;
+  const top = -z.h / 2;
+  const plaatTop = top + z.k, plaatOnder = plaatTop + z.grip;
+  if (el.plate !== false) rechthoek(-z.w / 2, plaatTop, z.w, z.grip, fout ? 'rgba(220,38,38,0.08)' : 'rgba(15,118,110,0.08)');
+  for (let i = 0; i < z.n; i++) {
+    const x = -z.s * (z.n - 1) / 2 + i * z.s;
+    // Head, hexagon across the corners: two face lines.
+    rechthoek(x - z.e / 2, top, z.e, z.k, '#ffffff');
+    lijn([[x - z.e / 4, top], [x - z.e / 4, plaatTop]]); ctx.stroke();
+    lijn([[x + z.e / 4, top], [x + z.e / 4, plaatTop]]); ctx.stroke();
+    // Shank hidden in the plies.
+    ctx.setLineDash([2, 1.5]);
+    lijn([[x - z.d / 2, plaatTop], [x - z.d / 2, plaatOnder]]); ctx.stroke();
+    lijn([[x + z.d / 2, plaatTop], [x + z.d / 2, plaatOnder]]); ctx.stroke();
+    ctx.setLineDash([]);
+    // Washer, nut, and the thread past the nut.
+    rechthoek(x - z.wd / 2, plaatOnder, z.wd, z.wt, '#ffffff');
+    const moerTop = plaatOnder + z.wt;
+    rechthoek(x - z.e / 2, moerTop, z.e, z.m, '#ffffff');
+    lijn([[x - z.e / 4, moerTop], [x - z.e / 4, moerTop + z.m]]); ctx.stroke();
+    lijn([[x + z.e / 4, moerTop], [x + z.e / 4, moerTop + z.m]]); ctx.stroke();
+    const tip = top + z.k + z.L;
+    rechthoek(x - z.d / 2, moerTop + z.m, z.d, tip - moerTop - z.m, '#ffffff');
+    // Centre line
+    ctx.setLineDash([6, 1.5, 1, 1.5]); ctx.lineWidth = 0.35;
+    lijn([[x, top - 3], [x, tip + 3]]); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineWidth = 0.6;
+  }
+  const { h } = m;
+  ctx.fillStyle = kleur;
+  ctx.font = '7px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`${z.rows * z.cols}-${el.bolt?.name || 'bolt'} x ${z.L}`, cx, cy + h / 2 + 2);
+  if (fout) ctx.fillText(z.fouten.join(', '), cx, cy + h / 2 + 11);
+  ctx.restore();
 }
 
 export function tekenBoutGroep(ctx, ann) {
   const el = ann.element;
   if (!el) return;
+  if (el.view === 'elevation') { tekenBoutZijaanzicht(ctx, ann); return; }
   const g = boutGroep(el), k = el.ptsPerMm || 1;
   const m = boutMaat(el);
   const cx = ann.x + m.w / 2, cy = ann.y + m.h / 2, rot = el.rotation || 0;
