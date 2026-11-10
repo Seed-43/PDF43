@@ -13,7 +13,7 @@
 
 import { laadBibliotheek, categorie } from './store.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
-import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
+import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
@@ -524,6 +524,17 @@ function boutPaneel(api) {
     const zij = e.view === 'elevation';
     veld(el, 'View', keuze([['face', 'Face (plan)'], ['elevation', 'Elevation (side on)']], zij ? 'elevation' : 'face',
       (v) => { wb((x) => { x.view = v; }); }));
+    // Bolt or threaded rod, nuts and washers.
+    const o = boutOpties(e);
+    veld(el, 'Kind', keuze([['bolt', 'Bolt (hex head)'], ['rod', 'Threaded rod']], o.kind, (v) => wb((x) => { x.kind = v; })));
+    veld(el, 'Nuts', keuze(o.kind === 'rod'
+      ? [['0', 'None'], ['1', 'One end'], ['2', 'Both ends']]
+      : [['0', 'None (bolt only)'], ['1', 'Nut'], ['2', 'Nut + lock nut']], String(o.nuts), (v) => wb((x) => { x.nuts = Number(v); })));
+    veld(el, 'Washers', keuze([['round', 'Round'], ['square', 'Square'], ['none', 'None']], o.washer, (v) => wb((x) => { x.washer = v; })));
+    if (o.washer !== 'none') {
+      veld(el, 'Washer at', keuze([['nut', 'Nut side only'], ['both', o.kind === 'rod' ? 'Both ends' : 'Under the head too']], o.washerAt,
+        (v) => wb((x) => { x.washerAt = v; })));
+    }
     if (zij) {
       const z = boutZijaanzicht(e);
       veld(el, 'Grip (mm)', getal(z.grip, (n) => wb((x) => { x.grip = Math.max(1, n); }), 1));
