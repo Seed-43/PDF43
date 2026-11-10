@@ -250,6 +250,7 @@ const BOUT_DELEN = {
  *            '1d' | '2d'   rod: double nuts at one end, at both ends
  *   washer   'none' | 'round' | 'square'
  *   washerAt 'nut' (under the nuts only) | 'both' (also under the head or at the other end)
+ *   flip     true: the bolt turned over (nut side on top, head side below)
  */
 export function boutOpties(el) {
   const ruw = String(el.nuts ?? '1');
@@ -261,6 +262,7 @@ export function boutOpties(el) {
     dubbel: dubbel && nuts > 0,
     washer: ['none', 'round', 'square'].includes(el.washer) ? el.washer : 'round',
     washerAt: el.washerAt === 'both' ? 'both' : 'nut',
+    flip: el.flip === true,
   };
 }
 
@@ -304,6 +306,8 @@ export function boutZijaanzicht(el) {
   const L = Math.ceil(lengteRuw / 5) * 5;
   // The rounding goes into the thread past the nut.
   onder[onder.length - 1] = { ...draad, h: draad.h + (L - lengteRuw) };
+  // Turned over: both lists run from the plies outward, so they just swap.
+  if (o.flip) { const t = boven.slice(); boven.length = 0; boven.push(...onder); onder.length = 0; onder.push(...t); }
   const breedste = Math.max(...[...onder, ...boven].map((x) => x.w));
   const breedte = Math.max((n - 1) * s + 2 * rand, breedste + 4);
   return { ...g, ...a, o, n, s, grip, L, boven, onder, w: breedte, h: som(boven) + grip + som(onder), langs };
@@ -399,8 +403,10 @@ export function tekenBoutGroep(ctx, ann) {
   // Plan: what is seen from the top end (the head of a bolt, or the other end of a rod).
   const bovenaanzicht = el.view === 'plan';
   const opt = boutOpties(el);
-  const bovenZeskant = opt.kind === 'bolt' || opt.nuts === 2;
-  const bovenRing = opt.washer !== 'none' && opt.washerAt === 'both' && bovenZeskant ? opt.washer : 'none';
+  // Turned over, the nut side is on top: a nut (if any) with its washer.
+  const bovenZeskant = opt.flip ? opt.nuts > 0 : (opt.kind === 'bolt' || opt.nuts === 2);
+  const bovenRing = opt.washer === 'none' || !bovenZeskant ? 'none'
+    : (opt.flip || opt.washerAt === 'both') ? opt.washer : 'none';
   for (let i = 0; i < g.rows; i++) {
     for (let j = 0; j < g.cols; j++) {
       const x = -g.gauge * (g.cols - 1) / 2 + j * g.gauge, y = -g.pitch * (g.rows - 1) / 2 + i * g.pitch;

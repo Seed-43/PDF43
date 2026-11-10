@@ -531,6 +531,8 @@ function boutPaneel(api) {
       ? [['0', 'None'], ['1', 'One end'], ['2', 'Both ends'], ['1d', 'Double nuts, one end'], ['2d', 'Double nuts, both ends']]
       : [['0', 'None (bolt only)'], ['1', 'Nut'], ['2', 'Double nut']], o.dubbel ? `${o.nuts}d` : String(o.nuts),
       (v) => wb((x) => { x.nuts = v.endsWith('d') ? v : Number(v); })));
+    veld(el, 'Ends', keuze([['0', o.kind === 'rod' ? 'As placed' : 'Head on top'], ['1', o.kind === 'rod' ? 'Swapped (other side)' : 'Swapped (nut on top)']],
+      o.flip ? '1' : '0', (v) => wb((x) => { x.flip = v === '1'; })));
     veld(el, 'Washers', keuze([['round', 'Round'], ['square', 'Square'], ['none', 'None']], o.washer, (v) => wb((x) => { x.washer = v; })));
     if (o.washer !== 'none') {
       veld(el, 'Washer at', keuze([['nut', 'Nut side only'], ['both', o.kind === 'rod' ? 'Both ends' : 'Under the head too']], o.washerAt,
