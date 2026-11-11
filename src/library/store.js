@@ -9,6 +9,7 @@ let huidig = null;
 const HOUT_VLAG = 'seed43.library.timber2025b';
 const ZA_VLAG = 'seed43.library.za2026b';
 const AU_VLAG = 'seed43.library.au2026a';
+const UK_VLAG = 'seed43.library.uk2026a';
 const FIXING_VLAG = 'seed43.library.fixings2024a';
 const HOUT_VERVANG = /^(timber-sg8|lvl-|prolam-|hyjoist$)/;
 const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
@@ -81,6 +82,15 @@ export async function laadBibliotheek(api) {
           for (const c of std.categories.filter((x) => x.region === 'South Africa' && !ids.has(x.id))) { v.categories.push(c); gewijzigd = true; }
           localStorage.setItem(ZA_VLAG, '1');
         } catch (e) { console.warn('[seed43] South Africa not added to the saved library:', e); }
+      }
+      // United Kingdom, the same way.
+      if (localStorage.getItem(UK_VLAG) !== '1') {
+        try {
+          const std = await standaardBibliotheek(api);
+          const ids = new Set(v.categories.map((c) => c.id));
+          for (const c of std.categories.filter((x) => x.region === 'United Kingdom' && !ids.has(x.id))) { v.categories.push(c); gewijzigd = true; }
+          localStorage.setItem(UK_VLAG, '1');
+        } catch (e) { console.warn('[seed43] United Kingdom not added to the saved library:', e); }
       }
       // The library note still describing the removed gauge tables.
       if (/Gauge tables/.test(v.source || '')) {
