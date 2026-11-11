@@ -7,6 +7,10 @@ body:
     attributes:
       value: |
         Thanks for asking. Tell us which elements you want in the Element Library and where the sizes come from.
+
+        **Please supply links to the data if you can**: the manufacturer's product pages, catalogue PDFs or size tables
+        with the dimensions. Elements built from published data are exact; without a source some sizes have to be estimated.
+
         Please do not attach client drawings or anything confidential.
   - type: input
     id: region
@@ -43,12 +47,14 @@ body:
       placeholder: e.g. Pryda framing anchors, all sizes; Stramit C and Z purlins
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: source
     attributes:
-      label: Link to the catalogue or size table
-      description: A public product page or PDF with the dimensions.
-      placeholder: https://
+      label: Links to the data
+      description: If possible, links to public product pages, catalogue PDFs or size tables with the dimensions (one per line). The more exact the source, the more exact the elements.
+      placeholder: |
+        https://
+        https://
   - type: textarea
     id: notes
     attributes:

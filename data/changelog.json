@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.6.1",
+    "date": "2026-11-12",
+    "notes": {
+      "New": [
+        "South Africa in the Element Library: SAISC I, IPE, H, PFC, angles, CHS, SHS, RHS, lipped channels and zeds, SA Pine S5 and S7, glulam, MiTek SA truss and strap hangers (estimated heights), bolts",
+        "United Kingdom in the Element Library: UB, UC, PFC, angles, hot-finished SHS, RHS and CHS, C16 and C24 sawn, CLS, GL24h and GL28c glulam, Kerto-S LVL, JJI-Joists, Simpson Strong-Tie SAE and JHA hangers, angle brackets and restraint straps, bolts",
+        "Bolt groups in elevation and plan: head, plies, washer, nut and thread side on with the bolt length from the grip, or looking down on the heads; bolt or threaded rod, no nut, one, two or double nuts, round, square or no washers, and a switch to turn the bolt over. Face, Plan and Elevation buttons in the Element Library"
+      ],
+      "General": [
+        "Request a library asks for links to the data (product pages, catalogues, size tables)",
+        "Smart Stamps opens as a dockable app palette where the app supports it (docks on all four sides, stacks with other palettes); floating, it shows each family's icon and name"
+      ]
+    }
+  },
+  {
     "version": "0.6.0",
     "date": "2026-11-10",
     "notes": {

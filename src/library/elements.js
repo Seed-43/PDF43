@@ -13,7 +13,7 @@
 
 import { laadBibliotheek, categorie } from './store.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
-import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
+import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
@@ -65,7 +65,8 @@ function nieuwElement(api, soort, keuze, page, x, y) {
   const schaal = puntenPerMm(api, page, x, y);
   return soort === SECTIE
     ? { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...schaal }
-    : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true, ...schaal };
+    : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true,
+      view: ['elevation', 'plan'].includes(keuze.view) ? keuze.view : 'face', grip: 20, along: 'gauge', ...schaal };
 }
 
 function plaatsingsType(api, soort) {
@@ -519,6 +520,33 @@ function boutPaneel(api) {
       const it = categorie(lib, cid)?.items.find((i) => i.name === naam);
       if (it) wb((x) => { x.bolt = kopie(it); });
     });
+    // Face (plan) or elevation (side on, through the plies).
+    const zij = e.view === 'elevation';
+    veld(el, 'View', keuze([['face', 'Face (holes)'], ['plan', 'Plan (heads)'], ['elevation', 'Elevation (side on)']], ['elevation', 'plan'].includes(e.view) ? e.view : 'face',
+      (v) => { wb((x) => { x.view = v; }); }));
+    // Bolt or threaded rod, nuts and washers.
+    const o = boutOpties(e);
+    veld(el, 'Kind', keuze([['bolt', 'Bolt (hex head)'], ['rod', 'Threaded rod']], o.kind, (v) => wb((x) => { x.kind = v; })));
+    veld(el, 'Nuts', keuze(o.kind === 'rod'
+      ? [['0', 'None'], ['1', 'One end'], ['2', 'Both ends'], ['1d', 'Double nuts, one end'], ['2d', 'Double nuts, both ends']]
+      : [['0', 'None (bolt only)'], ['1', 'Nut'], ['2', 'Double nut']], o.dubbel ? `${o.nuts}d` : String(o.nuts),
+      (v) => wb((x) => { x.nuts = v.endsWith('d') ? v : Number(v); })));
+    veld(el, 'Ends', keuze([['0', o.kind === 'rod' ? 'As placed' : 'Head on top'], ['1', o.kind === 'rod' ? 'Swapped (other side)' : 'Swapped (nut on top)']],
+      o.flip ? '1' : '0', (v) => wb((x) => { x.flip = v === '1'; })));
+    veld(el, 'Washers', keuze([['round', 'Round'], ['square', 'Square'], ['none', 'None']], o.washer, (v) => wb((x) => { x.washer = v; })));
+    if (o.washer !== 'none') {
+      veld(el, 'Washer at', keuze([['nut', 'Nut side only'], ['both', o.kind === 'rod' ? 'Both ends' : 'Under the head too']], o.washerAt,
+        (v) => wb((x) => { x.washerAt = v; })));
+    }
+    if (zij) {
+      const z = boutZijaanzicht(e);
+      veld(el, 'Grip (mm)', getal(z.grip, (n) => wb((x) => { x.grip = Math.max(1, n); }), 1));
+      veld(el, 'Bolts seen', keuze([['gauge', 'Across the gauge (columns)'], ['pitch', 'Along the pitch (rows)']], e.along === 'pitch' ? 'pitch' : 'gauge',
+        (v) => wb((x) => { x.along = v; })));
+      const lengte = document.createElement('span');
+      lengte.textContent = `${z.L} mm (grip + washer + nut + thread)`;
+      veld(el, 'Bolt length', lengte);
+    }
     veld(el, 'Rows', getal(g.rows, (n) => wb((x) => { x.rows = Math.max(1, Math.round(n)); })));
     veld(el, 'Columns', getal(g.cols, (n) => wb((x) => { x.cols = Math.max(1, Math.round(n)); })));
     veld(el, 'Pitch (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));

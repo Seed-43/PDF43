@@ -787,7 +787,10 @@ export async function openBibliotheek(api) {
       k.title = g ? 'Reference tables are not placed on the sheet' : 'Select an element first';
       plaatsGroep.append(k);
     } else if (g.c.kind === 'bolt') {
-      plaatsGroep.append(knop('Place bolt group', () => plaatsGekozen('section'), 'prim', 'Click on the sheet to place (Enter)'));
+      plaatsGroep.append(maak('span', '', 'Place bolt group:'),
+        knop('Face', () => plaatsGekozen('section'), 'prim', 'Bolt heads seen face on, with the plate (Enter)'),
+        knop('Plan', () => plaatsGekozen('plan'), 'prim', 'Looking down on the bolt heads (or nuts), with washers'),
+        knop('Elevation', () => plaatsGekozen('elevation'), 'prim', 'Bolts side on: head, plies, washer and nut, with the bolt length'));
     } else {
       const greep = maak('select');
       greep.title = 'The grip a member is placed by: click it first, then the other point';
