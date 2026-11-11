@@ -21,6 +21,11 @@ Timber
 - Kerto-S LVL (Metsa Wood): S-beam common sizes, 45 to 63 thick, 200 to 600 deep.
 - JJI-Joists (James Jones and Sons technical manual, November 2023): 45 deep
   flanges 47 (A+), 63 (B+), 72 (C) and 97 (D) wide, 9 mm OSB web.
+Fixings: Simpson Strong-Tie UK, "Connectors for Timber and Masonry
+Construction" C-C-UK-2024 and the JHA data sheet (2025): SAE face fix
+hangers, JHA hangers with adjustable height strap, ABR / AE / E angle
+brackets, ABR255, and H / L and HES / LES restraint straps. The SAE table is
+parsed into tools/uk-simpson-sae.json.
 Bolts: the same metric bolts as the NZ library.
 Units in the library are mm (A mm2, I mm4, Z and S mm3, J mm4, Iw mm6).
 """
@@ -321,6 +326,51 @@ def main():
         'James Jones JJI-Joists (technical manual, November 2023): 45 deep softwood flanges, 47 (A+), 63 (B+), 72 (C) or 97 (D) wide, '
         '9 mm OSB/3 web. Depths from the span tables: 195 to 350, and 400 D.',
         [{'name': f'JJI {d}{f}', 'd': d, 'b': breed[f], 'tf': 45, 'tw': 9, 'grade': f} for d, f in jji], 'Timber')
+
+    # Fixings: Simpson Strong-Tie UK (pre-galvanised mild steel).
+    SST = 'Simpson Strong-Tie UK, Connectors for Timber and Masonry Construction (C-C-UK-2024).'
+    hvelden = ['b', 'd', 't', 'L', 'F', 'material', 'fixing']
+    sae = json.loads(pathlib.Path(__file__).with_name('uk-simpson-sae.json').read_text(encoding='utf-8'))['SAE']
+    # SAE: A inside width, B height, C seat, D face flange, F side plate, t.
+    cat('uk-sst-sae', 'Face fix hangers SAE (Simpson)', 'hanger', hvelden,
+        f'SAE face fix joist hangers for solid joists, 2 mm: inside width A, height B, side plate F, face flange D. {SST}',
+        [{'name': n, 'b': a, 'd': b, 't': t, 'L': f, 'F': dd, 'material': 'Pre-galvanised',
+          'fixing': 'N3.75x30 nails or CSA screws, header and joist'}
+         for n, (a, b, c, dd, f, t) in sorted(sae.items(), key=lambda x: (x[1][0], x[1][1]))], 'Fixings')
+    # JHA: A inside width, E joist side leg, D strap width, t. The long leg
+    # B wraps over or fixes to the header; drawn as a hanger without a face flange.
+    jha = [('JHA270/38', 38, 106, 48.8, 0.9), ('JHA270/44', 44, 103, 48.8, 0.9), ('JHA270/47', 47, 101.5, 48.8, 0.9),
+           ('JHA270/50', 50, 100, 48.8, 0.9), ('JHA270/63', 63, 113.5, 48.8, 0.9), ('JHA270/75', 75, 99.5, 48.8, 0.9),
+           ('JHA270/91', 91, 95, 48.8, 0.9), ('JHA270/100', 100, 230, 48.8, 0.9),
+           ('JHA450/38', 38, 191, 51.5, 1.2), ('JHA450/44', 44, 188, 51.5, 1.2), ('JHA450/47', 47, 187, 51.5, 1.2),
+           ('JHA450/50', 50, 185, 51.5, 1.2), ('JHA450/63', 63, 179, 51.5, 1.2), ('JHA450/75', 75, 173, 51.5, 1.2),
+           ('JHA450/91', 91, 165, 51.5, 1.2), ('JHA450/100', 100, 160, 51.5, 1.2), ('JHA450/125', 125, 162.5, 51.5, 1.2),
+           ('JHA450/137', 137, 156.5, 51.5, 1.2), ('JHA450/150', 150, 150, 51.5, 1.2)]
+    cat('uk-sst-jha', 'Strap hangers JHA (Simpson)', 'hanger', hvelden,
+        'JHA joist hangers with adjustable height strap (JHA270, JHA450): inside width A, joist side leg E as the height, strap width D '
+        'as the side plate. The strap that wraps over or fixes to the header is not drawn. Simpson Strong-Tie JHA technical data sheet (2025).',
+        [{'name': n, 'b': a, 'd': e, 't': t, 'L': dd, 'F': 0, 'material': 'Pre-galvanised',
+          'fixing': 'wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws'} for n, a, e, dd, t in jha], 'Fixings')
+    # Angle brackets: flange A, flange B, width C, t.
+    abr = [('ABR70', 70, 70, 55, 2.0), ('ABR9020', 88, 88, 65, 2.0), ('ABR90', 90, 90, 65, 2.5), ('ABR98', 98, 98, 88, 3.0),
+           ('ABR100', 103, 103, 90, 2.0), ('ABR10525', 105, 105, 90, 2.5), ('ABR105', 105, 105, 90, 3.0),
+           ('AE76', 90, 48, 76, 3.0), ('E5/2C50', 75, 48, 65, 2.0), ('E4/2.5', 100, 60, 75, 2.5), ('E9S/2.5', 150, 90, 65, 2.5),
+           ('E9/2.5', 150, 150, 65, 2.5), ('ABR255', 120, 100, 255, 3.0), ('ABR255SO', 200, 100, 255, 3.0)]
+    cat('uk-sst-angles', 'Angle brackets (Simpson)', 'fangle', ['a', 'c', 'l', 't', 'material', 'fixing'],
+        f'ABR, AE and E reinforced angle brackets and the ABR255 structural angle bracket: flange A, flange B, width C, t. '
+        f'ABR9020S and ABR10525S are the stainless versions of ABR9020 and ABR10525. {SST}',
+        [{'name': n, 'a': a, 'c': b, 'l': c, 't': t, 'material': 'Pre-galvanised',
+          'fixing': 'CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange'} for n, a, b, c, t in abr], 'Fixings')
+    # Restraint straps: width A, length B (bend B1 not drawn), t.
+    straps = ([(f'H{l // 100:02d}B{b // 10}', 28, l, 4.0, f'Heavy, horizontal, {b} bend') for b in (100, 150) for l in (600, 800, 1000, 1200, 1500, 1600)]
+              + [(f'L{l // 100:02d}B10', 27, l, 2.0, 'Light, vertical, 100 bend') for l in (600, 800, 1000, 1200)]
+              + [(f'HES{l // 100 + 1:02d}B10'.replace('HES16', 'HES15'), 38, l, 1.2, 'Heavy engineered, horizontal, 100 bend') for l in (500, 700, 900, 1100, 1400)]
+              + [(f'LES{l // 100 + 1:02d}B10', 35, l, 1.2, 'Light engineered, vertical, 100 bend') for l in (500, 700, 900, 1100)])
+    cat('uk-sst-straps', 'Restraint straps (Simpson)', 'plate', ['b', 'd', 't', 'description', 'material', 'fixing'],
+        f'H / L restraint straps (4.0 and 2.0 mm) and HES / LES engineered restraint straps (1.2 mm): width A, length B, drawn flat '
+        f'(the bend is not drawn). {SST}',
+        [{'name': n, 'b': a, 'd': l, 't': t, 'description': o, 'material': 'Galvanised',
+          'fixing': 'N3.75x30 nails to joists; screws and plugs to masonry'} for n, a, l, t, o in straps], 'Fixings')
 
     bouten = copy.deepcopy(nz['bolts'])
     bouten.update({'id': 'uk-bolts', 'region': UK})

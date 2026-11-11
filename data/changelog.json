@@ -7,7 +7,7 @@
         "About: version, update check, what changed and which Seed43 tools show on the ribbon",
         "Australia in the Element Library: steel, Lysaght Zeds and Cees, MGP10/MGP12, F17 hardwood, Meyer, Wesbeam and Hyne timber, MiTek and Pryda hangers, bolts",
         "South Africa in the Element Library: SAISC I, IPE, H, PFC, angles, CHS, SHS, RHS, lipped channels and zeds, SA Pine S5 and S7, glulam, MiTek SA truss and strap hangers (estimated heights), bolts",
-        "United Kingdom in the Element Library: UB, UC, PFC, angles, hot-finished SHS, RHS and CHS, C16 and C24 sawn, CLS, GL24h and GL28c glulam, Kerto-S LVL, JJI-Joists, bolts",
+        "United Kingdom in the Element Library: UB, UC, PFC, angles, hot-finished SHS, RHS and CHS, C16 and C24 sawn, CLS, GL24h and GL28c glulam, Kerto-S LVL, JJI-Joists, Simpson Strong-Tie SAE and JHA hangers, angle brackets and restraint straps, bolts",
         "Bolt groups in elevation: head, plies, washer, nut and thread side on, with the bolt length from the grip; bolt or threaded rod, no nut, one or two nuts, round, square or no washers",
         "Bracing: a bracing legend line along a braced wall with its type and length in metres, like the Revit Bracing Legend Tag",
         "Fixings: Lumberlok joist, LVL, I-beam and split hangers, Tylok and Nailon plates, angles and cleats, galvanised and stainless, drawn to scale in section or elevation",

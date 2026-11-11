@@ -49034,6 +49034,1355 @@
    "group": "Timber"
   },
   {
+   "id": "uk-sst-sae",
+   "name": "Face fix hangers SAE (Simpson)",
+   "region": "United Kingdom",
+   "kind": "section",
+   "shape": "hanger",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "L",
+    "F",
+    "material",
+    "fixing"
+   ],
+   "note": "SAE face fix joist hangers for solid joists, 2 mm: inside width A, height B, side plate F, face flange D. Simpson Strong-Tie UK, Connectors for Timber and Masonry Construction (C-C-UK-2024).",
+   "items": [
+    {
+     "name": "SAE200/38/2",
+     "b": 38.0,
+     "d": 81.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE250/38/2",
+     "b": 38.0,
+     "d": 106.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/38/2/25",
+     "b": 38.0,
+     "d": 171.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/38/2",
+     "b": 38.0,
+     "d": 231.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/38/2",
+     "b": 38.0,
+     "d": 281.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE200/40/2",
+     "b": 40.0,
+     "d": 80.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE250/40/2",
+     "b": 40.0,
+     "d": 105.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/40/2/25",
+     "b": 40.0,
+     "d": 170.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/40/2",
+     "b": 40.0,
+     "d": 230.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/40/2",
+     "b": 40.0,
+     "d": 280.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE200/47/2",
+     "b": 47.0,
+     "d": 77.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE250/47/2",
+     "b": 47.0,
+     "d": 102.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/47/2/25",
+     "b": 47.0,
+     "d": 167.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/47/2",
+     "b": 47.0,
+     "d": 227.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/47/2",
+     "b": 47.0,
+     "d": 277.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE200/50/2",
+     "b": 50.0,
+     "d": 75.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE250/50/2",
+     "b": 50.0,
+     "d": 100.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/50/2/25",
+     "b": 50.0,
+     "d": 165.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/50/2",
+     "b": 50.0,
+     "d": 225.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/50/2",
+     "b": 50.0,
+     "d": 275.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/56/2/25",
+     "b": 56.0,
+     "d": 162.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/56/2",
+     "b": 56.0,
+     "d": 222.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/56/2",
+     "b": 56.0,
+     "d": 272.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/63/2/25",
+     "b": 63.0,
+     "d": 159.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/63/2",
+     "b": 63.0,
+     "d": 219.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/63/2",
+     "b": 63.0,
+     "d": 269.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/66/2/25",
+     "b": 66.0,
+     "d": 157.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/66/2",
+     "b": 66.0,
+     "d": 217.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/66/2",
+     "b": 66.0,
+     "d": 267.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/72/2/25",
+     "b": 72.0,
+     "d": 154.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/72/2",
+     "b": 72.0,
+     "d": 214.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/72/2",
+     "b": 72.0,
+     "d": 264.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE250/75/2",
+     "b": 75.0,
+     "d": 88.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/75/2/25",
+     "b": 75.0,
+     "d": 153.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/75/2",
+     "b": 75.0,
+     "d": 213.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/75/2",
+     "b": 75.0,
+     "d": 263.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/78/2/25",
+     "b": 78.0,
+     "d": 151.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/78/2",
+     "b": 78.0,
+     "d": 211.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/78/2",
+     "b": 78.0,
+     "d": 261.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/91/2/25",
+     "b": 91.0,
+     "d": 145.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/91/2",
+     "b": 91.0,
+     "d": 205.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/91/2",
+     "b": 91.0,
+     "d": 255.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/96/2/25",
+     "b": 96.0,
+     "d": 142.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/96/2",
+     "b": 96.0,
+     "d": 202.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/96/2",
+     "b": 96.0,
+     "d": 252.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/99/2/25",
+     "b": 99.0,
+     "d": 141.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/99/2",
+     "b": 99.0,
+     "d": 201.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/99/2",
+     "b": 99.0,
+     "d": 251.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE380/109/2/25",
+     "b": 109.0,
+     "d": 136.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/109/2",
+     "b": 109.0,
+     "d": 196.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/109/2",
+     "b": 109.0,
+     "d": 246.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/118/2",
+     "b": 118.0,
+     "d": 191.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/118/2",
+     "b": 118.0,
+     "d": 241.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/122/2",
+     "b": 122.0,
+     "d": 189.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/122/2",
+     "b": 122.0,
+     "d": 239.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/125/2",
+     "b": 125.0,
+     "d": 188.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/125/2",
+     "b": 125.0,
+     "d": 238.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/128/2",
+     "b": 128.0,
+     "d": 186.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/128/2",
+     "b": 128.0,
+     "d": 236.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/135/2",
+     "b": 135.0,
+     "d": 183.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/135/2",
+     "b": 135.0,
+     "d": 233.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/142/2",
+     "b": 142.0,
+     "d": 179.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/142/2",
+     "b": 142.0,
+     "d": 229.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/146/2",
+     "b": 146.0,
+     "d": 177.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/146/2",
+     "b": 146.0,
+     "d": 227.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAEL500/150/2",
+     "b": 150.0,
+     "d": 175.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/150/2",
+     "b": 150.0,
+     "d": 225.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE500/182/2",
+     "b": 182.0,
+     "d": 175.0,
+     "t": 2.0,
+     "L": 86.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/182/2",
+     "b": 182.0,
+     "d": 220.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 36.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE720/182/2",
+     "b": 182.0,
+     "d": 269.0,
+     "t": 2.0,
+     "L": 77.0,
+     "F": 38.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE600/196/2",
+     "b": 196.0,
+     "d": 220.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE720/196/2",
+     "b": 196.0,
+     "d": 262.0,
+     "t": 2.0,
+     "L": 77.0,
+     "F": 38.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    },
+    {
+     "name": "SAE590/200/2",
+     "b": 200.0,
+     "d": 195.0,
+     "t": 2.0,
+     "L": 90.0,
+     "F": 42.0,
+     "material": "Pre-galvanised",
+     "fixing": "N3.75x30 nails or CSA screws, header and joist"
+    }
+   ],
+   "group": "Fixings"
+  },
+  {
+   "id": "uk-sst-jha",
+   "name": "Strap hangers JHA (Simpson)",
+   "region": "United Kingdom",
+   "kind": "section",
+   "shape": "hanger",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "L",
+    "F",
+    "material",
+    "fixing"
+   ],
+   "note": "JHA joist hangers with adjustable height strap (JHA270, JHA450): inside width A, joist side leg E as the height, strap width D as the side plate. The strap that wraps over or fixes to the header is not drawn. Simpson Strong-Tie JHA technical data sheet (2025).",
+   "items": [
+    {
+     "name": "JHA270/38",
+     "b": 38,
+     "d": 106,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/44",
+     "b": 44,
+     "d": 103,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/47",
+     "b": 47,
+     "d": 101.5,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/50",
+     "b": 50,
+     "d": 100,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/63",
+     "b": 63,
+     "d": 113.5,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/75",
+     "b": 75,
+     "d": 99.5,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/91",
+     "b": 91,
+     "d": 95,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA270/100",
+     "b": 100,
+     "d": 230,
+     "t": 0.9,
+     "L": 48.8,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/38",
+     "b": 38,
+     "d": 191,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/44",
+     "b": 44,
+     "d": 188,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/47",
+     "b": 47,
+     "d": 187,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/50",
+     "b": 50,
+     "d": 185,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/63",
+     "b": 63,
+     "d": 179,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/75",
+     "b": 75,
+     "d": 173,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/91",
+     "b": 91,
+     "d": 165,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/100",
+     "b": 100,
+     "d": 160,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/125",
+     "b": 125,
+     "d": 162.5,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/137",
+     "b": 137,
+     "d": 156.5,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    },
+    {
+     "name": "JHA450/150",
+     "b": 150,
+     "d": 150,
+     "t": 1.2,
+     "L": 51.5,
+     "F": 0,
+     "material": "Pre-galvanised",
+     "fixing": "wrap over, face fix or below support: N3.75x30 nails or CSA4.0x30 screws"
+    }
+   ],
+   "group": "Fixings"
+  },
+  {
+   "id": "uk-sst-angles",
+   "name": "Angle brackets (Simpson)",
+   "region": "United Kingdom",
+   "kind": "section",
+   "shape": "fangle",
+   "fields": [
+    "a",
+    "c",
+    "l",
+    "t",
+    "material",
+    "fixing"
+   ],
+   "note": "ABR, AE and E reinforced angle brackets and the ABR255 structural angle bracket: flange A, flange B, width C, t. ABR9020S and ABR10525S are the stainless versions of ABR9020 and ABR10525. Simpson Strong-Tie UK, Connectors for Timber and Masonry Construction (C-C-UK-2024).",
+   "items": [
+    {
+     "name": "ABR70",
+     "a": 70,
+     "c": 70,
+     "l": 55,
+     "t": 2.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR9020",
+     "a": 88,
+     "c": 88,
+     "l": 65,
+     "t": 2.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR90",
+     "a": 90,
+     "c": 90,
+     "l": 65,
+     "t": 2.5,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR98",
+     "a": 98,
+     "c": 98,
+     "l": 88,
+     "t": 3.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR100",
+     "a": 103,
+     "c": 103,
+     "l": 90,
+     "t": 2.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR10525",
+     "a": 105,
+     "c": 105,
+     "l": 90,
+     "t": 2.5,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR105",
+     "a": 105,
+     "c": 105,
+     "l": 90,
+     "t": 3.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "AE76",
+     "a": 90,
+     "c": 48,
+     "l": 76,
+     "t": 3.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "E5/2C50",
+     "a": 75,
+     "c": 48,
+     "l": 65,
+     "t": 2.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "E4/2.5",
+     "a": 100,
+     "c": 60,
+     "l": 75,
+     "t": 2.5,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "E9S/2.5",
+     "a": 150,
+     "c": 90,
+     "l": 65,
+     "t": 2.5,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "E9/2.5",
+     "a": 150,
+     "c": 150,
+     "l": 65,
+     "t": 2.5,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR255",
+     "a": 120,
+     "c": 100,
+     "l": 255,
+     "t": 3.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    },
+    {
+     "name": "ABR255SO",
+     "a": 200,
+     "c": 100,
+     "l": 255,
+     "t": 3.0,
+     "material": "Pre-galvanised",
+     "fixing": "CNA4.0x35 / CNA4.0x50 nails, CSA screws or anchors per flange"
+    }
+   ],
+   "group": "Fixings"
+  },
+  {
+   "id": "uk-sst-straps",
+   "name": "Restraint straps (Simpson)",
+   "region": "United Kingdom",
+   "kind": "section",
+   "shape": "plate",
+   "fields": [
+    "b",
+    "d",
+    "t",
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "H / L restraint straps (4.0 and 2.0 mm) and HES / LES engineered restraint straps (1.2 mm): width A, length B, drawn flat (the bend is not drawn). Simpson Strong-Tie UK, Connectors for Timber and Masonry Construction (C-C-UK-2024).",
+   "items": [
+    {
+     "name": "H06B10",
+     "b": 28,
+     "d": 600,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H08B10",
+     "b": 28,
+     "d": 800,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H10B10",
+     "b": 28,
+     "d": 1000,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H12B10",
+     "b": 28,
+     "d": 1200,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H15B10",
+     "b": 28,
+     "d": 1500,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H16B10",
+     "b": 28,
+     "d": 1600,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H06B15",
+     "b": 28,
+     "d": 600,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 150 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H08B15",
+     "b": 28,
+     "d": 800,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 150 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H10B15",
+     "b": 28,
+     "d": 1000,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 150 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H12B15",
+     "b": 28,
+     "d": 1200,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 150 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H15B15",
+     "b": 28,
+     "d": 1500,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 150 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "H16B15",
+     "b": 28,
+     "d": 1600,
+     "t": 4.0,
+     "description": "Heavy, horizontal, 150 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "L06B10",
+     "b": 27,
+     "d": 600,
+     "t": 2.0,
+     "description": "Light, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "L08B10",
+     "b": 27,
+     "d": 800,
+     "t": 2.0,
+     "description": "Light, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "L10B10",
+     "b": 27,
+     "d": 1000,
+     "t": 2.0,
+     "description": "Light, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "L12B10",
+     "b": 27,
+     "d": 1200,
+     "t": 2.0,
+     "description": "Light, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "HES06B10",
+     "b": 38,
+     "d": 500,
+     "t": 1.2,
+     "description": "Heavy engineered, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "HES08B10",
+     "b": 38,
+     "d": 700,
+     "t": 1.2,
+     "description": "Heavy engineered, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "HES10B10",
+     "b": 38,
+     "d": 900,
+     "t": 1.2,
+     "description": "Heavy engineered, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "HES12B10",
+     "b": 38,
+     "d": 1100,
+     "t": 1.2,
+     "description": "Heavy engineered, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "HES15B10",
+     "b": 38,
+     "d": 1400,
+     "t": 1.2,
+     "description": "Heavy engineered, horizontal, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "LES06B10",
+     "b": 35,
+     "d": 500,
+     "t": 1.2,
+     "description": "Light engineered, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "LES08B10",
+     "b": 35,
+     "d": 700,
+     "t": 1.2,
+     "description": "Light engineered, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "LES10B10",
+     "b": 35,
+     "d": 900,
+     "t": 1.2,
+     "description": "Light engineered, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    },
+    {
+     "name": "LES12B10",
+     "b": 35,
+     "d": 1100,
+     "t": 1.2,
+     "description": "Light engineered, vertical, 100 bend",
+     "material": "Galvanised",
+     "fixing": "N3.75x30 nails to joists; screws and plugs to masonry"
+    }
+   ],
+   "group": "Fixings"
+  },
+  {
    "id": "uk-bolts",
    "name": "Bolts",
    "kind": "bolt",
