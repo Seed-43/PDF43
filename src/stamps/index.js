@@ -32,6 +32,8 @@ function registreerPalet(api) {
     icon: PALET_ICOON,
     defaultVisible: false,
     defaultMode: 'docked-right',
+    // Floating: a list of each family's icon and name (hosts with floatLayout).
+    floatLayout: 'list',
     tools: families.map((f, i) => ({
       id: `stamp-${f.id}`, tool: TYPE, label: f.name, icon: familieIcoon(f), group: i,
       overrides: { seed43Family: f.id },
