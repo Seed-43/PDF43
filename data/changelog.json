@@ -20,7 +20,8 @@
         "Element Library window redesigned: browse tree under New Zealand, search, preview tiles or list, details panel",
         "Browse groups fold up and open with a click, and start folded",
         "Smart Stamps open their own panel where the app has no palette switch",
-        "Request a library asks for links to the data (product pages, catalogues, size tables)"
+        "Request a library asks for links to the data (product pages, catalogues, size tables)",
+        "Smart Stamps opens as a dockable app palette where the app supports it (docks on all four sides, stacks with other palettes); floating, it shows each family's icon and name"
       ],
       "Removed": [
         "The unused NZ gauge and base plate reference tables"
