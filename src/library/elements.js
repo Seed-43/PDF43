@@ -14,6 +14,7 @@
 import { registreerEigenschappen, registreerMeervoud } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { maakMaatschets, maakBoutSchets } from './maatschets.js';
+import { toonGids, gidsLink } from './gids.js';
 
 /**
  * Change element: a Category list and an Element list. Picking an element
@@ -661,7 +662,7 @@ function sectiePaneel() {
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
     }
     sectieGegevens(el, e.shape, e.item);
-    el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
+    el.appendChild((() => { const t = tip('Drag the centre grip to move it; it snaps to member ends, edges and corners. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('sectie')); return t; })());
     return el;
   };
 }
@@ -747,7 +748,7 @@ function boutPaneel(api) {
     schaalVeld(el, ann, update, boutMaat);
     toonStatus();
     el.appendChild(status);
-    el.appendChild(tip('Drag the centre grip to move the group; it snaps to member ends, midpoints and centre lines.'));
+    el.appendChild((() => { const t = tip('Drag the centre grip to move the group; it snaps to member ends, edges and corners. Enter places another with the same layout.'); t.appendChild(gidsLink('bout')); return t; })());
     return el;
   };
 }
@@ -793,7 +794,7 @@ function lidPaneel() {
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
     sectieGegevens(el, e.shape, e.item);
-    el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
+    el.appendChild((() => { const t = tip('Drag end A or B to stretch it (Shift keeps it square, Tab turns the direction), the midpoint to move it; grips snap to ends, edges and corners. J: line on the centre or an edge. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('lid')); return t; })());
     return el;
   };
 }
@@ -842,7 +843,7 @@ function bracingPaneel(el, ann, update, e, g) {
   const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
   groep(el, 'Scale');
   veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) { const x = kopie(ann.element); x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; update('element', x); } }));
-  el.appendChild(tip('Drag end A or B to change the braced length (Ctrl/Shift keeps it square). New bracing lines take the last tag and settings.'));
+  el.appendChild((() => { const t = tip('Drag end A or B to change the braced length (Shift keeps it square, Tab turns it). New bracing lines take the last tag and settings; Enter places another.'); t.appendChild(gidsLink('bracing')); return t; })());
 }
 
 /** Arm the bracing line tool: click A, then B along the braced wall. */
@@ -853,6 +854,7 @@ export function plaatsBracing(api) {
   api.setTool(LID);
   api.setToolOverrides({ seed43Element: plaatsing });
   startLus(api);
+  toonGids('bracing', { nogBezig: () => api.getCurrentTool?.() === LID });
 }
 
 // ── Space bar: turn the selected element (or the one being placed) ────────
@@ -1056,6 +1058,7 @@ export function plaats(api, cat, it, view = 'section', greep = 'A') {
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });
   startLus(api);
+  toonGids(soort === LID ? 'lid' : soort === BOUTEN ? 'bout' : 'sectie', { nogBezig: () => ONZE.includes(api.getCurrentTool?.()) });
 }
 
 // ── Several Seed43 items selected: one shared form ─────────────────────────
