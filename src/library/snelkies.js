@@ -7,12 +7,13 @@
 //   click                   pick; the views show under the row
 
 import { laadBibliotheek, regioVan, groepVan } from './store.js';
-import { plaats } from './elements.js';
+import { plaats, leesGebruik } from './elements.js';
 import { tekenVoorbeeld, isHout } from './draw.js';
 import { leesRegios, regioVolgorde } from './window.js';
 
 const STIJL_ID = 'seed43-snelkies-stijl';
 const MAX = 150;
+const TOP = 20;
 
 const CSS = `
 .s43k{display:flex;flex-direction:column;height:100%;min-height:0;}
@@ -83,9 +84,25 @@ export function maakSnelKies(api) {
 
   const leg = (tekst) => { lijst.replaceChildren(maak('div', 's43k-leeg', tekst)); tel.textContent = ''; };
 
+  // Empty search: the 20 most used elements, most used first.
+  function meestGebruikt() {
+    const g = leesGebruik();
+    const inst = leesRegios();
+    const uit = [];
+    for (const [k, v] of Object.entries(g)) {
+      const scheid = k.indexOf('|');
+      const c = lib.categories.find((x) => x.id === k.slice(0, scheid));
+      if (!c || inst.off.includes(regioVan(c))) continue;
+      const it = c.items.find((x) => x.name === k.slice(scheid + 1));
+      if (it) uit.push({ c, it, n: v.n || 0, laatst: v.laatst || 0 });
+    }
+    return uit.sort((a, b) => (b.n - a.n) || (b.laatst - a.laatst)).slice(0, TOP);
+  }
+
   function zoek() {
     if (!lib) return;
     const woorden = invoer.value.toLowerCase().replace(/\s*x\s*/g, 'x').split(/\s+/).filter(Boolean);
+    if (!woorden.length) { resultaat = meestGebruikt(); gekozen = 0; teken(); return; }
     const inst = leesRegios();
     const volgorde = regioVolgorde(lib, inst);
     const uit = [];
@@ -106,12 +123,16 @@ export function maakSnelKies(api) {
 
   function plaatsHet(r, view) {
     plaats(api, r.c, r.it, view);
+    // The most-used list changes once it is on the sheet: refresh when the
+    // pointer comes back to the drawer.
+    if (!invoer.value.trim()) el.addEventListener('pointerenter', () => zoek(), { once: true });
   }
 
   function teken() {
-    if (!invoer.value.trim()) { leg('Type to find an element in the library, then double-click it or press Enter to place it.'); return; }
+    const leeg = !invoer.value.trim();
+    if (leeg && !resultaat.length) { leg('Type to find an element in the library, then double-click it or press Enter to place it. Your most used elements will show here.'); return; }
     if (!resultaat.length) { leg(`Nothing matches "${invoer.value}". Try a size such as 310 or 90x45.`); return; }
-    tel.textContent = resultaat.length > MAX ? `${resultaat.length} found, first ${MAX} shown` : `${resultaat.length} found`;
+    tel.textContent = leeg ? 'Most used' : resultaat.length > MAX ? `${resultaat.length} found, first ${MAX} shown` : `${resultaat.length} found`;
     lijst.replaceChildren();
     resultaat.slice(0, MAX).forEach((r, i) => {
       const rij = maak('div', 's43k-rij');
@@ -123,7 +144,7 @@ export function maakSnelKies(api) {
         tekenVoorbeeld(ctx, r.c.shape, r.it, 60, 60, { kleur: isHout(r.c.shape) ? '#b45309' : getComputedStyle(el).getPropertyValue('--acc') || '#0078d7', lijn: 2, marge: 6 });
       } catch {}
       const naam = maak('div', 's43k-naam');
-      naam.append(maak('b', '', r.it.name), maak('span', '', `${r.c.name} · ${groepVan(r.c)} · ${regioVan(r.c)}`));
+      naam.append(maak('b', '', r.it.name), maak('span', '', `${r.c.name} · ${groepVan(r.c)} · ${regioVan(r.c)}${r.n ? ` · placed ${r.n}×` : ''}`));
       rij.append(cv, naam);
       rij.title = 'Double-click to place; click to choose the view';
       rij.addEventListener('click', () => { gekozen = i; teken(); });
@@ -169,5 +190,7 @@ export function maakSnelKies(api) {
   return {
     el,
     focus() { if (lib) zoek(); setTimeout(() => invoer.focus(), 50); },
+    /** Draw the list again (the most-used order may have changed). */
+    ververs() { if (lib) zoek(); },
   };
 }

@@ -159,6 +159,7 @@ function zetTab(naam, opZoek = false) {
         if (opZoek) l.snel.focus();
       }).catch((e) => console.warn('[seed43] elements tab:', e));
     } else if (opZoek) lade.snel?.focus();
+    else lade.snel?.ververs();
   }
 }
 

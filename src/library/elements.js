@@ -84,6 +84,7 @@ function plaatsingsType(api, soort) {
       const p = kiesPunt(api, page, x, y, state);
       const element = nieuwElement(api, soort, keuze, page, p.x, p.y);
       const m = maat(element);
+      try { telGebruik(keuze); } catch {}
       return { type: soort, x: p.x - m.w / 2, y: p.y - m.h / 2, width: m.w, height: m.h, element, subject: element.item?.name || element.bolt?.name || '' };
     },
     render(ctx, ann) { (soort === SECTIE ? tekenSectie : tekenBoutGroep)(ctx, ann); },
@@ -138,6 +139,7 @@ function lidType(api) {
       const { a, b } = lidPunten(keuze.greep, lidStart, p2);
       lidStart = null;
       herteken(api);
+      try { telGebruik(keuze); } catch {}
       return lidAnnotatie(api, keuze, page, a, b);
     },
     preview(ctx, sx, sy, cx, cy, state) {
@@ -353,7 +355,7 @@ function luisteraars(api) {
       const { a, b } = lidPunten(plaatsing.greep, lidStart, q);
       const ann = lidAnnotatie(api, plaatsing, p.page, a, b);
       lidStart = null;
-      try { api.applyAnnotationBatch([{ op: 'create', annotation: { ...ann, page: p.page, seed43Element: plaatsing } }]); api.redrawAnnotations?.(); }
+      try { api.applyAnnotationBatch([{ op: 'create', annotation: { ...ann, page: p.page, seed43Element: plaatsing } }]); api.redrawAnnotations?.(); telGebruik(plaatsing); }
       catch (err) { console.warn('[seed43] member not placed:', err); }
       startLus(api);
     }
@@ -728,13 +730,33 @@ export const PLAATS_GREPEN = [['A', 'End A'], ['mid', 'Midpoint'], ['B', 'End B'
 /** Arm the placing tool for a library item: view 'section' (click), or
  *  'elevation' / 'plan' (click point A, then point B). Bolts: click.
  *  greep: the grip a member is placed by ('A', 'mid' or 'B'). */
+// How often each element is placed: { 'catId|name': { n, laatst } }. The
+// Elements tab lists the 20 most used when its search is empty.
+const GEBRUIK = 'seed43.library.gebruik';
+export function leesGebruik() {
+  try { const v = JSON.parse(localStorage.getItem(GEBRUIK) || 'null'); if (v && typeof v === 'object') return v; } catch {}
+  return {};
+}
+function telGebruik(keuze) {
+  if (!keuze?.catId || !keuze.item?.name) return;
+  const g = leesGebruik();
+  const k = `${keuze.catId}|${keuze.item.name}`;
+  g[k] = { n: (g[k]?.n || 0) + 1, laatst: Date.now() };
+  // Keep it small: the 200 most used.
+  const sleutels = Object.keys(g);
+  if (sleutels.length > 200) {
+    sleutels.sort((a, b) => (g[b].n - g[a].n) || (g[b].laatst - g[a].laatst)).slice(200).forEach((s) => delete g[s]);
+  }
+  try { localStorage.setItem(GEBRUIK, JSON.stringify(g)); } catch {}
+}
+
 export function plaats(api, cat, it, view = 'section', greep = 'A') {
   // Fixings are placed by a click in either view; the view sets their look.
   const fixing = BEVESTIGINGEN.includes(cat.shape);
   const soort = cat.kind === 'bolt' ? BOUTEN : (view === 'section' || fixing) ? SECTIE : LID;
   const item = kopie(it);
   if (fixing) item.view = view === 'section' ? 'section' : 'elevation';
-  plaatsing = { category: cat.name, shape: cat.shape, item, view: fixing ? 'section' : view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A' };
+  plaatsing = { category: cat.name, catId: cat.id, shape: cat.shape, item, view: fixing ? 'section' : view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A' };
   lidStart = null;
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });
