@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.6.2",
+    "date": "2026-11-12",
+    "notes": {
+      "New": [
+        "Seed43 Properties: a drawer on the right of the page view, opened with its tab, showing the selected member, section, bolt group, bracing line or smart stamp as a Property / Value table with foldable sections. Works with the app's Properties panel closed; the Properties button on the Seed43 tab switches it off",
+        "Element Library: Countries list to choose which countries load, and drag grips to set their order"
+      ],
+      "General": [
+        "Bracing lines can be selected by their tag text as well as the line",
+        "Seed43 windows (the Smart Stamps window in the official app) float or dock on any side of the page view and stack",
+        "Seed43 styles refresh after a reinstall without restarting the app"
+      ]
+    }
+  },
+  {
     "version": "0.6.1",
     "date": "2026-11-12",
     "notes": {
