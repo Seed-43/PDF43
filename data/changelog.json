@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.6.4",
+    "date": "2026-11-13",
+    "notes": {
+      "New": [
+        "Bolt group key in Seed43 Properties: the plate and holes to scale with pitch (p), gauge (g) and edge distances (ex, ey); the rows use the same letters",
+        "Guides: an animated card shows how to place or edit each kind of element (member, section or fixing, bolt group, bracing line), with Don't show this again",
+        "Selecting a Seed43 element with Seed43 Properties closed: a card says it has properties and Open properties opens the drawer",
+        "Tips button on the Seed43 tab to show or hide the guides and the properties card",
+        "Bracing line: Space flips the line and tag to the other side, while placing and when selected"
+      ],
+      "General": [
+        "Scale shown as the sheet's ratio, e.g. 1:100 (sheet), using the page scale from Open PDF Studio where it is set",
+        "Guides show again on every new selection until switched off"
+      ]
+    }
+  },
+  {
     "version": "0.6.3",
     "date": "2026-11-13",
     "notes": {
