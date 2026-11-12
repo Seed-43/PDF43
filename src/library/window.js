@@ -15,6 +15,28 @@ import { tekenVoorbeeld, sectieVorm, isHout } from './draw.js';
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const UI_OPSLAG = 'seed43.library.ui';
 const GROEP_VOLGORDE = ['Steel', 'Timber', 'Fixings', 'Bolts', 'Reference tables'];
+
+// Countries (regions): their order in Browse and which ones load. Unticked
+// countries are left out of Browse, search and the counts; elements already
+// placed on a sheet are not affected.
+const REGIO_OPSLAG = 'seed43.library.regions';
+function leesRegios() {
+  try {
+    const v = JSON.parse(localStorage.getItem(REGIO_OPSLAG) || 'null');
+    if (v && typeof v === 'object') return { order: Array.isArray(v.order) ? v.order : [], off: Array.isArray(v.off) ? v.off : [] };
+  } catch {}
+  return { order: [], off: [] };
+}
+function bewaarRegios(v) {
+  try { localStorage.setItem(REGIO_OPSLAG, JSON.stringify(v)); } catch {}
+}
+/** Every country in the library, in the user's order (new ones alphabetically at the end). */
+function regioVolgorde(lib, inst = leesRegios()) {
+  const alle = [...new Set(lib.categories.map((c) => regioVan(c)))];
+  const plek = (r) => { const i = inst.order.indexOf(r); return i < 0 ? 1e6 : i; };
+  return alle.sort((a, b) => (plek(a) - plek(b)) || a.localeCompare(b));
+}
+
 const SOORT_MEERVOUD = { section: 'Sections', bolt: 'Bolts', table: 'Tables' };
 
 // ── Styles (once, scoped under .s43l) ──────────────────────────────────────
@@ -62,6 +84,18 @@ const CSS = `
 .s43l-zij{border-right:1px solid var(--lijn);display:flex;flex-direction:column;min-height:0;background:var(--bg);}
 .s43l-zij-scroll{flex:1;overflow:auto;padding:6px 0 10px;}
 .s43l-sectie{padding:10px 14px 4px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--zacht);}
+.s43l-sectie-knop{display:flex;align-items:center;gap:8px;}
+.s43l-sectie-knop span{flex:1;}
+.s43l-sectie-knop button{text-transform:none;letter-spacing:0;font-weight:500;}
+.s43l-regio{display:flex;align-items:center;gap:8px;cursor:default;}
+.s43l-regio .naam{flex:1;}
+.s43l-greep{cursor:grab;color:var(--zacht);font-size:16px;line-height:1;padding:2px 4px;border-radius:3px;user-select:none;}
+.s43l-greep:hover{background:var(--hover);color:var(--acc);}
+.s43l-regio.sleept{opacity:.6;}
+.s43l-regio.lijn-boven{box-shadow:inset 0 2px 0 var(--acc,#e07b00);}
+.s43l-regio.lijn-onder{box-shadow:inset 0 -2px 0 var(--acc,#e07b00);}
+.s43l-regio input{margin:0;}
+.s43l-regio-tip{padding:8px 14px;font-size:11.5px;color:var(--zacht);}
 .s43l-filter{padding:2px 14px 6px;display:flex;flex-direction:column;gap:6px;}
 .s43l-chips{display:flex;flex-wrap:wrap;gap:4px;}
 .s43l-chip{border-radius:999px !important;padding:2px 9px !important;font-size:11.5px;}
@@ -119,11 +153,10 @@ const CSS = `
 `;
 
 function zorgVoorCss() {
-  if (document.getElementById('seed43-library-css')) return;
-  const st = document.createElement('style');
-  st.id = 'seed43-library-css';
-  st.textContent = CSS;
-  document.head.appendChild(st);
+  // Always rewrite: after a reinstall the page still holds the old sheet.
+  let st = document.getElementById('seed43-library-css');
+  if (!st) { st = document.createElement('style'); st.id = 'seed43-library-css'; document.head.appendChild(st); }
+  if (st.textContent !== CSS) st.textContent = CSS;
 }
 
 const IKOON_ZOEK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
@@ -279,6 +312,9 @@ export async function openBibliotheek(api) {
   achter.appendChild(venster);
 
   const cat = (id) => lib.categories.find((c) => c.id === id) || null;
+  // Countries switched off in Countries are not loaded into Browse or search.
+  const regioAan = (c) => !leesRegios().off.includes(regioVan(c));
+  let regioScherm = false;   // the Countries list is showing in the sidebar
   const gekozenItem = () => { const c = gekozen && cat(gekozen.catId); const it = c?.items[gekozen.i]; return it ? { c, it } : null; };
   const zetTitel = () => { titel.innerHTML = ''; titel.append('Element Library'); };
   const markeer = () => { gewijzigd = true; zetTitel(); };
@@ -322,6 +358,7 @@ export async function openBibliotheek(api) {
     const woorden = zoek.toLowerCase().replace(/\s*x\s*/g, 'x').split(/\s+/).filter(Boolean);
     const uit = [];
     for (const c of lib.categories) {
+      if (!regioAan(c)) continue;
       if (!filter.soorten.has(c.kind)) continue;
       if (filter.vorm && (c.kind !== 'section' || c.shape !== filter.vorm)) continue;
       if (nav.catId && c.id !== nav.catId) continue;
@@ -388,15 +425,88 @@ export async function openBibliotheek(api) {
     delen.forEach((d, i) => { if (i) kruimel.append(maak('span', '', '›')); kruimel.append(d); });
   }
 
+  // ── Sidebar: countries (load or not, order) ──
+  function tekenRegios() {
+    const inst = leesRegios();
+    const lijst = regioVolgorde(lib, inst);
+    const tel = (r) => lib.categories.filter((c) => regioVan(c) === r).reduce((s, c) => s + c.items.length, 0);
+    const zet = (nieuw) => { bewaarRegios(nieuw); tekenZij(); };
+    const box = maak('div', 's43l-regios');
+    const rijen = [];
+    lijst.forEach((r, i) => {
+      const rij = maak('div', 's43l-knoop s43l-regio');
+      // Grip: press and drag up or down to move this country.
+      const greep = maak('span', 's43l-greep', '⠿');
+      greep.title = `Drag to move ${r}`;
+      greep.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        rij.classList.add('sleept');
+        let doel = i;
+        let klaar = false;
+        const beweeg = (ev) => {
+          // Button already up: the release went elsewhere. Finish here.
+          if ((ev.buttons & 1) === 0) { los(); return; }
+          doel = rijen.length - 1;
+          for (let k = 0; k < rijen.length; k++) {
+            const rr = rijen[k].getBoundingClientRect();
+            if (ev.clientY < rr.top + rr.height / 2) { doel = k; break; }
+          }
+          rijen.forEach((x, k) => {
+            x.classList.toggle('lijn-boven', k === doel && doel !== i && doel < i);
+            x.classList.toggle('lijn-onder', k === doel && doel !== i && doel > i);
+          });
+        };
+        const los = () => {
+          if (klaar) return;
+          klaar = true;
+          window.removeEventListener('mousemove', beweeg, true);
+          window.removeEventListener('mouseup', los, true);
+          window.removeEventListener('blur', los);
+          if (doel !== i) {
+            const o = lijst.slice();
+            const [weg] = o.splice(i, 1);
+            o.splice(doel, 0, weg);
+            zet({ order: o, off: inst.off });
+          } else tekenZij();
+        };
+        window.addEventListener('mousemove', beweeg, true);
+        window.addEventListener('mouseup', los, true);
+        window.addEventListener('blur', los);
+      });
+      const vink = document.createElement('input');
+      vink.type = 'checkbox';
+      vink.checked = !inst.off.includes(r);
+      vink.title = vink.checked ? `Loaded: untick to leave ${r} out of Browse and search` : `Not loaded: tick to show ${r}`;
+      vink.addEventListener('change', () => {
+        const off = new Set(inst.off);
+        if (vink.checked) off.delete(r); else off.add(r);
+        if (nav.regio === r && !vink.checked) nav = {};
+        zet({ order: lijst, off: [...off] });
+      });
+      const naam = maak('span', 'naam', r);
+      rij.append(greep, vink, naam, maak('span', 'n', String(tel(r))));
+      rijen.push(rij);
+      box.appendChild(rij);
+    });
+    box.appendChild(maak('div', 's43l-regio-tip', 'Drag the grips to change the order. Ticked countries load into Browse and search; elements already on a sheet are not affected.'));
+    zijScroll.appendChild(box);
+  }
+
   // ── Sidebar: browse ──
   function tekenZij() {
     zijScroll.innerHTML = '';
 
-    zijScroll.append(maak('div', 's43l-sectie', 'Browse'));
+    const sectie = maak('div', 's43l-sectie s43l-sectie-knop');
+    sectie.append(maak('span', '', regioScherm ? 'Countries' : 'Browse'),
+      knop(regioScherm ? 'Done' : 'Countries', () => { regioScherm = !regioScherm; tekenZij(); if (!regioScherm) tekenWerk(); }, 'klein',
+        regioScherm ? 'Back to Browse' : 'Choose which countries load, and their order'));
+    zijScroll.append(sectie);
+    if (regioScherm) { tekenRegios(); return; }
     const boom = maak('div', 's43l-boom');
     boom.setAttribute('role', 'tree');
     const alles = maak('div', `s43l-knoop${!nav.regio ? ' aan' : ''}`);
-    alles.append(maak('span', 'pijl', ''), maak('span', '', 'All elements'), maak('span', 'n', String(lib.categories.reduce((s, c) => s + c.items.length, 0))));
+    alles.append(maak('span', 'pijl', ''), maak('span', '', 'All elements'), maak('span', 'n', String(lib.categories.filter(regioAan).reduce((s, c) => s + c.items.length, 0))));
     alles.addEventListener('click', () => gaNaar({}));
     boom.appendChild(alles);
     const telItems = (lijst) => String(lijst.reduce((s, c) => s + c.items.length, 0));
@@ -423,8 +533,9 @@ export async function openBibliotheek(api) {
       return dicht;
     };
     const regios = new Map();
-    for (const c of lib.categories) { const r = regioVan(c); if (!regios.has(r)) regios.set(r, []); regios.get(r).push(c); }
-    for (const [regio, inRegio] of [...regios].sort((a, b) => a[0].localeCompare(b[0]))) {
+    for (const c of lib.categories) { if (!regioAan(c)) continue; const r = regioVan(c); if (!regios.has(r)) regios.set(r, []); regios.get(r).push(c); }
+    const volgordeRegios = regioVolgorde(lib).filter((r) => regios.has(r));
+    for (const [regio, inRegio] of volgordeRegios.map((r) => [r, regios.get(r)])) {
       const hier = nav.regio === regio && !nav.groep && !nav.catId;
       if (rij(regio, telItems(inRegio), regio, hier, 0, { regio })) continue;
       const groepen = new Map();
