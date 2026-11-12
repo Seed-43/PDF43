@@ -11,7 +11,7 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
-import { registreerEigenschappen } from '../eigenschappen.js';
+import { registreerEigenschappen, registreerMeervoud } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { maakMaatschets } from './maatschets.js';
 
@@ -948,6 +948,7 @@ export function startElementen(api) {
   registreerEigenschappen(api, SECTIE, sectiePaneel());
   registreerEigenschappen(api, BOUTEN, boutPaneel(api));
   registreerEigenschappen(api, LID, lidPaneel());
+  registreerMeervoud(api, ONZE, meervoudPaneel);
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);
@@ -1051,4 +1052,89 @@ export function plaats(api, cat, it, view = 'section', greep = 'A') {
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });
   startLus(api);
+}
+
+// ── Several Seed43 items selected: one shared form ─────────────────────────
+
+/** The new element and bounds of `ann` after `wijzig(element)`, in place. */
+function herzien(ann, wijzig) {
+  const element = kopie(ann.element);
+  wijzig(element, ann);
+  if (ann.type === LID) {
+    const b = lidBounds({ ...ann, element });
+    return { element, x: b.x, y: b.y, width: b.width, height: b.height };
+  }
+  const maat = ann.type === SECTIE ? sectieMaat : boutMaat;
+  const oud = maat(ann.element);
+  const cx = ann.x + oud.w / 2, cy = ann.y + oud.h / 2;
+  const m = maat(element);
+  return { element, x: cx - m.w / 2, y: cy - m.h / 2, width: m.w, height: m.h };
+}
+
+/** A list with 'Mixed' first when the items differ. */
+function gedeeld(waarden, opties, wijzig) {
+  const een = waarden.every((v) => v === waarden[0]);
+  const lijst = een ? opties : [['', 'Mixed'], ...opties];
+  return keuze(lijst, een ? waarden[0] : '', (v) => { if (v !== '') wijzig(v); });
+}
+
+function meervoudPaneel(api, anns, opnieuw) {
+  const el = formulier();
+  const telSoort = (t) => anns.filter((a) => a.type === t).length;
+  const delen = [[SECTIE, 'section'], [LID, 'member'], [BOUTEN, 'bolt group']]
+    .map(([t, n]) => [telSoort(t), n]).filter(([n]) => n).map(([n, w]) => `${n} ${w}${n > 1 ? 's' : ''}`);
+  kop(el, `${anns.length} elements`, `${delen.join(', ')}. Changes apply to all of them.`, '#1d4ed8',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1" opacity=".5"/></svg>');
+  const pas = (wijzig) => {
+    const ops = anns.map((a) => ({ op: 'update', id: a.id, changes: herzien(a, wijzig) }));
+    try { api.applyAnnotationBatch(ops); api.redrawAnnotations?.(); } catch (err) { console.warn('[seed43] several:', err); }
+    opnieuw();
+  };
+
+  groep(el, 'Shared');
+  // Scale: typed in, applied to all.
+  const schalen = anns.map((a) => Math.round(PT_PER_PAPER_MM / (a.element.ptsPerMm || 1)));
+  const schaal = document.createElement('input');
+  schaal.type = 'number'; schaal.step = '1';
+  if (schalen.every((v) => v === schalen[0])) schaal.value = schalen[0]; else schaal.placeholder = 'Mixed';
+  schaal.addEventListener('change', () => {
+    const n = Number(schaal.value);
+    if (n > 0) pas((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; });
+  });
+  veld(el, 'Scale 1:', schaal);
+  veld(el, 'Label', gedeeld(anns.map((a) => (a.element.label === false ? '0' : '1')), [['1', 'Show'], ['0', 'Hide']],
+    (v) => pas((x) => { x.label = v === '1'; })));
+
+  const vlak = anns.every((a) => a.type === SECTIE || a.type === BOUTEN);
+  if (vlak) {
+    const draai = anns.map((a) => a.element.rotation || 0);
+    const hoek = hoekVeld(draai.every((v) => v === draai[0]) ? draai[0] : '', (v) => pas((x) => { x.rotation = v; }));
+    if (!draai.every((v) => v === draai[0])) hoek.placeholder = 'Mixed';
+    veld(el, 'Rotation °', hoek);
+  }
+  const leden = anns.every((a) => a.type === LID && a.element.shape !== 'bracing');
+  if (leden) {
+    groep(el, 'Members');
+    veld(el, 'View', gedeeld(anns.map((a) => a.element.view || 'elevation'), [['elevation', 'Elevation'], ['plan', 'Plan']],
+      (v) => pas((x) => { x.view = v; })));
+    veld(el, 'Line at', gedeeld(anns.map((a) => a.element.uitlijn || 'centre'), Object.entries(UITLIJNING),
+      (v) => pas((x) => { if (v === 'centre') delete x.uitlijn; else x.uitlijn = v; })));
+  }
+  if (anns.every((a) => a.type !== BOUTEN && AANTAL_VORMEN.includes(a.element.shape))) {
+    groep(el, 'Timber');
+    veld(el, 'Members', gedeeld(anns.map((a) => String(a.element.aantal || 1)),
+      [1, 2, 3, 4, 5, 6].map((n) => [String(n), n === 1 ? 'Single' : `${n} side by side (${n}/)`]),
+      (v) => pas((x) => { metAantal(x, Number(v)); })));
+  }
+  if (anns.every((a) => a.type !== BOUTEN)) {
+    const teksten = anns.map((a) => a.element.labelTekst || '');
+    const eigen = document.createElement('input');
+    eigen.type = 'text';
+    if (teksten.every((v) => v === teksten[0])) eigen.value = teksten[0]; else eigen.placeholder = 'Mixed';
+    eigen.title = 'Your own label for all of them, e.g. DS. Empty: the automatic labels.';
+    eigen.addEventListener('change', () => { const v = eigen.value.trim(); pas((x) => { if (v) x.labelTekst = v; else delete x.labelTekst; }); });
+    veld(el, 'Label text', eigen);
+  }
+  el.appendChild(tip('Select one element to see all its properties.'));
+  return el;
 }

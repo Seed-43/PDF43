@@ -266,3 +266,37 @@ export function wisselVenster() {
   if (aan) { maakLade(); zetOpen(true); } else verwijderLade();
   return aan;
 }
+
+// --- Several Seed43 items selected -----------------------------------------
+//
+// Needs api.onSelectionChange and api.getSelectedAnnotations (Open PDF Studio
+// builds that have them). The single-item listeners report "nothing" for a
+// multi-select; this shows one shared form for all of them instead.
+
+/**
+ * `typen`: the annotation types to include; `bouw(api, anns, opnieuw)` builds
+ * the shared form, `opnieuw()` draws it again after a change.
+ */
+export function registreerMeervoud(api, typen, bouw) {
+  if (typeof api.onSelectionChange !== 'function') return null;
+  const toonMeer = (sel) => {
+    if (!vensterAan()) return;
+    const onze = (sel || []).filter((a) => typen.includes(a.type));
+    if (onze.length < 2) return;
+    teller++;
+    clearTimeout(wis);
+    const l = maakLade();
+    const ids = onze.map((a) => a.id);
+    const opnieuw = () => {
+      const vers = (api.getAnnotations?.() || []).filter((a) => ids.includes(a.id));
+      toonMeer(vers);
+    };
+    let dom = null;
+    try { dom = bouw(api, onze, opnieuw); } catch (e) { console.warn('[seed43] properties (several):', e); }
+    const scroll = l.lijf.scrollTop;
+    l.lijf.replaceChildren(dom || leeg());
+    l.lijf.scrollTop = scroll;
+    zetTab('eigenschappen');
+  };
+  return api.onSelectionChange(toonMeer);
+}
