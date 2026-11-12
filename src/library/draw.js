@@ -141,6 +141,12 @@ export function gedraaid(w, h, graden) {
 const STAAL = '#1d4ed8';
 const DUN = '#9ca3af';
 const HOUT = '#92400e';
+// Fixings (hangers, plates, cleats): purple, apart from steel (blue),
+// timber (brown) and bolt groups (teal).
+const FIXING = '#7e22ce';
+const FIXING_VUL = 'rgba(126, 34, 206, 0.14)';
+export const FIXING_KLEUR = FIXING;
+const isFixing = (shape) => ['hanger', 'plate', 'fangle'].includes(shape);
 const HOUT_VUL = 'rgba(180, 120, 50, 0.16)';
 
 /** Timber shapes are drawn in brown. */
@@ -186,8 +192,8 @@ export function tekenVoorbeeld(ctx, shape, it, w, h, opties = {}) {
   ctx.save();
   ctx.lineWidth = opties.lijn || 1;
   ctx.lineJoin = 'round';
-  const kleur = opties.kleur || (v.hout ? HOUT : STAAL);
-  tekenVorm(ctx, v, w / 2, h / 2, k, 0, kleur, v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.16)');
+  const kleur = opties.kleur || (isFixing(shape) ? FIXING : v.hout ? HOUT : STAAL);
+  tekenVorm(ctx, v, w / 2, h / 2, k, 0, kleur, isFixing(shape) ? FIXING_VUL : v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.16)');
   ctx.restore();
   return true;
 }
@@ -208,8 +214,9 @@ export function tekenSectie(ctx, ann) {
   const cx = ann.x + m.w / 2, cy = ann.y + m.h / 2;
   ctx.save();
   ctx.lineWidth = 0.6;
-  const kleur = el.color || (v.hout ? HOUT : STAAL);
-  tekenVorm(ctx, v, cx, cy, k, el.rotation || 0, kleur, v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.18)');
+  const fix = isFixing(el.shape);
+  const kleur = el.color || (fix ? FIXING : v.hout ? HOUT : STAAL);
+  tekenVorm(ctx, v, cx, cy, k, el.rotation || 0, kleur, fix ? FIXING_VUL : v.hout ? HOUT_VUL : 'rgba(29, 78, 216, 0.18)');
   if (el.label !== false) {
     const { h } = m;
     ctx.fillStyle = kleur;

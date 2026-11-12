@@ -141,7 +141,7 @@ export function maakSnelKies(api) {
       cv.width = 60; cv.height = 60;
       try {
         const ctx = cv.getContext('2d');
-        tekenVoorbeeld(ctx, r.c.shape, r.it, 60, 60, { kleur: isHout(r.c.shape) ? '#b45309' : getComputedStyle(el).getPropertyValue('--acc') || '#0078d7', lijn: 2, marge: 6 });
+        tekenVoorbeeld(ctx, r.c.shape, r.it, 60, 60, { kleur: ['hanger', 'plate', 'fangle'].includes(r.c.shape) ? '#a855f7' : isHout(r.c.shape) ? '#b45309' : getComputedStyle(el).getPropertyValue('--acc') || '#0078d7', lijn: 2, marge: 6 });
       } catch {}
       const naam = maak('div', 's43k-naam');
       naam.append(maak('b', '', r.it.name), maak('span', '', `${r.c.name} · ${groepVan(r.c)} · ${regioVan(r.c)}${r.n ? ` · placed ${r.n}×` : ''}`));

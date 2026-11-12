@@ -229,7 +229,7 @@ function tekenInDoek(doek, c, it, k, opties = {}) {
   const tx = themaKleur(doek, 'color', '#333') || '#333';
   const acc = opties.acc || '#0078d7';
   if (c.kind === 'section') {
-    const ok = tekenVoorbeeld(ctx, c.shape, it, w, h, { k: k || 0, kleur: isHout(c.shape) ? '#b45309' : acc, lijn: opties.lijn || 1, marge: opties.marge ?? 8 });
+    const ok = tekenVoorbeeld(ctx, c.shape, it, w, h, { k: k || 0, kleur: ['hanger', 'plate', 'fangle'].includes(c.shape) ? '#a855f7' : isHout(c.shape) ? '#b45309' : acc, lijn: opties.lijn || 1, marge: opties.marge ?? 8 });
     if (!ok) { ctx.fillStyle = tx; ctx.globalAlpha = 0.5; ctx.textAlign = 'center'; ctx.fillText('no d / b', w / 2, h / 2); }
     if (opties.maten && ok) maatLijnen(ctx, c, it, w, h, tx, opties.marge ?? 8);
   } else if (c.kind === 'bolt') {
