@@ -70,7 +70,7 @@ export async function activate(api) {
   // Smart Stamps are always available: placed stamps must keep showing.
   try { await startStamps(api); } catch (e) { console.warn('[seed43] stamps did not start:', e); }
   try { startElementen(api); } catch (e) { console.warn('[seed43] element library did not start:', e); }
-  try { startLade(); } catch (e) { console.warn('[seed43] properties drawer:', e); }
+  try { startLade(api); } catch (e) { console.warn('[seed43] properties drawer:', e); }
 
   if (api.features?.ribbonTabs !== true) return;
   bouwTab(api, aan);

@@ -20,7 +20,7 @@ const GROEP_VOLGORDE = ['Steel', 'Timber', 'Fixings', 'Bolts', 'Reference tables
 // countries are left out of Browse, search and the counts; elements already
 // placed on a sheet are not affected.
 const REGIO_OPSLAG = 'seed43.library.regions';
-function leesRegios() {
+export function leesRegios() {
   try {
     const v = JSON.parse(localStorage.getItem(REGIO_OPSLAG) || 'null');
     if (v && typeof v === 'object') return { order: Array.isArray(v.order) ? v.order : [], off: Array.isArray(v.off) ? v.off : [] };
@@ -31,7 +31,7 @@ function bewaarRegios(v) {
   try { localStorage.setItem(REGIO_OPSLAG, JSON.stringify(v)); } catch {}
 }
 /** Every country in the library, in the user's order (new ones alphabetically at the end). */
-function regioVolgorde(lib, inst = leesRegios()) {
+export function regioVolgorde(lib, inst = leesRegios()) {
   const alle = [...new Set(lib.categories.map((c) => regioVan(c)))];
   const plek = (r) => { const i = inst.order.indexOf(r); return i < 0 ? 1e6 : i; };
   return alle.sort((a, b) => (plek(a) - plek(b)) || a.localeCompare(b));
@@ -229,7 +229,7 @@ function tekenInDoek(doek, c, it, k, opties = {}) {
   const tx = themaKleur(doek, 'color', '#333') || '#333';
   const acc = opties.acc || '#0078d7';
   if (c.kind === 'section') {
-    const ok = tekenVoorbeeld(ctx, c.shape, it, w, h, { k: k || 0, kleur: isHout(c.shape) ? '#b45309' : acc, lijn: opties.lijn || 1, marge: opties.marge ?? 8 });
+    const ok = tekenVoorbeeld(ctx, c.shape, it, w, h, { k: k || 0, kleur: ['hanger', 'plate', 'fangle'].includes(c.shape) ? '#a855f7' : isHout(c.shape) ? '#b45309' : acc, lijn: opties.lijn || 1, marge: opties.marge ?? 8 });
     if (!ok) { ctx.fillStyle = tx; ctx.globalAlpha = 0.5; ctx.textAlign = 'center'; ctx.fillText('no d / b', w / 2, h / 2); }
     if (opties.maten && ok) maatLijnen(ctx, c, it, w, h, tx, opties.marge ?? 8);
   } else if (c.kind === 'bolt') {

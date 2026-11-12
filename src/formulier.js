@@ -25,7 +25,7 @@ const CSS = `
 .s43f-groep i{width:12px;height:12px;border:1px solid currentColor;border-radius:2px;display:inline-flex;align-items:center;
   justify-content:center;font-style:normal;font-size:11px;line-height:1;flex:none;}
 .s43f-rij{display:grid;grid-template-columns:45% 55%;align-items:center;border-bottom:1px solid var(--rand);min-height:34px;}
-.s43f-rij[hidden]{display:none;}
+.s43f-rij[hidden],.s43f-schets[hidden]{display:none;}
 .s43f-eig{padding:6px 10px 6px 24px;color:var(--tx);}
 .s43f-waarde{padding:3px 8px;border-left:1px solid var(--rand);min-width:0;display:flex;flex-direction:column;gap:3px;}
 .s43f-waarde input,.s43f-waarde select{width:100%;box-sizing:border-box;font:inherit;color:inherit;background:transparent;
@@ -96,7 +96,7 @@ export function groep(el, titel) {
   const pas = () => {
     teken.textContent = dicht ? '+' : '−';
     for (let n = g.nextElementSibling; n && !n.classList.contains('s43f-groep'); n = n.nextElementSibling) {
-      if (n.classList.contains('s43f-rij')) n.hidden = dicht;
+      if (n.classList.contains('s43f-rij') || n.classList.contains('s43f-schets')) n.hidden = dicht;
     }
   };
   g.addEventListener('click', () => { dicht = !dicht; zetDicht(titel, dicht); pas(); });

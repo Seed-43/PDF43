@@ -1,5 +1,27 @@
 [
   {
+    "version": "0.6.3",
+    "date": "2026-11-13",
+    "notes": {
+      "New": [
+        "Elements tab in the Seed43 drawer: type a name or size, pick and place without opening the Element Library; your 20 most used elements show when the search is empty",
+        "Change element: swap a selected section or member for another size or category, keeping its place, rotation, view and scale",
+        "Switch a section to an elevation or plan member and back",
+        "Timber side by side: 2, 3, 4 or more pieces (2/140x45), and your own label text such as DS",
+        "Line at: a member drawn on its centre line or on an edge (top of steel, one face); J switches it while placing",
+        "Enter on a selected element places another the same (Create Similar)",
+        "Several Seed43 elements selected: one shared form for scale, label, rotation, view, line and pieces (needs an Open PDF Studio build with onSelectionChange)",
+        "Dimension key in Seed43 Properties: the section to scale with d, b, tf, tw, t and r1 marked"
+      ],
+      "General": [
+        "Section data with names and units, in Dimensions and Section properties",
+        "Snapping to section corners and side midpoints and member edges; Shift or Ctrl locks the direction (Tab turns it) and still snaps",
+        "Fixings drawn in purple, apart from steel, timber and bolt groups",
+        "The Seed43 drawer no longer passes clicks, scrolling or typing through to the page"
+      ]
+    }
+  },
+  {
     "version": "0.6.2",
     "date": "2026-11-12",
     "notes": {

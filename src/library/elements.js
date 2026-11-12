@@ -11,11 +11,111 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
-import { registreerEigenschappen } from '../eigenschappen.js';
+import { registreerEigenschappen, registreerMeervoud } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
-import { laadBibliotheek, categorie } from './store.js';
+import { maakMaatschets } from './maatschets.js';
+
+/**
+ * Change element: a Category list and an Element list. Picking an element
+ * swaps the selected one for it (`kies(cat, item)`); position, rotation,
+ * view and scale stay. Fixings change only to fixings, sections and members
+ * only to sections.
+ */
+function wisselRijen(el, e, kies) {
+  const lib = geladenBibliotheek();
+  if (!lib) return;
+  const fixing = BEVESTIGINGEN.includes(e.shape);
+  const uit = leesRegios().off;
+  const cats = lib.categories.filter((c) => c.kind === 'section' && c.shape !== 'bracing'
+    && BEVESTIGINGEN.includes(c.shape) === fixing && !uit.includes(regioVan(c)) && c.items.length);
+  const nu = cats.find((c) => c.id === e.catId)
+    || cats.find((c) => c.name === e.category && c.shape === e.shape && c.items.some((i) => i.name === e.item?.name))
+    || cats.find((c) => c.name === e.category) || cats[0];
+  if (!nu) return;
+  const catLijst = keuze(cats.map((c) => [c.id, `${regioVan(c)} · ${c.name}`]), nu.id, () => vulItems());
+  const itemLijst = document.createElement('select');
+  itemLijst.style.cssText = INVOER;
+  const vulItems = () => {
+    const c = cats.find((x) => x.id === catLijst.value);
+    itemLijst.replaceChildren();
+    if (c !== nu) {
+      const o = document.createElement('option'); o.value = ''; o.textContent = 'Pick an element...'; itemLijst.appendChild(o);
+    }
+    for (const it of c?.items || []) { const o = document.createElement('option'); o.value = it.name; o.textContent = it.name; itemLijst.appendChild(o); }
+    itemLijst.value = c === nu ? (e.item?.name || '') : '';
+  };
+  vulItems();
+  itemLijst.addEventListener('change', () => {
+    const c = cats.find((x) => x.id === catLijst.value);
+    const it = c?.items.find((x) => x.name === itemLijst.value);
+    if (c && it && !(c === nu && it.name === e.item?.name)) kies(c, it);
+  });
+  groep(el, 'Change element');
+  veld(el, 'Category', catLijst);
+  veld(el, 'Element', itemLijst);
+}
+
+/** The dimension key of a section (no group of its own: it follows the dimensions). */
+function schets(el, shape, item) {
+  const cv = maakMaatschets(shape, item);
+  if (!cv) return;
+  const w = document.createElement('div');
+  w.className = 's43f-schets';
+  w.appendChild(cv);
+  el.appendChild(w);
+}
+
+// Section data: each value with its name and unit, dimensions first, then
+// the section properties. Large properties are shown in powers of ten.
+const MATEN = [
+  ['d', 'Depth', 'mm'], ['b', 'Width', 'mm'], ['tf', 'Flange thickness', 'mm'], ['tw', 'Web thickness', 'mm'],
+  ['t', 'Thickness', 'mm'], ['r1', 'Root radius', 'mm'], ['r2', 'Toe radius', 'mm'], ['ro', 'Outside corner radius', 'mm'],
+  ['ri', 'Inside corner radius', 'mm'], ['lip', 'Lip', 'mm'], ['e', 'Top flange', 'mm'], ['f', 'Bottom flange', 'mm'],
+  ['plies', 'Plies', ''],
+];
+const EIGENSCHAPPEN = [
+  ['mass', 'Mass', 'kg/m', 0], ['A', 'Area', 'mm²', 0],
+  ['Ix', 'Second moment Ix', 'mm⁴', 6], ['Iy', 'Second moment Iy', 'mm⁴', 6],
+  ['Zx', 'Elastic modulus Zx', 'mm³', 3], ['Zy', 'Elastic modulus Zy', 'mm³', 3],
+  ['Sx', 'Plastic modulus Sx', 'mm³', 3], ['Sy', 'Plastic modulus Sy', 'mm³', 3],
+  ['J', 'Torsion constant J', 'mm⁴', 3], ['Iw', 'Warping constant Iw', 'mm⁶', 9],
+];
+const MACHT = { 3: '10³', 6: '10⁶', 9: '10⁹' };
+
+function getalTekst(v, macht = 0) {
+  if (typeof v !== 'number') return String(v);
+  if (macht && Math.abs(v) >= 10 ** macht) return `${(v / 10 ** macht).toLocaleString('en-NZ', { maximumFractionDigits: 3 })} × ${MACHT[macht]}`;
+  return v.toLocaleString('en-NZ', { maximumFractionDigits: 3 });
+}
+
+/** Dimensions (with the key), section properties, then anything else. */
+function sectieGegevens(el, shape, item) {
+  const gezien = new Set(['name', 'blocking', 'view', 'check']);
+  groep(el, 'Dimensions');
+  for (const [k, naam, eenheid] of MATEN) {
+    if (item[k] == null || item[k] === '') continue;
+    gezien.add(k);
+    waarde(el, `${naam} (${k})`, `${getalTekst(item[k])}${eenheid ? ` ${eenheid}` : ''}`);
+  }
+  schets(el, shape, item);
+  const eig = EIGENSCHAPPEN.filter(([k]) => item[k] != null && item[k] !== '');
+  if (eig.length) {
+    groep(el, 'Section properties');
+    for (const [k, naam, eenheid, macht] of eig) {
+      gezien.add(k);
+      waarde(el, naam, `${getalTekst(item[k], macht)} ${eenheid}`);
+    }
+  }
+  const rest = Object.entries(item).filter(([k]) => !gezien.has(k));
+  if (rest.length) {
+    groep(el, 'Other');
+    for (const [k, v] of rest) waarde(el, k, getalTekst(v));
+  }
+}
+import { laadBibliotheek, categorie, geladenBibliotheek, regioVan } from './store.js';
+import { leesRegios } from './window.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
-import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
+import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN, AANTAL_VORMEN, metAantal, labelNaam, UITLIJNING } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
@@ -44,6 +144,7 @@ export function puntenPerMm(api, page, x, y, denom = 10) {
 let plaatsing = null;   // the element being placed (tool overrides)
 let lidStart = null;    // first click of a member: { x, y, page, druk: { cx, cy } | null }
 let laatste = null;     // last pointer: { cx, cy, ctrlKey, shiftKey, metaKey }
+let richting = null;    // locked direction with Shift / Ctrl: { stap, hoek }
 let geselecteerd = null;   // id of the selected Seed43 element
 let greepSleep = null;  // grip being dragged: { id, soort, page }
 
@@ -63,12 +164,54 @@ function kiesPunt(api, page, x, y, state, uitsluit) {
   return { x, y, snap: null };
 }
 
+/**
+ * Square to `vast` (Ctrl / Shift), but still snapping: with a snap point near
+ * the pointer, the end stops where a perpendicular from that point meets the
+ * square line.
+ */
+function haaksMetSnap(api, page, vast, x, y, stap, radius, uitsluit) {
+  // The direction locks to the way the pointer first moves once Shift or
+  // Ctrl is held, and stays until the keys are let go (Tab turns it).
+  if (!richting || richting.stap !== stap) {
+    if (Math.hypot(x - vast.x, y - vast.y) < radius) return { ...haaks(vast.x, vast.y, x, y, stap), snap: null, haaks: stap };
+    const r = (stap * Math.PI) / 180;
+    richting = { stap, hoek: Math.round(Math.atan2(y - vast.y, x - vast.x) / r) * r };
+  }
+  const ux = Math.cos(richting.hoek), uy = Math.sin(richting.hoek);
+  // Along the locked line, either way from the fixed point.
+  const t0 = (x - vast.x) * ux + (y - vast.y) * uy;
+  const s = zoekSnap(api, page, x, y, radius, uitsluit);
+  if (!s) return { x: vast.x + ux * t0, y: vast.y + uy * t0, snap: null, haaks: stap };
+  const t = (s.x - vast.x) * ux + (s.y - vast.y) * uy;
+  return { x: vast.x + ux * t, y: vast.y + uy * t, snap: { ...s, tekst: `${s.tekst} (square)` }, haaks: stap };
+}
+
+/** Tab: turn the locked direction to the next one (90, or 45 with both keys). */
+function draaiRichting() {
+  if (!richting) return false;
+  richting.hoek += (richting.stap * Math.PI) / 180;
+  return true;
+}
+
+/** What a placed element takes over from the placing choice: pieces, label text, line position, label. */
+function extraVan(keuze) {
+  const x = {};
+  if (keuze.enkel) x.enkel = kopie(keuze.enkel);
+  if (keuze.aantal > 1) x.aantal = keuze.aantal;
+  if (keuze.labelTekst) x.labelTekst = keuze.labelTekst;
+  if (keuze.catId) x.catId = keuze.catId;
+  if (keuze.label === false) x.label = false;
+  if (keuze.showLength === false) x.showLength = false;
+  return x;
+}
+
 function nieuwElement(api, soort, keuze, page, x, y) {
   const schaal = puntenPerMm(api, page, x, y);
-  return soort === SECTIE
-    ? { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...schaal }
-    : { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true,
-      view: ['elevation', 'plan'].includes(keuze.view) ? keuze.view : 'face', grip: 20, along: 'gauge', ...schaal };
+  if (soort === SECTIE) return { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), rotation: keuze.rotation || 0, label: true, ...extraVan(keuze), ...schaal };
+  // A bolt group made like a selected one keeps its layout.
+  if (keuze.sjabloon) return { ...kopie(keuze.sjabloon), rotation: keuze.rotation || 0, ...schaal };
+  return { bolt: kopie(keuze.item), rows: 2, cols: 2, pitch: 70, gauge: 70, edgeX: 35, edgeY: 35, rotation: keuze.rotation || 0, plate: true,
+    view: ['elevation', 'plan'].includes(keuze.view) ? keuze.view : 'face', grip: 20, along: 'gauge', ...schaal };
 }
 
 function plaatsingsType(api, soort) {
@@ -84,6 +227,7 @@ function plaatsingsType(api, soort) {
       const p = kiesPunt(api, page, x, y, state);
       const element = nieuwElement(api, soort, keuze, page, p.x, p.y);
       const m = maat(element);
+      try { telGebruik(keuze); } catch {}
       return { type: soort, x: p.x - m.w / 2, y: p.y - m.h / 2, width: m.w, height: m.h, element, subject: element.item?.name || element.bolt?.name || '' };
     },
     render(ctx, ann) { (soort === SECTIE ? tekenSectie : tekenBoutGroep)(ctx, ann); },
@@ -102,8 +246,9 @@ function lidAnnotatie(api, keuze, page, a, b) {
   const schaal = puntenPerMm(api, page, a.x, a.y);
   const ann = {
     type: LID, startX: a.x, startY: a.y, endX: b.x, endY: b.y,
-    element: { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), view: keuze.view || 'elevation', label: true, ...schaal },
-    subject: keuze.item.name,
+    element: { category: keuze.category, shape: keuze.shape, item: kopie(keuze.item), view: keuze.view || 'elevation', label: true,
+      ...(keuze.uitlijn && keuze.uitlijn !== 'centre' ? { uitlijn: keuze.uitlijn } : {}), ...extraVan(keuze), ...schaal },
+    subject: labelNaam(keuze),
   };
   const bb = lidBounds(ann);
   return { ...ann, x: bb.x, y: bb.y, width: bb.width, height: bb.height };
@@ -112,7 +257,7 @@ function lidAnnotatie(api, keuze, page, a, b) {
 /** Second point of a member: square to the first with Ctrl / Shift, else snapped. */
 function tweedePunt(api, page, p1, x, y, mods, state) {
   const stap = haaksStap(mods);
-  if (stap) return { ...haaks(p1.x, p1.y, x, y, stap), snap: null, haaks: stap };
+  if (stap) return haaksMetSnap(api, page, p1, x, y, stap, snapRadius(page, state?.docScale));
   return kiesPunt(api, page, x, y, state);
 }
 
@@ -137,7 +282,9 @@ function lidType(api) {
       if (Math.hypot(p2.x - lidStart.x, p2.y - lidStart.y) < 1) return null;   // same point: wait for B
       const { a, b } = lidPunten(keuze.greep, lidStart, p2);
       lidStart = null;
+      richting = null;
       herteken(api);
+      try { telGebruik(keuze); } catch {}
       return lidAnnotatie(api, keuze, page, a, b);
     },
     preview(ctx, sx, sy, cx, cy, state) {
@@ -188,7 +335,7 @@ function greepPunt(api, ann, soort, p) {
   const stap = haaksStap(laatste);
   if (stap && ann.type === LID && (soort === 'A' || soort === 'B')) {
     const vast = soort === 'A' ? { x: ann.endX, y: ann.endY } : { x: ann.startX, y: ann.startY };
-    return { ...haaks(vast.x, vast.y, p.x, p.y, stap), snap: null };
+    return haaksMetSnap(api, ann.page, vast, p.x, p.y, stap, SNAP_PX / p.s, ann.id);
   }
   const snap = zoekSnap(api, ann.page, p.x, p.y, SNAP_PX / p.s, ann.id);
   return snap ? { x: snap.x, y: snap.y, snap } : { x: p.x, y: p.y, snap: null };
@@ -249,12 +396,13 @@ function herteken(api) {
           tekenSnap(c, s, q.snap);
           const L = Math.hypot(b.x - a.x, b.y - a.y) / (puntenPerMm(api, page, a.x, a.y).ptsPerMm || 1);
           const naam = plaatsing.greep === 'B' ? 'point A' : plaatsing.greep === 'mid' ? 'an end' : 'point B';
-          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '' : '  (Ctrl/Shift: square)'}`);
+          const lijn = plaatsing.uitlijn && plaatsing.uitlijn !== 'centre' ? `  J: ${UITLIJNING[plaatsing.uitlijn]}` : '  J: centre';
+          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '  Tab: turn' : '  (Ctrl/Shift: square)'}${lijn}`);
         } else {
           const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
           tekenSnap(c, s, q.snap);
           const naam = plaatsing.greep === 'B' ? 'point B' : plaatsing.greep === 'mid' ? 'the midpoint' : 'point A';
-          tekenTekst(c, s, q.x, q.y, `Click ${naam} of ${plaatsing.item.name}`);
+          tekenTekst(c, s, q.x, q.y, `Click ${naam} of ${labelNaam(plaatsing)}  (J: ${(UITLIJNING[plaatsing.uitlijn || 'centre'] || 'Centre').toLowerCase()})`);
         }
       } else {
         const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
@@ -353,7 +501,8 @@ function luisteraars(api) {
       const { a, b } = lidPunten(plaatsing.greep, lidStart, q);
       const ann = lidAnnotatie(api, plaatsing, p.page, a, b);
       lidStart = null;
-      try { api.applyAnnotationBatch([{ op: 'create', annotation: { ...ann, page: p.page, seed43Element: plaatsing } }]); api.redrawAnnotations?.(); }
+      richting = null;
+      try { api.applyAnnotationBatch([{ op: 'create', annotation: { ...ann, page: p.page, seed43Element: plaatsing } }]); api.redrawAnnotations?.(); telGebruik(plaatsing); }
       catch (err) { console.warn('[seed43] member not placed:', err); }
       startLus(api);
     }
@@ -361,12 +510,40 @@ function luisteraars(api) {
   const toets = (e) => {
     if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Meta') {
       if (laatste) { laatste.ctrlKey = e.ctrlKey; laatste.shiftKey = e.shiftKey; laatste.metaKey = e.metaKey; }
+      // Keys let go (or the other one added): the direction is free again.
+      if (e.type === 'keyup' || haaksStap(e) !== richting?.stap) richting = null;
       startLus(api);
+      return;
+    }
+    if (e.type !== 'keydown') return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName) || t.closest?.('.s43d-lade, .s43l, .s43v'))) return;
+    // Tab: the locked direction turns (vertical / horizontal, or 45s).
+    if (e.key === 'Tab' && (lidStart || greepSleep) && draaiRichting()) {
+      e.preventDefault(); e.stopPropagation();
+      startLus(api);
+      return;
+    }
+    // J: where the line sits on a member being placed (centre or an edge).
+    if ((e.key === 'j' || e.key === 'J') && !e.ctrlKey && !e.altKey && !e.metaKey && api.getCurrentTool?.() === LID && plaatsing && plaatsing.shape !== 'bracing') {
+      const volg = Object.keys(UITLIJNING);
+      plaatsing.uitlijn = volg[(volg.indexOf(plaatsing.uitlijn || 'centre') + 1) % volg.length];
+      try { localStorage.setItem(UITLIJN_OPSLAG, plaatsing.uitlijn); } catch {}
+      api.setToolOverrides({ seed43Element: plaatsing });
+      e.preventDefault(); e.stopPropagation();
+      startLus(api);
+      return;
+    }
+    // Enter: place another of the selected element (like Create Similar).
+    if (e.key === 'Enter' && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && geselecteerd && !lidStart && !greepSleep
+        && !isPlaatsTool(api) && maakZoals(api)) {
+      e.preventDefault(); e.stopPropagation();
       return;
     }
     if (e.key === 'Escape') {
       if (greepSleep) { greepSleep = null; e.stopPropagation(); }
       lidStart = null;
+      richting = null;
       startLus(api);
     }
   };
@@ -443,11 +620,37 @@ function sectiePaneel() {
     const el = formulier();
     if (!e) return el;
     kop(el, e.item.name, `${e.category} section, ${e.scaleText || ''}`, '#1d4ed8', ICOON_SECTIE);
+    wisselRijen(el, e, (c, it) => {
+      werkBij(ann, update, sectieMaat, (x) => {
+        x.item = kopie(it); delete x.enkel;
+        if (BEVESTIGINGEN.includes(c.shape)) x.item.view = e.item?.view || 'section';
+        x.category = c.name; x.shape = c.shape; x.catId = c.id;
+        metAantal(x, e.aantal || 1);
+      });
+      update('subject', it.name);
+    });
     groep(el, 'Display');
+    if (!BEVESTIGINGEN.includes(e.shape)) {
+      // Section, or the same element as a member in elevation or plan.
+      veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (member)'], ['plan', 'Plan (member)']], 'section',
+        (v) => { if (v !== 'section') wisselVorm(ann, v); }));
+    }
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => werkBij(ann, update, sectieMaat, (x) => { x.rotation = v; })));
     schaalVeld(el, ann, update, sectieMaat);
     veld(el, 'Label', keuze([['1', 'Show'], ['0', 'Hide']], e.label === false ? '0' : '1',
       (v) => werkBij(ann, update, sectieMaat, (x) => { x.label = v === '1'; })));
+    if (AANTAL_VORMEN.includes(e.shape)) {
+      veld(el, 'Members', keuze([1, 2, 3, 4, 5, 6].map((n) => [String(n), n === 1 ? 'Single' : `${n} side by side (${n}/)`]), String(e.aantal || 1),
+        (v) => ((w) => werkBij(ann, update, sectieMaat, w))((x) => { metAantal(x, Number(v)); })));
+    }
+    const eigen = document.createElement('input');
+    eigen.type = 'text';
+    eigen.value = e.labelTekst || '';
+    eigen.placeholder = labelNaam({ ...e, labelTekst: '' });
+    eigen.title = 'Your own label, e.g. DS for a double stud. Empty: the automatic label.';
+    eigen.addEventListener('change', () => ((w) => werkBij(ann, update, sectieMaat, w))((x) => { const v = eigen.value.trim(); if (v) x.labelTekst = v; else delete x.labelTekst; }));
+    veld(el, 'Label text', eigen);
+
     if (BEVESTIGINGEN.includes(e.shape)) {
       veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (side on)']], e.item.view === 'elevation' ? 'elevation' : 'section',
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
@@ -457,11 +660,7 @@ function sectiePaneel() {
       veld(el, 'Look', keuze([['0', 'Timber (cross)'], ['1', 'Blocking (diagonal)']], e.item.blocking ? '1' : '0',
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
     }
-    groep(el, 'Section data');
-    for (const [k, v] of Object.entries(e.item)) {
-      if (k === 'name' || k === 'blocking' || k === 'view') continue;
-      waarde(el, k, typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v));
-    }
+    sectieGegevens(el, e.shape, e.item);
     el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
     return el;
   };
@@ -558,19 +757,38 @@ function lidPaneel() {
     const g = lidGeometrie(ann);
     if (e.shape === 'bracing') { bracingPaneel(el, ann, update, e, g); return el; }
     kop(el, e.item.name, `${e.category} member, ${e.view === 'plan' ? 'plan' : 'elevation'}, ${e.scaleText || ''}`, '#1d4ed8', ICOON_LID);
-    groep(el, 'Member');
     const zet = (wijzig) => {
       const x = kopie(ann.element); wijzig(x); update('element', x);
       const b = lidBounds(ann); update('x', b.x); update('y', b.y); update('width', b.width); update('height', b.height);
     };
-    veld(el, 'View', keuze([['elevation', 'Elevation'], ['plan', 'Plan']], e.view || 'elevation', (v) => zet((x) => { x.view = v; })));
+    wisselRijen(el, e, (c, it) => {
+      zet((x) => { x.item = kopie(it); delete x.enkel; x.category = c.name; x.shape = c.shape; x.catId = c.id; metAantal(x, e.aantal || 1); });
+      update('subject', it.name);
+    });
+    groep(el, 'Member');
+    veld(el, 'View', keuze([['elevation', 'Elevation'], ['plan', 'Plan'], ['section', 'Section (end on)']], e.view || 'elevation',
+      (v) => { if (v === 'section') wisselVorm(ann, 'section'); else zet((x) => { x.view = v; }); }));
     const lengte = document.createElement('span');
     lengte.textContent = `${Math.round(g.L / g.k)} mm`;
     veld(el, 'Length', lengte);
+    veld(el, 'Line at', keuze(Object.entries(UITLIJNING), e.uitlijn || 'centre', (v) => zet((x) => { if (v === 'centre') delete x.uitlijn; else x.uitlijn = v; })));
     veld(el, 'Label', keuze([['1', 'Name and length'], ['n', 'Name only'], ['0', 'Hide']], e.label === false ? '0' : e.showLength === false ? 'n' : '1',
       (v) => zet((x) => { x.label = v !== '0'; x.showLength = v === '1'; })));
+    if (AANTAL_VORMEN.includes(e.shape)) {
+      veld(el, 'Members', keuze([1, 2, 3, 4, 5, 6].map((n) => [String(n), n === 1 ? 'Single' : `${n} side by side (${n}/)`]), String(e.aantal || 1),
+        (v) => zet((x) => { metAantal(x, Number(v)); })));
+    }
+    const eigen = document.createElement('input');
+    eigen.type = 'text';
+    eigen.value = e.labelTekst || '';
+    eigen.placeholder = labelNaam({ ...e, labelTekst: '' });
+    eigen.title = 'Your own label, e.g. DS for a double stud. Empty: the automatic label.';
+    eigen.addEventListener('change', () => zet((x) => { const v = eigen.value.trim(); if (v) x.labelTekst = v; else delete x.labelTekst; }));
+    veld(el, 'Label text', eigen);
+
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
+    sectieGegevens(el, e.shape, e.item);
     el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
     return el;
   };
@@ -682,9 +900,47 @@ function spatieToets(api) {
 }
 
 let toets = null;
+let apiRef = null;   // for forms that change an element's kind
+
+/**
+ * Swap a section for a member in elevation or plan, or a member for a
+ * section. The app cannot change an annotation's type, so the old one is
+ * deleted and the new one created in one batch (one undo step). Same element
+ * and scale: a section becomes a 1 m member through its centre, a member a
+ * section at its midpoint.
+ */
+function wisselVorm(ann, naar) {
+  const api = apiRef;
+  const e = ann?.element;
+  if (!api || !e) return;
+  const basis = { category: e.category, shape: e.shape, item: kopie(e.item), ptsPerMm: e.ptsPerMm, scaleText: e.scaleText,
+    ...extraVan(e), label: e.label !== false };
+  let nieuw;
+  if (ann.type === SECTIE && (naar === 'elevation' || naar === 'plan')) {
+    const cx = ann.x + (ann.width || 0) / 2, cy = ann.y + (ann.height || 0) / 2;
+    const half = 500 * (e.ptsPerMm || 1);
+    const lid = { type: LID, startX: cx - half, startY: cy, endX: cx + half, endY: cy, element: { ...basis, view: naar }, subject: e.item?.name || '' };
+    const bb = lidBounds(lid);
+    nieuw = { ...lid, x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+  } else if (ann.type === LID && naar === 'section') {
+    const mx = (ann.startX + ann.endX) / 2, my = (ann.startY + ann.endY) / 2;
+    const element = { ...basis, rotation: 0 };
+    const m = sectieMaat(element);
+    nieuw = { type: SECTIE, x: mx - m.w / 2, y: my - m.h / 2, width: m.w, height: m.h, element, subject: e.item?.name || '' };
+  } else return;
+  try {
+    const uit = api.applyAnnotationBatch([{ op: 'delete', id: ann.id }, { op: 'create', annotation: { ...nieuw, page: ann.page } }]);
+    api.redrawAnnotations?.();
+    const id = uit?.createdIds?.[0];
+    if (id) { try { api.selectAnnotations?.({ ids: [id] }); } catch {} }
+  } catch (err) { console.warn('[seed43] change view:', err); }
+}
 let pointer = null;
 
 export function startElementen(api) {
+  apiRef = api;
+  // Load the library now, so Change element can list it straight away.
+  laadBibliotheek(api).catch(() => {});
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
@@ -692,6 +948,7 @@ export function startElementen(api) {
   registreerEigenschappen(api, SECTIE, sectiePaneel());
   registreerEigenschappen(api, BOUTEN, boutPaneel(api));
   registreerEigenschappen(api, LID, lidPaneel());
+  registreerMeervoud(api, ONZE, meervoudPaneel);
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);
@@ -728,15 +985,156 @@ export const PLAATS_GREPEN = [['A', 'End A'], ['mid', 'Midpoint'], ['B', 'End B'
 /** Arm the placing tool for a library item: view 'section' (click), or
  *  'elevation' / 'plan' (click point A, then point B). Bolts: click.
  *  greep: the grip a member is placed by ('A', 'mid' or 'B'). */
+// How often each element is placed: { 'catId|name': { n, laatst } }. The
+// Elements tab lists the 20 most used when its search is empty.
+const GEBRUIK = 'seed43.library.gebruik';
+export function leesGebruik() {
+  try { const v = JSON.parse(localStorage.getItem(GEBRUIK) || 'null'); if (v && typeof v === 'object') return v; } catch {}
+  return {};
+}
+function telGebruik(keuze) {
+  if (!keuze?.catId || !keuze.item?.name) return;
+  const g = leesGebruik();
+  const k = `${keuze.catId}|${keuze.item.name}`;
+  g[k] = { n: (g[k]?.n || 0) + 1, laatst: Date.now() };
+  // Keep it small: the 200 most used.
+  const sleutels = Object.keys(g);
+  if (sleutels.length > 200) {
+    sleutels.sort((a, b) => (g[b].n - g[a].n) || (g[b].laatst - g[a].laatst)).slice(200).forEach((s) => delete g[s]);
+  }
+  try { localStorage.setItem(GEBRUIK, JSON.stringify(g)); } catch {}
+}
+
+const UITLIJN_OPSLAG = 'seed43.uitlijn';
+function leesUitlijn() {
+  try { const v = localStorage.getItem(UITLIJN_OPSLAG); return UITLIJNING[v] ? v : 'centre'; } catch { return 'centre'; }
+}
+
+/**
+ * Enter on a selected Seed43 element: start placing another one like it, the
+ * same element, view, pieces, label and line position (Create Similar).
+ */
+function maakZoals(api) {
+  const ann = api.getAnnotations?.().find((a) => a.id === geselecteerd && ONZE.includes(a.type));
+  const e = ann?.element;
+  if (!e) return false;
+  if (ann.type === LID && e.shape === 'bracing') {
+    laatsteBracing = { ...BRACING_STANDAARD, ...(e.item || {}) };
+    plaatsBracing(api);
+    return true;
+  }
+  if (ann.type === BOUTEN) {
+    plaatsing = { category: 'Bolts', shape: 'bolt', item: kopie(e.bolt), view: e.view, rotation: e.rotation || 0, greep: 'A', sjabloon: kopie(e) };
+  } else {
+    plaatsing = {
+      category: e.category, shape: e.shape, item: kopie(e.item), view: ann.type === SECTIE ? 'section' : (e.view || 'elevation'),
+      rotation: ann.type === SECTIE ? (e.rotation || 0) : 0, greep: 'A', uitlijn: e.uitlijn || leesUitlijn(), ...extraVan(e),
+    };
+  }
+  lidStart = null;
+  richting = null;
+  api.setTool(ann.type);
+  api.setToolOverrides({ seed43Element: plaatsing });
+  startLus(api);
+  return true;
+}
+
 export function plaats(api, cat, it, view = 'section', greep = 'A') {
   // Fixings are placed by a click in either view; the view sets their look.
   const fixing = BEVESTIGINGEN.includes(cat.shape);
   const soort = cat.kind === 'bolt' ? BOUTEN : (view === 'section' || fixing) ? SECTIE : LID;
   const item = kopie(it);
   if (fixing) item.view = view === 'section' ? 'section' : 'elevation';
-  plaatsing = { category: cat.name, shape: cat.shape, item, view: fixing ? 'section' : view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A' };
+  plaatsing = { category: cat.name, catId: cat.id, shape: cat.shape, item, view: fixing ? 'section' : view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A',
+    uitlijn: leesUitlijn() };
+  richting = null;
   lidStart = null;
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });
   startLus(api);
+}
+
+// ── Several Seed43 items selected: one shared form ─────────────────────────
+
+/** The new element and bounds of `ann` after `wijzig(element)`, in place. */
+function herzien(ann, wijzig) {
+  const element = kopie(ann.element);
+  wijzig(element, ann);
+  if (ann.type === LID) {
+    const b = lidBounds({ ...ann, element });
+    return { element, x: b.x, y: b.y, width: b.width, height: b.height };
+  }
+  const maat = ann.type === SECTIE ? sectieMaat : boutMaat;
+  const oud = maat(ann.element);
+  const cx = ann.x + oud.w / 2, cy = ann.y + oud.h / 2;
+  const m = maat(element);
+  return { element, x: cx - m.w / 2, y: cy - m.h / 2, width: m.w, height: m.h };
+}
+
+/** A list with 'Mixed' first when the items differ. */
+function gedeeld(waarden, opties, wijzig) {
+  const een = waarden.every((v) => v === waarden[0]);
+  const lijst = een ? opties : [['', 'Mixed'], ...opties];
+  return keuze(lijst, een ? waarden[0] : '', (v) => { if (v !== '') wijzig(v); });
+}
+
+function meervoudPaneel(api, anns, opnieuw) {
+  const el = formulier();
+  const telSoort = (t) => anns.filter((a) => a.type === t).length;
+  const delen = [[SECTIE, 'section'], [LID, 'member'], [BOUTEN, 'bolt group']]
+    .map(([t, n]) => [telSoort(t), n]).filter(([n]) => n).map(([n, w]) => `${n} ${w}${n > 1 ? 's' : ''}`);
+  kop(el, `${anns.length} elements`, `${delen.join(', ')}. Changes apply to all of them.`, '#1d4ed8',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1" opacity=".5"/></svg>');
+  const pas = (wijzig) => {
+    const ops = anns.map((a) => ({ op: 'update', id: a.id, changes: herzien(a, wijzig) }));
+    try { api.applyAnnotationBatch(ops); api.redrawAnnotations?.(); } catch (err) { console.warn('[seed43] several:', err); }
+    opnieuw();
+  };
+
+  groep(el, 'Shared');
+  // Scale: typed in, applied to all.
+  const schalen = anns.map((a) => Math.round(PT_PER_PAPER_MM / (a.element.ptsPerMm || 1)));
+  const schaal = document.createElement('input');
+  schaal.type = 'number'; schaal.step = '1';
+  if (schalen.every((v) => v === schalen[0])) schaal.value = schalen[0]; else schaal.placeholder = 'Mixed';
+  schaal.addEventListener('change', () => {
+    const n = Number(schaal.value);
+    if (n > 0) pas((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; });
+  });
+  veld(el, 'Scale 1:', schaal);
+  veld(el, 'Label', gedeeld(anns.map((a) => (a.element.label === false ? '0' : '1')), [['1', 'Show'], ['0', 'Hide']],
+    (v) => pas((x) => { x.label = v === '1'; })));
+
+  const vlak = anns.every((a) => a.type === SECTIE || a.type === BOUTEN);
+  if (vlak) {
+    const draai = anns.map((a) => a.element.rotation || 0);
+    const hoek = hoekVeld(draai.every((v) => v === draai[0]) ? draai[0] : '', (v) => pas((x) => { x.rotation = v; }));
+    if (!draai.every((v) => v === draai[0])) hoek.placeholder = 'Mixed';
+    veld(el, 'Rotation °', hoek);
+  }
+  const leden = anns.every((a) => a.type === LID && a.element.shape !== 'bracing');
+  if (leden) {
+    groep(el, 'Members');
+    veld(el, 'View', gedeeld(anns.map((a) => a.element.view || 'elevation'), [['elevation', 'Elevation'], ['plan', 'Plan']],
+      (v) => pas((x) => { x.view = v; })));
+    veld(el, 'Line at', gedeeld(anns.map((a) => a.element.uitlijn || 'centre'), Object.entries(UITLIJNING),
+      (v) => pas((x) => { if (v === 'centre') delete x.uitlijn; else x.uitlijn = v; })));
+  }
+  if (anns.every((a) => a.type !== BOUTEN && AANTAL_VORMEN.includes(a.element.shape))) {
+    groep(el, 'Timber');
+    veld(el, 'Members', gedeeld(anns.map((a) => String(a.element.aantal || 1)),
+      [1, 2, 3, 4, 5, 6].map((n) => [String(n), n === 1 ? 'Single' : `${n} side by side (${n}/)`]),
+      (v) => pas((x) => { metAantal(x, Number(v)); })));
+  }
+  if (anns.every((a) => a.type !== BOUTEN)) {
+    const teksten = anns.map((a) => a.element.labelTekst || '');
+    const eigen = document.createElement('input');
+    eigen.type = 'text';
+    if (teksten.every((v) => v === teksten[0])) eigen.value = teksten[0]; else eigen.placeholder = 'Mixed';
+    eigen.title = 'Your own label for all of them, e.g. DS. Empty: the automatic labels.';
+    eigen.addEventListener('change', () => { const v = eigen.value.trim(); pas((x) => { if (v) x.labelTekst = v; else delete x.labelTekst; }); });
+    veld(el, 'Label text', eigen);
+  }
+  el.appendChild(tip('Select one element to see all its properties.'));
+  return el;
 }

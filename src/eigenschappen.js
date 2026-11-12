@@ -17,20 +17,24 @@ const BREEDTE = 380;
 
 const CSS = `
 .s43d-lade{--bg:var(--theme-surface,#fff);--rand:var(--theme-border,#c8ccd1);--tx:var(--theme-text,#1f2328);--acc:var(--theme-accent,#0078d7);
-  position:absolute;z-index:930;width:${BREEDTE}px;max-width:calc(100% - 60px);top:8px;bottom:8px;right:0;display:flex;flex-direction:column;background:var(--bg);color:var(--tx);
+  position:fixed;z-index:930;width:${BREEDTE}px;display:flex;flex-direction:column;background:var(--bg);color:var(--tx);
   border:1px solid var(--rand);border-radius:8px 0 0 8px;box-shadow:-6px 0 20px rgba(0,0,0,.25);
   transition:transform .2s ease,opacity .2s ease;font:13px/1.35 system-ui,Segoe UI,sans-serif;overflow:hidden;}
 .s43d-lade[data-dicht]{transform:translateX(40px);opacity:0;pointer-events:none;box-shadow:none;}
 .s43d-balk{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--rand);flex:none;}
-.s43d-balk b{padding:4px 12px;border:1px solid var(--acc);border-radius:6px;background:color-mix(in srgb,var(--acc) 15%,transparent);font-weight:600;}
+.s43d-tabje{padding:4px 12px;border:1px solid transparent;border-radius:6px;background:none;color:inherit;font:inherit;font-weight:600;cursor:pointer;opacity:.75;}
+.s43d-tabje:hover{opacity:1;background:color-mix(in srgb,var(--tx) 8%,transparent);}
+.s43d-tabje[data-aan]{opacity:1;border-color:var(--acc);background:color-mix(in srgb,var(--acc) 15%,transparent);}
+.s43d-kies{flex:1;min-height:0;display:flex;flex-direction:column;}
+.s43d-lade [hidden]{display:none !important;}
 .s43d-balk span{flex:1;}
 .s43d-x{border:0;background:none;color:inherit;cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;}
 .s43d-x:hover{background:color-mix(in srgb,var(--tx) 10%,transparent);}
 .s43d-lijf{flex:1;min-height:0;overflow:auto;}
 .s43d-leeg{padding:16px;color:var(--theme-text-secondary,#666);}
-.s43d-tab{position:absolute;z-index:931;top:50%;right:0;margin-top:-50px;writing-mode:vertical-rl;padding:14px 7px;border:1px solid var(--theme-border,#c8ccd1);border-right:0;
+.s43d-tab{position:fixed;z-index:931;writing-mode:vertical-rl;padding:14px 7px;border:1px solid var(--theme-border,#c8ccd1);border-right:0;
   border-radius:8px 0 0 8px;background:var(--theme-surface,#fff);color:var(--theme-text,#1f2328);font:600 13px system-ui,Segoe UI,sans-serif;
-  cursor:pointer;box-shadow:-3px 0 10px rgba(0,0,0,.18);transition:right .2s ease;}
+  cursor:pointer;box-shadow:-3px 0 10px rgba(0,0,0,.18);transition:left .2s ease;}
 .s43d-tab:hover,.s43d-tab[data-open]{border-color:var(--theme-accent,#0078d7);color:var(--theme-accent,#0078d7);}
 `;
 
@@ -41,18 +45,33 @@ function isOpen() {
   try { return localStorage.getItem(OPEN) === '1'; } catch { return false; }
 }
 
-let lade = null;   // { el, lijf, tab }
+let lade = null;   // { el, lijf, kies, tab, tabjes }
+let api0 = null;   // the extension API, for the Elements tab
 
-// The drawer and its tab live inside the page view, pinned to its right
-// edge: no screen coordinates, so the app's interface scale cannot shift it.
+// The drawer and its tab are fixed over the right edge of the page view, but
+// are not inside it: the page view never sees their clicks, scrolling or
+// typing (inside it, scrolling the drawer scrolled the sheet and keys typed in
+// a field reached the app's shortcuts).
 function houder() {
-  return document.querySelector('.main-view') || document.body;
+  return document.body;
+}
+
+function paginaVak() {
+  const r = document.querySelector('.main-view')?.getBoundingClientRect();
+  if (r && r.width > 0 && r.height > 0) return r;
+  return { top: 120, height: window.innerHeight - 120, right: window.innerWidth, width: window.innerWidth };
 }
 
 function plaats() {
   if (!lade) return;
+  const v = paginaVak();
   const open = !lade.el.hasAttribute('data-dicht');
-  lade.tab.style.right = open ? `${lade.el.offsetWidth || BREEDTE}px` : '0px';
+  const b = Math.max(240, Math.min(BREEDTE, v.width - 60));
+  Object.assign(lade.el.style, { top: `${v.top + 8}px`, height: `${Math.max(160, v.height - 16)}px`, left: `${v.right - b}px`, width: `${b}px` });
+  const tw = lade.tab.offsetWidth || 32;
+  const th = lade.tab.offsetHeight || 140;
+  lade.tab.style.top = `${v.top + Math.max(20, v.height / 2 - th / 2)}px`;
+  lade.tab.style.left = `${v.right - tw - (open ? b : 0)}px`;
 }
 
 function zetOpen(open) {
@@ -78,26 +97,77 @@ function maakLade() {
   if (s.textContent !== CSS) s.textContent = CSS;
   const el = document.createElement('div');
   el.className = 's43d-lade';
-  el.innerHTML = '<div class="s43d-balk"><b>Seed43 Properties</b><span></span><button class="s43d-x" title="Close">×</button></div><div class="s43d-lijf"></div>';
+  el.innerHTML = '<div class="s43d-balk"><button class="s43d-tabje" data-tab="eigenschappen">Seed43 Properties</button>'
+    + '<button class="s43d-tabje" data-tab="elementen">Elements</button><span></span><button class="s43d-x" title="Close">×</button></div>'
+    + '<div class="s43d-lijf"></div><div class="s43d-kies" hidden></div>';
   const lijf = el.querySelector('.s43d-lijf');
+  const kies = el.querySelector('.s43d-kies');
+  const tabjes = [...el.querySelectorAll('.s43d-tabje')];
+  for (const t of tabjes) t.addEventListener('click', () => zetTab(t.dataset.tab, true));
   const tab = document.createElement('button');
   tab.className = 's43d-tab';
   tab.textContent = 'Seed43 Properties';
-  tab.title = 'Seed43 Properties: the options of the selected Seed43 item';
+  tab.title = 'Seed43 Properties and Elements: the options of the selected Seed43 item, or find and place an element';
   tab.addEventListener('click', () => zetOpen(el.hasAttribute('data-dicht')));
   el.querySelector('.s43d-x').addEventListener('click', () => zetOpen(false));
+  // The drawer sits inside the page view: keep its clicks, keys and scrolling
+  // to itself, or the page view takes the focus back (typing in a field then
+  // went to the app's shortcuts) and treats clicks as clicks on the sheet.
+  for (const soort of ['mousedown', 'mouseup', 'pointerdown', 'pointerup', 'click', 'dblclick', 'wheel', 'keydown', 'keyup', 'keypress', 'contextmenu']) {
+    el.addEventListener(soort, (e) => e.stopPropagation());
+    tab.addEventListener(soort, (e) => e.stopPropagation());
+  }
+  // The app takes the focus back after a click outside its own panels, so a
+  // field in the drawer lost it before anything could be typed. Give it back.
+  el.addEventListener('mousedown', (e) => {
+    const veld = e.target.closest?.('input, textarea, select');
+    if (!veld) return;
+    const terug = () => { if (document.activeElement !== veld && veld.isConnected) veld.focus(); };
+    setTimeout(terug, 0);
+    setTimeout(terug, 60);
+  });
   houder().append(el, tab);
-  lade = { el, lijf, tab };
+  lade = { el, lijf, kies, tab, tabjes, snel: null };
   window.addEventListener('resize', plaats);
+  // The page view moves and resizes as the app's side panels open and close.
+  const mv = document.querySelector('.main-view');
+  if (mv && typeof ResizeObserver !== 'undefined') { lade.waker = new ResizeObserver(plaats); lade.waker.observe(mv); }
+  requestAnimationFrame(plaats);
   lijf.replaceChildren(leeg());
+  zetTab('elementen');   // nothing selected yet: find and place
   zetOpen(isOpen());
   return lade;
+}
+
+/**
+ * Show a tab: 'eigenschappen' (the selected item) or 'elementen' (find and
+ * place). Selecting an item shows Properties; with nothing selected the
+ * drawer shows Elements. `opZoek` puts the cursor in the search box.
+ */
+function zetTab(naam, opZoek = false) {
+  if (!lade) return;
+  for (const t of lade.tabjes) t.toggleAttribute('data-aan', t.dataset.tab === naam);
+  lade.lijf.hidden = naam !== 'eigenschappen';
+  lade.kies.hidden = naam !== 'elementen';
+  if (naam === 'elementen') {
+    if (!lade.snel && api0) {
+      const l = lade;
+      import('./library/snelkies.js').then(({ maakSnelKies }) => {
+        if (l !== lade || l.snel) return;
+        l.snel = maakSnelKies(api0);
+        l.kies.replaceChildren(l.snel.el);
+        if (opZoek) l.snel.focus();
+      }).catch((e) => console.warn('[seed43] elements tab:', e));
+    } else if (opZoek) lade.snel?.focus();
+    else lade.snel?.ververs();
+  }
 }
 
 export function verwijderLade() {
   if (!lade) return;
   lade.el.remove();
   lade.tab.remove();
+  lade.waker?.disconnect();
   window.removeEventListener('resize', plaats);
   lade = null;
 }
@@ -157,6 +227,7 @@ function toon(api, renderFn, ann) {
   let dom = null;
   try { dom = renderFn(werk, update, () => {}, () => {}); } catch (e) { console.warn('[seed43] properties:', e); }
   l.lijf.replaceChildren(dom || leeg());
+  zetTab('eigenschappen');
 }
 
 /**
@@ -165,6 +236,7 @@ function toon(api, renderFn, ann) {
  * with it off, the form shows in the app's panel as before.
  */
 export function registreerEigenschappen(api, type, renderFn) {
+  api0 = api0 || api;
   api.registerPropertyPanel(type, (ann, update, commit, cancel) => {
     if (!vensterAan()) return renderFn(ann, update, commit, cancel);
     if (!ann) { try { renderFn(null, update, commit, cancel); } catch {} return null; }
@@ -177,12 +249,13 @@ export function registreerEigenschappen(api, type, renderFn) {
     // was selected again straight after (moving to another Seed43 item).
     const nu = teller;
     clearTimeout(wis);
-    wis = setTimeout(() => { if (teller === nu && lade) lade.lijf.replaceChildren(leeg()); }, 0);
+    wis = setTimeout(() => { if (teller === nu && lade) { lade.lijf.replaceChildren(leeg()); zetTab('elementen'); } }, 0);
   });
 }
 
 /** Start: show the drawer's tab when the drawer is switched on. */
-export function startLade() {
+export function startLade(api) {
+  api0 = api;
   if (vensterAan()) maakLade();
 }
 
@@ -192,4 +265,38 @@ export function wisselVenster() {
   try { localStorage.setItem(AAN, aan ? '1' : '0'); } catch {}
   if (aan) { maakLade(); zetOpen(true); } else verwijderLade();
   return aan;
+}
+
+// --- Several Seed43 items selected -----------------------------------------
+//
+// Needs api.onSelectionChange and api.getSelectedAnnotations (Open PDF Studio
+// builds that have them). The single-item listeners report "nothing" for a
+// multi-select; this shows one shared form for all of them instead.
+
+/**
+ * `typen`: the annotation types to include; `bouw(api, anns, opnieuw)` builds
+ * the shared form, `opnieuw()` draws it again after a change.
+ */
+export function registreerMeervoud(api, typen, bouw) {
+  if (typeof api.onSelectionChange !== 'function') return null;
+  const toonMeer = (sel) => {
+    if (!vensterAan()) return;
+    const onze = (sel || []).filter((a) => typen.includes(a.type));
+    if (onze.length < 2) return;
+    teller++;
+    clearTimeout(wis);
+    const l = maakLade();
+    const ids = onze.map((a) => a.id);
+    const opnieuw = () => {
+      const vers = (api.getAnnotations?.() || []).filter((a) => ids.includes(a.id));
+      toonMeer(vers);
+    };
+    let dom = null;
+    try { dom = bouw(api, onze, opnieuw); } catch (e) { console.warn('[seed43] properties (several):', e); }
+    const scroll = l.lijf.scrollTop;
+    l.lijf.replaceChildren(dom || leeg());
+    l.lijf.scrollTop = scroll;
+    zetTab('eigenschappen');
+  };
+  return api.onSelectionChange(toonMeer);
 }

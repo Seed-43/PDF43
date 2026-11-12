@@ -3,14 +3,14 @@
 // member's centre line. Ctrl or Shift keeps a direction horizontal or
 // vertical; both together also allow 45 degrees.
 
-import { sectieMaat, boutMaat } from './draw.js';
+import { sectieMaat, boutMaat, sectieVorm, lidGeometrie } from './draw.js';
 
 export const SECTIE = 'seed43Section';
 export const BOUTEN = 'seed43BoltGroup';
 export const LID = 'seed43Member';
 export const ONZE = [SECTIE, BOUTEN, LID];
 
-export const GREEP_NAAM = { A: 'End A', B: 'End B', mid: 'Midpoint', centre: 'Centre', line: 'On centre line' };
+export const GREEP_NAAM = { A: 'End A', B: 'End B', mid: 'Midpoint', centre: 'Centre', line: 'On centre line', kant: 'Midpoint of side', hoek: 'Corner', rand: 'Edge' };
 
 /** Centre of a section or bolt group (x, y is the top-left of its bounds). */
 export function midden(ann) {
@@ -32,6 +32,41 @@ export function grepen(ann) {
   return [];
 }
 
+/**
+ * Points to snap to that are not grips: a section's corners and the middle
+ * of each side (top and bottom of a UB, the sides of an SHS), turned with the
+ * section; a member's two edges at end A, the middle and end B.
+ */
+export function snapPunten(ann) {
+  if (!ann?.element) return [];
+  const el = ann.element;
+  if (ann.type === SECTIE) {
+    const v = sectieVorm(el.shape, el.item);
+    const k = el.ptsPerMm || 1;
+    const c = midden(ann);
+    const hw = (v.w * k) / 2, hh = (v.h * k) / 2;
+    const r = ((el.rotation || 0) * Math.PI) / 180, co = Math.cos(r), si = Math.sin(r);
+    const P = (x, y, soort) => ({ x: c.x + x * co - y * si, y: c.y + x * si + y * co, soort, id: ann.id });
+    return [
+      P(0, -hh, 'kant'), P(0, hh, 'kant'), P(-hw, 0, 'kant'), P(hw, 0, 'kant'),
+      P(-hw, -hh, 'hoek'), P(hw, -hh, 'hoek'), P(hw, hh, 'hoek'), P(-hw, hh, 'hoek'),
+    ];
+  }
+  if (ann.type === LID && el.shape !== 'bracing') {
+    const g = lidGeometrie(ann);
+    const hw = (g.p.breedte * g.k) / 2;
+    if (!(hw > 0)) return [];
+    const mx = (g.ax + g.bx) / 2, my = (g.ay + g.by) / 2;
+    const uit = [];
+    for (const [x, y] of [[g.ax, g.ay], [mx, my], [g.bx, g.by]]) {
+      uit.push({ x: x + g.nx * hw, y: y + g.ny * hw, soort: 'rand', id: ann.id });
+      uit.push({ x: x - g.nx * hw, y: y - g.ny * hw, soort: 'rand', id: ann.id });
+    }
+    return uit;
+  }
+  return [];
+}
+
 /** Nearest grip within radius (page points), else the nearest point on a
  *  member's centre line, else null. `uitsluit` = id to leave out. */
 export function zoekSnap(api, page, x, y, radius, uitsluit) {
@@ -40,7 +75,7 @@ export function zoekSnap(api, page, x, y, radius, uitsluit) {
   for (const a of api.getAnnotations()) {
     if (a.page !== page || !ONZE.includes(a.type) || a.id === uitsluit || !a.element) continue;
     if (a.type === LID) leden.push(a);
-    for (const g of grepen(a)) {
+    for (const g of [...grepen(a), ...snapPunten(a)]) {
       const d = Math.hypot(g.x - x, g.y - y);
       if (d <= bestD) { best = g; bestD = d; }
     }
