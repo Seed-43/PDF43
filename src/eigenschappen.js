@@ -298,6 +298,9 @@ export function registreerEigenschappen(api, type, renderFn) {
     return notitie();
   });
   api.registerSelectionListener(type, (ann) => {
+    // Deselected: the next selection may show the card and guide again
+    // (they show on every new selection until switched off).
+    if (!ann) { hintGezien.clear(); gidsGezien.clear(); }
     if (!vensterAan()) {
       if (ann) meldGesloten(ann);
       return;
