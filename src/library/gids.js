@@ -244,3 +244,32 @@ export function gidsLink(soort) {
   a.addEventListener('click', (e) => { e.preventDefault(); toonGids(soort, { altijd: true }); });
   return a;
 }
+
+/**
+ * "This element has properties": shown when a Seed43 element is selected
+ * while Seed43 Properties is closed. `open()` opens it; `nogBezig()` keeps
+ * the card while the element stays selected.
+ */
+export function toonEigenschappenHint({ naam, open, nogBezig }) {
+  if (uit().has('open-props')) return;
+  stijl();
+  sluitGids();
+  const el = document.createElement('div');
+  el.className = 's43g';
+  el.innerHTML = `<div class="s43g-kop"><span>Seed43 Properties</span><button class="s43g-x" title="Close">×</button></div>
+    <ol style="list-style:none;padding:0 12px;"><li></li></ol>
+    <div class="s43g-voet"><label><input type="checkbox"> Don't show this again</label><button>Open properties</button></div>`;
+  el.querySelector('li').textContent = `${naam} has its own properties: size, view, pieces, label, and a key to its dimensions.`;
+  const vink = el.querySelector('input');
+  const dicht = () => { zetUit('open-props', vink.checked); sluitGids(); };
+  el.querySelector('.s43g-x').addEventListener('click', dicht);
+  el.querySelector('.s43g-voet button').addEventListener('click', () => { zetUit('open-props', vink.checked); sluitGids(); open(); });
+  vink.addEventListener('change', () => zetUit('open-props', vink.checked));
+  for (const t of ['mousedown', 'click', 'keydown', 'wheel', 'pointerdown']) el.addEventListener(t, (e) => e.stopPropagation());
+  const r = document.querySelector('.main-view')?.getBoundingClientRect();
+  el.style.left = `${(r?.right ?? window.innerWidth) - 316}px`;
+  el.style.bottom = `${Math.max(16, window.innerHeight - (r?.bottom ?? window.innerHeight) + 16)}px`;
+  document.body.appendChild(el);
+  kaart = el;
+  if (nogBezig) wacht = setInterval(() => { if (!nogBezig()) sluitGids(); }, 600);
+}

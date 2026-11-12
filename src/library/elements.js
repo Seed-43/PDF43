@@ -11,10 +11,10 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
-import { registreerEigenschappen, registreerMeervoud, bijEigenschappen } from '../eigenschappen.js';
+import { registreerEigenschappen, registreerMeervoud, bijEigenschappen, bijGeslotenEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { maakMaatschets, maakBoutSchets } from './maatschets.js';
-import { toonGids, gidsLink } from './gids.js';
+import { toonGids, gidsLink, toonEigenschappenHint } from './gids.js';
 
 /**
  * Change element: a Category list and an Element list. Picking an element
@@ -955,6 +955,11 @@ export function startElementen(api) {
   registreerEigenschappen(api, BOUTEN, boutPaneel(api));
   registreerEigenschappen(api, LID, lidPaneel());
   registreerMeervoud(api, ONZE, meervoudPaneel);
+  // Selected while Seed43 Properties is closed or off: say it has properties.
+  bijGeslotenEigenschappen((ann, open) => {
+    const naam = ann.element ? (ann.element.shape === 'bracing' ? 'This bracing line' : labelNaam(ann.element) || ann.element.bolt?.name || 'This element') : 'This element';
+    toonEigenschappenHint({ naam, open, nogBezig: () => geselecteerd === ann.id });
+  });
   // The editing guide for the selected kind, when its properties are on show.
   bijEigenschappen((ann) => {
     const soort = ann.type === BOUTEN ? 'bout-sel' : ann.type === SECTIE ? 'sectie-sel'

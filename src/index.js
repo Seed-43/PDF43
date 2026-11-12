@@ -15,7 +15,7 @@ import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
-import { vensterAan, wisselVenster, startLade, verwijderLade } from './eigenschappen.js';
+import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from './eigenschappen.js';
 
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
@@ -176,6 +176,7 @@ function bouwTab(api, aan) {
     ...alle.map((g) => ({ ...g, items: g.items.filter((it) => zie(welk[it.id] || it.id)) })).filter((g) => g.items.length),
   ];
   tab = api.registerRibbonTab({ id: 'main', label: 'Seed43', groups });
+  bijAanUit((aanNu) => { try { tab?.update('properties-window', { active: aanNu }); } catch {} });
   paletOpen(api).then((o) => { try { tab.update('smart-stamps', { active: o }); } catch {} }).catch(() => {});
 }
 
