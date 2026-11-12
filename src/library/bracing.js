@@ -115,3 +115,28 @@ export function tekenBracing(ctx, ann) {
   }
   ctx.restore();
 }
+
+/**
+ * Is (px, py) on this bracing line? The dashed line (and its twin when on
+ * both sides) and the tag text both count, so the text can be clicked too.
+ */
+export function bracingRaak(px, py, ann, tol = 2) {
+  if (!ann?.element) return false;
+  const g = geometrie(ann);
+  const dx = px - g.ax, dy = py - g.ay;
+  const t = dx * g.ux + dy * g.uy;              // along A to B
+  const n = dx * g.sx + dy * g.sy;              // out from the wall, towards the tag
+  const marge = Math.max(3, tol + 2);
+  // The line, offset from the wall (and on the other side too).
+  if (t >= -marge && t <= g.L + marge) {
+    if (Math.abs(n - g.wo) <= marge) return true;
+    if (g.it.both && Math.abs(n + g.wo) <= marge) return true;
+  }
+  // The tag text: a box around where it is written.
+  const m = tekstMidden(g);
+  const tm = (m.x - g.ax) * g.ux + (m.y - g.ay) * g.uy;
+  const regels = labelTekst(g);
+  const halfBreed = Math.max(...regels.map((r) => r.length)) * TEKST_PT * 0.3 + marge;
+  const van = g.wo + g.to - marge, tot = g.wo + g.to + g.tekstHoogte + marge;
+  return Math.abs(t - tm) <= halfBreed && n >= Math.min(van, g.wo) && n <= tot;
+}

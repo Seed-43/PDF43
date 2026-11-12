@@ -3,7 +3,7 @@
 // stamp of a family shows the family's parameter values: change one stamp and
 // all stamps of that family in the file follow.
 
-import { viaVenster } from '../eigenschappen.js';
+import { registreerEigenschappen } from '../eigenschappen.js';
 import { formulier, kop as formKop, groep, veld as formVeld } from '../formulier.js';
 import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO } from './families.js';
 import { maat, teken } from './render.js';
@@ -152,7 +152,7 @@ export async function startStamps(api) {
   if (actief) return;
   families = laadFamilies();
   api.registerAnnotationType(TYPE, markeringType(api));
-  api.registerPropertyPanel(TYPE, viaVenster(paneel(api)));
+  registreerEigenschappen(api, TYPE, paneel(api));
   registreerPalet(api);
   actief = true;
 }

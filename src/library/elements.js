@@ -11,10 +11,10 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
-import { viaVenster } from '../eigenschappen.js';
+import { registreerEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { laadBibliotheek, categorie } from './store.js';
-import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
+import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
@@ -149,6 +149,8 @@ function lidType(api) {
     getBounds(ann) { return ann.element ? lidBounds(ann) : { x: ann.x, y: ann.y, width: ann.width || 0, height: ann.height || 0 }; },
     hitTest(px, py, ann, tol = 2) {
       if (!ann.element) return false;
+      // A bracing line: the line or its tag text.
+      if (ann.element.shape === 'bracing') return bracingRaak(px, py, ann, tol);
       const g = lidGeometrie(ann);
       const t = (px - g.ax) * g.ux + (py - g.ay) * g.uy;
       const n = Math.abs((px - g.ax) * g.nx + (py - g.ay) * g.ny);
@@ -687,9 +689,9 @@ export function startElementen(api) {
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
   // The forms go to the Seed43 Properties window (eigenschappen.js).
-  api.registerPropertyPanel(SECTIE, viaVenster(sectiePaneel()));
-  api.registerPropertyPanel(BOUTEN, viaVenster(boutPaneel(api)));
-  api.registerPropertyPanel(LID, viaVenster(lidPaneel()));
+  registreerEigenschappen(api, SECTIE, sectiePaneel());
+  registreerEigenschappen(api, BOUTEN, boutPaneel(api));
+  registreerEigenschappen(api, LID, lidPaneel());
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);

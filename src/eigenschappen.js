@@ -78,11 +78,11 @@ function maakLade() {
   if (s.textContent !== CSS) s.textContent = CSS;
   const el = document.createElement('div');
   el.className = 's43d-lade';
-  el.innerHTML = '<div class="s43d-balk"><b>Properties</b><span></span><button class="s43d-x" title="Close">×</button></div><div class="s43d-lijf"></div>';
+  el.innerHTML = '<div class="s43d-balk"><b>Seed43 Properties</b><span></span><button class="s43d-x" title="Close">×</button></div><div class="s43d-lijf"></div>';
   const lijf = el.querySelector('.s43d-lijf');
   const tab = document.createElement('button');
   tab.className = 's43d-tab';
-  tab.textContent = 'Properties';
+  tab.textContent = 'Seed43 Properties';
   tab.title = 'Seed43 Properties: the options of the selected Seed43 item';
   tab.addEventListener('click', () => zetOpen(el.hasAttribute('data-dicht')));
   el.querySelector('.s43d-x').addEventListener('click', () => zetOpen(false));
@@ -112,28 +112,73 @@ function leeg() {
 function notitie() {
   const n = document.createElement('div');
   n.style.cssText = 'padding:6px 8px;font-size:12px;opacity:.75;';
-  n.textContent = 'Seed43 options are in the Properties drawer (tab on the right of the page).';
+  n.textContent = 'Seed43 options are in the Seed43 Properties drawer (tab on the right of the page).';
   return n;
 }
 
-/**
- * Wrap a property-panel renderer so its form goes to the Seed43 Properties
- * drawer. The drawer keeps its open or closed state; the tab is always there.
- */
-export function viaVenster(renderFn) {
-  return (ann, update, commit, cancel) => {
-    if (!vensterAan()) return renderFn(ann, update, commit, cancel);
-    const l = maakLade();
-    if (!ann) {
-      try { renderFn(null, update, commit, cancel); } catch {}
-      l.lijf.replaceChildren(leeg());
-      return null;
+// --- Following the selection ---------------------------------------------
+//
+// The drawer follows the selection itself (api.registerSelectionListener),
+// so it works while the app's own Properties panel is closed or folded up.
+// Its form edits a copy of the annotation; the changes of one edit go to the
+// app as one api.applyAnnotationBatch update (one undo step), after which the
+// form is drawn again from the updated annotation.
+
+let teller = 0;     // goes up with every form shown; a pending clear checks it
+let wis = null;
+
+function kopieVan(ann) {
+  try { return structuredClone(ann); } catch { return JSON.parse(JSON.stringify(ann)); }
+}
+
+function toon(api, renderFn, ann) {
+  teller++;
+  const l = maakLade();
+  const id = ann.id;
+  const lees = () => api.getAnnotations?.().find((a) => a.id === id) || ann;
+  const werk = kopieVan(lees());
+  let wachtend = null;
+  const update = (sleutel, waarde) => {
+    werk[sleutel] = waarde;
+    if (!wachtend) {
+      wachtend = {};
+      queueMicrotask(() => {
+        const changes = wachtend;
+        wachtend = null;
+        try { api.applyAnnotationBatch([{ op: 'update', id, changes }]); } catch (e) { console.warn('[seed43] properties update:', e); }
+        try { api.redrawAnnotations?.(); } catch {}
+        const scroll = l.lijf.scrollTop;
+        toon(api, renderFn, lees());
+        l.lijf.scrollTop = scroll;
+      });
     }
-    let dom = null;
-    try { dom = renderFn(ann, update, commit, cancel); } catch (e) { console.warn('[seed43] properties:', e); }
-    l.lijf.replaceChildren(dom || leeg());
-    return notitie();
+    wachtend[sleutel] = waarde;
   };
+  let dom = null;
+  try { dom = renderFn(werk, update, () => {}, () => {}); } catch (e) { console.warn('[seed43] properties:', e); }
+  l.lijf.replaceChildren(dom || leeg());
+}
+
+/**
+ * Register the properties form for a Seed43 annotation type. With the drawer
+ * on, the form shows in the drawer and the app's panel gets a one-line note;
+ * with it off, the form shows in the app's panel as before.
+ */
+export function registreerEigenschappen(api, type, renderFn) {
+  api.registerPropertyPanel(type, (ann, update, commit, cancel) => {
+    if (!vensterAan()) return renderFn(ann, update, commit, cancel);
+    if (!ann) { try { renderFn(null, update, commit, cancel); } catch {} return null; }
+    return notitie();
+  });
+  api.registerSelectionListener(type, (ann) => {
+    if (!vensterAan()) return;
+    if (ann) { clearTimeout(wis); toon(api, renderFn, ann); return; }
+    // A deselect calls every type's listener: clear once, unless something
+    // was selected again straight after (moving to another Seed43 item).
+    const nu = teller;
+    clearTimeout(wis);
+    wis = setTimeout(() => { if (teller === nu && lade) lade.lijf.replaceChildren(leeg()); }, 0);
+  });
 }
 
 /** Start: show the drawer's tab when the drawer is switched on. */
