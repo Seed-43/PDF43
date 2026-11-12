@@ -15,15 +15,62 @@ import { registreerEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { maakMaatschets } from './maatschets.js';
 
-/** The dimension key of a section, in its own foldable group. */
+/** The dimension key of a section (no group of its own: it follows the dimensions). */
 function schets(el, shape, item) {
   const cv = maakMaatschets(shape, item);
   if (!cv) return;
-  groep(el, 'Dimensions');
   const w = document.createElement('div');
   w.className = 's43f-schets';
   w.appendChild(cv);
   el.appendChild(w);
+}
+
+// Section data: each value with its name and unit, dimensions first, then
+// the section properties. Large properties are shown in powers of ten.
+const MATEN = [
+  ['d', 'Depth', 'mm'], ['b', 'Width', 'mm'], ['tf', 'Flange thickness', 'mm'], ['tw', 'Web thickness', 'mm'],
+  ['t', 'Thickness', 'mm'], ['r1', 'Root radius', 'mm'], ['r2', 'Toe radius', 'mm'], ['ro', 'Outside corner radius', 'mm'],
+  ['ri', 'Inside corner radius', 'mm'], ['lip', 'Lip', 'mm'], ['e', 'Top flange', 'mm'], ['f', 'Bottom flange', 'mm'],
+  ['plies', 'Plies', ''],
+];
+const EIGENSCHAPPEN = [
+  ['mass', 'Mass', 'kg/m', 0], ['A', 'Area', 'mm²', 0],
+  ['Ix', 'Second moment Ix', 'mm⁴', 6], ['Iy', 'Second moment Iy', 'mm⁴', 6],
+  ['Zx', 'Elastic modulus Zx', 'mm³', 3], ['Zy', 'Elastic modulus Zy', 'mm³', 3],
+  ['Sx', 'Plastic modulus Sx', 'mm³', 3], ['Sy', 'Plastic modulus Sy', 'mm³', 3],
+  ['J', 'Torsion constant J', 'mm⁴', 3], ['Iw', 'Warping constant Iw', 'mm⁶', 9],
+];
+const MACHT = { 3: '10³', 6: '10⁶', 9: '10⁹' };
+
+function getalTekst(v, macht = 0) {
+  if (typeof v !== 'number') return String(v);
+  if (macht && Math.abs(v) >= 10 ** macht) return `${(v / 10 ** macht).toLocaleString('en-NZ', { maximumFractionDigits: 3 })} × ${MACHT[macht]}`;
+  return v.toLocaleString('en-NZ', { maximumFractionDigits: 3 });
+}
+
+/** Dimensions (with the key), section properties, then anything else. */
+function sectieGegevens(el, shape, item) {
+  const gezien = new Set(['name', 'blocking', 'view', 'check']);
+  groep(el, 'Dimensions');
+  for (const [k, naam, eenheid] of MATEN) {
+    if (item[k] == null || item[k] === '') continue;
+    gezien.add(k);
+    waarde(el, `${naam} (${k})`, `${getalTekst(item[k])}${eenheid ? ` ${eenheid}` : ''}`);
+  }
+  schets(el, shape, item);
+  const eig = EIGENSCHAPPEN.filter(([k]) => item[k] != null && item[k] !== '');
+  if (eig.length) {
+    groep(el, 'Section properties');
+    for (const [k, naam, eenheid, macht] of eig) {
+      gezien.add(k);
+      waarde(el, naam, `${getalTekst(item[k], macht)} ${eenheid}`);
+    }
+  }
+  const rest = Object.entries(item).filter(([k]) => !gezien.has(k));
+  if (rest.length) {
+    groep(el, 'Other');
+    for (const [k, v] of rest) waarde(el, k, getalTekst(v));
+  }
 }
 import { laadBibliotheek, categorie } from './store.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
@@ -471,12 +518,7 @@ function sectiePaneel() {
       veld(el, 'Look', keuze([['0', 'Timber (cross)'], ['1', 'Blocking (diagonal)']], e.item.blocking ? '1' : '0',
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
     }
-    groep(el, 'Section data');
-    for (const [k, v] of Object.entries(e.item)) {
-      if (k === 'name' || k === 'blocking' || k === 'view') continue;
-      waarde(el, k, typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v));
-    }
-    schets(el, e.shape, e.item);
+    sectieGegevens(el, e.shape, e.item);
     el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
     return el;
   };
@@ -586,7 +628,7 @@ function lidPaneel() {
       (v) => zet((x) => { x.label = v !== '0'; x.showLength = v === '1'; })));
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
-    schets(el, e.shape, e.item);
+    sectieGegevens(el, e.shape, e.item);
     el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
     return el;
   };

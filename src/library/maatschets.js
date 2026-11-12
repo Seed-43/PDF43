@@ -83,10 +83,20 @@ export function maakMaatschets(shape, it) {
     case 'I':
     case 'channel': {
       const ftf = tf * k, ftw = tw * k;
-      // Flange thickness at the top left, web thickness at mid height.
-      dikte(ctx, L + 10, T, L + 10, T + ftf, false, 'tf', L - 2, T + ftf / 2);
-      const wx = shape === 'I' ? cx - ftw / 2 : L + 0;
+      // Flange thickness: arrows and label clear of the section, on the left,
+      // with extension lines from the flange faces.
+      const fx = L - 12;
+      hulp(ctx, L - 2, T, fx - 4, T); hulp(ctx, L - 2, T + ftf, fx - 4, T + ftf);
+      dikte(ctx, fx, T, fx, T + ftf, false, 'tf', fx - 14, T + ftf / 2);
+      // Web thickness at mid height.
+      const wx = shape === 'I' ? cx - ftw / 2 : L;
       dikte(ctx, wx, cy, wx + ftw, cy, true, 'tw', wx + ftw + 22, cy - 9);
+      // Root radius where the web meets the bottom flange, with a leader.
+      if (num(it.r1)) {
+        const rx = shape === 'I' ? cx + ftw / 2 : L + ftw, ry = O - ftf;
+        ctx.beginPath(); ctx.moveTo(rx + 1, ry - 1); ctx.lineTo(rx + 16, ry - 16); ctx.stroke();
+        ctx.fillText('r1', rx + 24, ry - 20);
+      }
       break;
     }
     case 'angle':
