@@ -13,7 +13,7 @@
 
 import { registreerEigenschappen, registreerMeervoud } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
-import { maakMaatschets } from './maatschets.js';
+import { maakMaatschets, maakBoutSchets } from './maatschets.js';
 
 /**
  * Change element: a Category list and an Element list. Picking an element
@@ -737,6 +737,10 @@ function boutPaneel(api) {
     veld(el, 'Gauge (mm)', getal(g.gauge, (n) => wb((x) => { x.gauge = n; }), 5));
     veld(el, 'Edge across', getal(g.ex, (n) => wb((x) => { x.edgeX = n; }), 5));
     veld(el, 'Edge along', getal(g.ey, (n) => wb((x) => { x.edgeY = n; }), 5));
+    {
+      const cv = maakBoutSchets(e);
+      if (cv) { const w = document.createElement('div'); w.className = 's43f-schets'; w.appendChild(cv); el.appendChild(w); }
+    }
     groep(el, 'Display');
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => wb((x) => { x.rotation = v; })));
     veld(el, 'Plate', keuze([['1', 'Show'], ['0', 'Hide']], e.plate === false ? '0' : '1', (v) => wb((x) => { x.plate = v === '1'; })));
