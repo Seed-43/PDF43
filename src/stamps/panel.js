@@ -27,12 +27,10 @@ let paneel = null;
  * stamp tool for that family; `bijSluiten()` runs when the user closes it.
  */
 export function openPaneel({ families, icoon, kies, bijSluiten }) {
-  if (!document.getElementById(STIJL_ID)) {
-    const s = document.createElement('style');
-    s.id = STIJL_ID;
-    s.textContent = CSS;
-    document.head.appendChild(s);
-  }
+  // Always rewrite: after a reinstall the page still holds the old sheet.
+  let s = document.getElementById(STIJL_ID);
+  if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
+  if (s.textContent !== CSS) s.textContent = CSS;
   const venster = maakVenster({ id: 'stamps', titel: 'Smart Stamps', breedte: 210, hoogte: 90, bijSluiten: () => { paneel = null; bijSluiten?.(); } });
   const lijst = document.createElement('div');
   lijst.className = 's43p-lijst';

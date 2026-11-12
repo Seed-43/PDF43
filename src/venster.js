@@ -45,11 +45,10 @@ const DOEL_ICOON = {
 const vensters = new Map();   // id -> venster
 
 function stijl() {
-  if (document.getElementById(STIJL_ID)) return;
-  const s = document.createElement('style');
-  s.id = STIJL_ID;
-  s.textContent = CSS;
-  document.head.appendChild(s);
+  // Always rewrite: after a reinstall the page still holds the old sheet.
+  let s = document.getElementById(STIJL_ID);
+  if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
+  if (s.textContent !== CSS) s.textContent = CSS;
 }
 
 function leesAlle() {

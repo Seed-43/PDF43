@@ -15,7 +15,7 @@ import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
-import { vensterAan, wisselVenster } from './eigenschappen.js';
+import { vensterAan, wisselVenster, startLade, verwijderLade } from './eigenschappen.js';
 
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
@@ -70,6 +70,7 @@ export async function activate(api) {
   // Smart Stamps are always available: placed stamps must keep showing.
   try { await startStamps(api); } catch (e) { console.warn('[seed43] stamps did not start:', e); }
   try { startElementen(api); } catch (e) { console.warn('[seed43] element library did not start:', e); }
+  try { startLade(); } catch (e) { console.warn('[seed43] properties drawer:', e); }
 
   if (api.features?.ribbonTabs !== true) return;
   bouwTab(api, aan);
@@ -165,8 +166,8 @@ function bouwTab(api, aan) {
       }, {
         type: 'action', id: 'properties-window', label: { en: 'Properties', nl: 'Eigenschappen' }, icon: ICOON_EIGENSCHAPPEN, size: 'large',
         title: {
-          en: 'Seed43 Properties window: the options of a selected member, bolt group, bracing line or stamp in a window you can dock on any side. Off: they show in the Properties panel of the app.',
-          nl: 'Venster Seed43-eigenschappen: de opties van een gekozen element in een venster dat aan elke kant kan docken. Uit: in het eigenschappenpaneel van de app.',
+          en: 'Properties drawer: the options of the selected Seed43 item, in a drawer on the right of the page (Properties tab). Off: they show in the Properties panel.',
+          nl: 'Lade Seed43-eigenschappen: de opties van een gekozen element in een lade rechts van de pagina. Uit: in het eigenschappenpaneel van de app.',
         },
         active: vensterAan(),
         onRun: () => { const aanNu = wisselVenster(); tab?.update('properties-window', { active: aanNu }); },
@@ -180,6 +181,7 @@ function bouwTab(api, aan) {
 
 export async function deactivate(api) {
   tab = null;
+  verwijderLade();
   stopElementen();
   for (const t of TOOLS) { try { await t.stop(api); } catch {} }
 }
