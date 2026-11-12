@@ -11,6 +11,7 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
+import { viaVenster } from '../eigenschappen.js';
 import { laadBibliotheek, categorie } from './store.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
@@ -700,9 +701,10 @@ export function startElementen(api) {
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
-  api.registerPropertyPanel(SECTIE, sectiePaneel());
-  api.registerPropertyPanel(BOUTEN, boutPaneel(api));
-  api.registerPropertyPanel(LID, lidPaneel());
+  // The forms go to the Seed43 Properties window (eigenschappen.js).
+  api.registerPropertyPanel(SECTIE, viaVenster(sectiePaneel()));
+  api.registerPropertyPanel(BOUTEN, viaVenster(boutPaneel(api)));
+  api.registerPropertyPanel(LID, viaVenster(lidPaneel()));
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);

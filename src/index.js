@@ -15,9 +15,11 @@ import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
+import { vensterAan, wisselVenster } from './eigenschappen.js';
 
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
+const ICOON_EIGENSCHAPPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M14 4v16"/><path d="M16.5 8h2"/><path d="M16.5 11h2"/><path d="M16.5 14h2"/></svg>';
 const ICOON_ABOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
 
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
@@ -160,6 +162,14 @@ function bouwTab(api, aan) {
           zichtbaar: isZichtbaar,
           zet: (id, v) => { const z = leesZichtbaar(); z[id] = v; try { localStorage.setItem(ZICHTBAAR, JSON.stringify(z)); } catch {} bouwTab(api, aan); },
         }),
+      }, {
+        type: 'action', id: 'properties-window', label: { en: 'Properties', nl: 'Eigenschappen' }, icon: ICOON_EIGENSCHAPPEN, size: 'large',
+        title: {
+          en: 'Seed43 Properties window: the options of a selected member, bolt group, bracing line or stamp in a window you can dock on any side. Off: they show in the Properties panel of the app.',
+          nl: 'Venster Seed43-eigenschappen: de opties van een gekozen element in een venster dat aan elke kant kan docken. Uit: in het eigenschappenpaneel van de app.',
+        },
+        active: vensterAan(),
+        onRun: () => { const aanNu = wisselVenster(); tab?.update('properties-window', { active: aanNu }); },
       }],
     },
     ...alle.map((g) => ({ ...g, items: g.items.filter((it) => zie(welk[it.id] || it.id)) })).filter((g) => g.items.length),

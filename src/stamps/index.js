@@ -3,6 +3,7 @@
 // stamp of a family shows the family's parameter values: change one stamp and
 // all stamps of that family in the file follow.
 
+import { viaVenster } from '../eigenschappen.js';
 import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO } from './families.js';
 import { maat, teken } from './render.js';
 import { openBouwer } from './builder.js';
@@ -163,7 +164,7 @@ export async function startStamps(api) {
   if (actief) return;
   families = laadFamilies();
   api.registerAnnotationType(TYPE, markeringType(api));
-  api.registerPropertyPanel(TYPE, paneel(api));
+  api.registerPropertyPanel(TYPE, viaVenster(paneel(api)));
   registreerPalet(api);
   actief = true;
 }
