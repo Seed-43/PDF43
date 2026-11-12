@@ -135,7 +135,18 @@ export function puntenPerMm(api, page, x, y, denom = 10) {
   try {
     const s = api.getScaleAt?.(page, x, y);
     const f = s && PER_MM[String(s.unit || '').toLowerCase()];
-    if (s && f && s.pixelsPerUnit > 0) return { ptsPerMm: s.pixelsPerUnit * f, scaleText: 'sheet scale' };
+    if (s && f && s.pixelsPerUnit > 0) {
+      const ptsPerMm = s.pixelsPerUnit * f;
+      // The ratio itself, e.g. "1:100 (sheet)", from the app's page or
+      // document scale; worked out from the points when it gives none.
+      let ratio = /^1\s*:\s*\d/.test(String(s.scaleRatio || '')) ? String(s.scaleRatio).replace(/\s+/g, '') : '';
+      if (!ratio) {
+        const n = PT_PER_PAPER_MM / ptsPerMm;
+        const rond = Math.abs(n - Math.round(n)) < 0.01 * n ? Math.round(n) : Math.round(n * 10) / 10;
+        if (rond > 0 && Number.isFinite(rond)) ratio = `1:${rond}`;
+      }
+      return { ptsPerMm, scaleText: ratio ? `${ratio} (sheet)` : 'sheet scale' };
+    }
   } catch {}
   return { ptsPerMm: PT_PER_PAPER_MM / denom, scaleText: `1:${denom}` };
 }
