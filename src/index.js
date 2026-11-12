@@ -15,6 +15,8 @@ import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
+import { tipsAan, wisselTips } from './library/gids.js';
+const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
 import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from './eigenschappen.js';
 
 const OPSLAG = 'seed43.tools';
@@ -163,6 +165,11 @@ function bouwTab(api, aan) {
           zichtbaar: isZichtbaar,
           zet: (id, v) => { const z = leesZichtbaar(); z[id] = v; try { localStorage.setItem(ZICHTBAAR, JSON.stringify(z)); } catch {} bouwTab(api, aan); },
         }),
+      }, {
+        type: 'action', id: 'tips', label: { en: 'Tips', nl: 'Tips' }, icon: ICOON_TIPS, size: 'large',
+        title: { en: 'Show or hide the Seed43 tips: the animated guides when placing or selecting, and the properties card. On again brings back the ones you ticked off.', nl: 'Seed43-tips tonen of verbergen.' },
+        active: tipsAan(),
+        onRun: () => { const aanNu = wisselTips(); tab?.update('tips', { active: aanNu }); },
       }, {
         type: 'action', id: 'properties-window', label: { en: 'Properties', nl: 'Eigenschappen' }, icon: ICOON_EIGENSCHAPPEN, size: 'large',
         title: {

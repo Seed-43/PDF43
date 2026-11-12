@@ -184,6 +184,22 @@ function stijl() {
   if (s.textContent !== CSS) s.textContent = CSS;
 }
 
+const ALLES = 'seed43.gids.alles';   // '0' = all tips off (ribbon Tips button)
+/** Tips (guides and the properties card) on or off as a whole. */
+export function tipsAan() {
+  try { return localStorage.getItem(ALLES) !== '0'; } catch { return true; }
+}
+/** Ribbon: tips on or off. Switching them on also brings back every guide ticked off. */
+export function wisselTips() {
+  const aan = !tipsAan();
+  try {
+    localStorage.setItem(ALLES, aan ? '1' : '0');
+    if (aan) localStorage.removeItem(UIT);
+  } catch {}
+  if (!aan) sluitGids();
+  return aan;
+}
+
 function uit() {
   try { const v = JSON.parse(localStorage.getItem(UIT) || '[]'); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); }
 }
@@ -210,7 +226,7 @@ export function sluitGids() {
  */
 export function toonGids(soort, { altijd = false, nogBezig = null } = {}) {
   const g = GIDSEN[soort];
-  if (!g || (!altijd && uit().has(soort))) return;
+  if (!g || (!altijd && (!tipsAan() || uit().has(soort)))) return;
   stijl();
   sluitGids();
   const el = document.createElement('div');
@@ -251,7 +267,7 @@ export function gidsLink(soort) {
  * the card while the element stays selected.
  */
 export function toonEigenschappenHint({ naam, open, nogBezig }) {
-  if (uit().has('open-props')) return;
+  if (!tipsAan() || uit().has('open-props')) return;
   stijl();
   sluitGids();
   const el = document.createElement('div');
