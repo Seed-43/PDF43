@@ -733,10 +733,10 @@ function boutPaneel(api) {
     groep(el, 'Layout');
     veld(el, 'Rows', getal(g.rows, (n) => wb((x) => { x.rows = Math.max(1, Math.round(n)); })));
     veld(el, 'Columns', getal(g.cols, (n) => wb((x) => { x.cols = Math.max(1, Math.round(n)); })));
-    veld(el, 'Pitch (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));
-    veld(el, 'Gauge (mm)', getal(g.gauge, (n) => wb((x) => { x.gauge = n; }), 5));
-    veld(el, 'Edge across', getal(g.ex, (n) => wb((x) => { x.edgeX = n; }), 5));
-    veld(el, 'Edge along', getal(g.ey, (n) => wb((x) => { x.edgeY = n; }), 5));
+    veld(el, 'Pitch, p (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));
+    veld(el, 'Gauge, g (mm)', getal(g.gauge, (n) => wb((x) => { x.gauge = n; }), 5));
+    veld(el, 'Edge across, ex (mm)', getal(g.ex, (n) => wb((x) => { x.edgeX = n; }), 5));
+    veld(el, 'Edge along, ey (mm)', getal(g.ey, (n) => wb((x) => { x.edgeY = n; }), 5));
     {
       const cv = maakBoutSchets(e);
       if (cv) { const w = document.createElement('div'); w.className = 's43f-schets'; w.appendChild(cv); el.appendChild(w); }
