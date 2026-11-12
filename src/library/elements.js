@@ -409,12 +409,12 @@ function herteken(api) {
           const L = Math.hypot(b.x - a.x, b.y - a.y) / (puntenPerMm(api, page, a.x, a.y).ptsPerMm || 1);
           const naam = plaatsing.greep === 'B' ? 'point A' : plaatsing.greep === 'mid' ? 'an end' : 'point B';
           const lijn = plaatsing.uitlijn && plaatsing.uitlijn !== 'centre' ? `  J: ${UITLIJNING[plaatsing.uitlijn]}` : '  J: centre';
-          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '  Tab: turn' : '  (Ctrl/Shift: square)'}${lijn}`);
+          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '  Tab: turn' : '  (Ctrl/Shift: square)'}${plaatsing.shape === 'bracing' ? '  Space: flip side' : lijn}`);
         } else {
           const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
           tekenSnap(c, s, q.snap);
           const naam = plaatsing.greep === 'B' ? 'point B' : plaatsing.greep === 'mid' ? 'the midpoint' : 'point A';
-          tekenTekst(c, s, q.x, q.y, `Click ${naam} of ${labelNaam(plaatsing)}  (J: ${(UITLIJNING[plaatsing.uitlijn || 'centre'] || 'Centre').toLowerCase()})`);
+          tekenTekst(c, s, q.x, q.y, plaatsing.shape === 'bracing' ? `Click ${naam} of ${labelNaam(plaatsing)}  (Space: flip side)` : `Click ${naam} of ${labelNaam(plaatsing)}  (J: ${(UITLIJNING[plaatsing.uitlijn || 'centre'] || 'Centre').toLowerCase()})`);
         }
       } else {
         const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
@@ -854,7 +854,7 @@ function bracingPaneel(el, ann, update, e, g) {
   const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
   groep(el, 'Scale');
   veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) { const x = kopie(ann.element); x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; update('element', x); } }));
-  el.appendChild((() => { const t = tip('Drag end A or B to change the braced length (Shift keeps it square, Tab turns it). New bracing lines take the last tag and settings; Enter places another.'); t.appendChild(gidsLink('bracing-sel')); return t; })());
+  el.appendChild((() => { const t = tip('Drag end A or B to change the braced length (Shift keeps it square, Tab turns it); Space flips it to the other side. New bracing lines take the last tag and settings; Enter places another.'); t.appendChild(gidsLink('bracing-sel')); return t; })());
 }
 
 /** Arm the bracing line tool: click A, then B along the braced wall. */
@@ -874,6 +874,14 @@ function draaiGeselecteerd(api, stap) {
   const ann = api.getAnnotations().find((a) => a.id === geselecteerd);
   if (!ann?.element) return false;
   const changes = {};
+  // A bracing line flips to the other side instead of turning.
+  if (ann.type === LID && ann.element.shape === 'bracing') {
+    const element = kopie(ann.element);
+    element.item = { ...element.item, flip: !element.item?.flip };
+    api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { element } }]);
+    api.redrawAnnotations?.();
+    return true;
+  }
   if (ann.type === LID) {
     const mx = (ann.startX + ann.endX) / 2, my = (ann.startY + ann.endY) / 2;
     const r = (stap * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
@@ -902,6 +910,16 @@ function spatieToets(api) {
     const t = e.target;
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName))) return;
     const stap = e.shiftKey ? -90 : 90;
+    // Placing a bracing line: Space flips the line and tag to the other side
+    // (and new bracing lines keep that side).
+    if (api.getCurrentTool?.() === LID && plaatsing?.shape === 'bracing') {
+      plaatsing.item = { ...plaatsing.item, flip: !plaatsing.item.flip };
+      laatsteBracing = { ...laatsteBracing, flip: plaatsing.item.flip };
+      api.setToolOverrides({ seed43Element: plaatsing });
+      e.preventDefault(); e.stopPropagation();
+      startLus(api);
+      return;
+    }
     // Placing: turn the element that is about to be placed.
     if ([SECTIE, BOUTEN].includes(api.getCurrentTool?.())) {
       if (plaatsing) {

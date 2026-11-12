@@ -98,6 +98,7 @@ const GIDSEN = {
     stappen: [
       'Drag end <b>A</b> or <b>B</b> to change the braced length; the length in metres updates.',
       'Click the line or its text to select it.',
+      '<kbd>Space</kbd> flips the line and tag to the other side.',
       'Seed43 Properties: tag, rounding, layout, side, both sides and offsets. <kbd>Enter</kbd> places another.',
     ],
   },
@@ -172,6 +173,7 @@ const GIDSEN = {
     stappen: [
       'Click point <b>A</b>, then point <b>B</b> along the braced wall.',
       'Hold <kbd>Shift</kbd> to keep it square (<kbd>Tab</kbd> turns it).',
+      '<kbd>Space</kbd> flips the line and tag to the other side.',
       'The tag and the length in metres are written for you; set the tag and side in Seed43 Properties.',
       'New bracing lines take the last tag and settings.',
     ],
