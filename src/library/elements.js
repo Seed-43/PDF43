@@ -554,6 +554,11 @@ function sectiePaneel() {
       update('subject', it.name);
     });
     groep(el, 'Display');
+    if (!BEVESTIGINGEN.includes(e.shape)) {
+      // Section, or the same element as a member in elevation or plan.
+      veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (member)'], ['plan', 'Plan (member)']], 'section',
+        (v) => { if (v !== 'section') wisselVorm(ann, v); }));
+    }
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => werkBij(ann, update, sectieMaat, (x) => { x.rotation = v; })));
     schaalVeld(el, ann, update, sectieMaat);
     veld(el, 'Label', keuze([['1', 'Show'], ['0', 'Hide']], e.label === false ? '0' : '1',
@@ -673,7 +678,8 @@ function lidPaneel() {
       update('subject', it.name);
     });
     groep(el, 'Member');
-    veld(el, 'View', keuze([['elevation', 'Elevation'], ['plan', 'Plan']], e.view || 'elevation', (v) => zet((x) => { x.view = v; })));
+    veld(el, 'View', keuze([['elevation', 'Elevation'], ['plan', 'Plan'], ['section', 'Section (end on)']], e.view || 'elevation',
+      (v) => { if (v === 'section') wisselVorm(ann, 'section'); else zet((x) => { x.view = v; }); }));
     const lengte = document.createElement('span');
     lengte.textContent = `${Math.round(g.L / g.k)} mm`;
     veld(el, 'Length', lengte);
@@ -793,9 +799,45 @@ function spatieToets(api) {
 }
 
 let toets = null;
+let apiRef = null;   // for forms that change an element's kind
+
+/**
+ * Swap a section for a member in elevation or plan, or a member for a
+ * section. The app cannot change an annotation's type, so the old one is
+ * deleted and the new one created in one batch (one undo step). Same element
+ * and scale: a section becomes a 1 m member through its centre, a member a
+ * section at its midpoint.
+ */
+function wisselVorm(ann, naar) {
+  const api = apiRef;
+  const e = ann?.element;
+  if (!api || !e) return;
+  const basis = { category: e.category, shape: e.shape, item: kopie(e.item), ptsPerMm: e.ptsPerMm, scaleText: e.scaleText,
+    ...(e.catId ? { catId: e.catId } : {}), label: e.label !== false };
+  let nieuw;
+  if (ann.type === SECTIE && (naar === 'elevation' || naar === 'plan')) {
+    const cx = ann.x + (ann.width || 0) / 2, cy = ann.y + (ann.height || 0) / 2;
+    const half = 500 * (e.ptsPerMm || 1);
+    const lid = { type: LID, startX: cx - half, startY: cy, endX: cx + half, endY: cy, element: { ...basis, view: naar }, subject: e.item?.name || '' };
+    const bb = lidBounds(lid);
+    nieuw = { ...lid, x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+  } else if (ann.type === LID && naar === 'section') {
+    const mx = (ann.startX + ann.endX) / 2, my = (ann.startY + ann.endY) / 2;
+    const element = { ...basis, rotation: 0 };
+    const m = sectieMaat(element);
+    nieuw = { type: SECTIE, x: mx - m.w / 2, y: my - m.h / 2, width: m.w, height: m.h, element, subject: e.item?.name || '' };
+  } else return;
+  try {
+    const uit = api.applyAnnotationBatch([{ op: 'delete', id: ann.id }, { op: 'create', annotation: { ...nieuw, page: ann.page } }]);
+    api.redrawAnnotations?.();
+    const id = uit?.createdIds?.[0];
+    if (id) { try { api.selectAnnotations?.({ ids: [id] }); } catch {} }
+  } catch (err) { console.warn('[seed43] change view:', err); }
+}
 let pointer = null;
 
 export function startElementen(api) {
+  apiRef = api;
   // Load the library now, so Change element can list it straight away.
   laadBibliotheek(api).catch(() => {});
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
