@@ -53,8 +53,13 @@ export function sectieVorm(shape, it) {
       // Sawn timber: the section with a cross, or one diagonal for blocking;
       // 2/ = pieces side by side.
       const n = Math.max(1, Math.round(num(it.plies) || 1));
-      const lijnen = it.blocking ? [[[-hb, -hd], [hb, hd]]] : [[[-hb, -hd], [hb, hd]], [[hb, -hd], [-hb, hd]]];
-      for (let i = 1; i < n; i++) { const x = -hb + (b * i) / n; lijnen.push([[x, -hd], [x, hd]]); }
+      const lijnen = [];
+      for (let i = 0; i < n; i++) {
+        const x0 = -hb + (b * i) / n, x1 = -hb + (b * (i + 1)) / n;
+        lijnen.push([[x0, -hd], [x1, hd]]);
+        if (!it.blocking) lijnen.push([[x1, -hd], [x0, hd]]);
+        if (i) lijnen.push([[x0, -hd], [x0, hd]]);
+      }
       return { w: b, h: d, hout: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
     }
     case 'glulam': {
@@ -62,12 +67,16 @@ export function sectieVorm(shape, it) {
       // bottom; what is left over is the top lamination.
       const lijnen = [];
       for (let y = hd - LAMEL; y > -hd + 1; y -= LAMEL) lijnen.push([[-hb, y], [hb, y]]);
+      const n = Math.max(1, Math.round(num(it.plies) || 1));
+      for (let i = 1; i < n; i++) { const x = -hb + (b * i) / n; lijnen.push([[x, -hd], [x, hd]]); }
       return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
     }
     case 'lvl': {
       // LVL: veneer lines down the depth, VINEER mm apart from the left.
       const lijnen = [];
       for (let x = -hb + VINEER; x < hb - 1; x += VINEER) lijnen.push([[x, -hd], [x, hd]]);
+      const n = Math.max(1, Math.round(num(it.plies) || 1));
+      for (let i = 1; i < n; i++) { const x = -hb + (b * i) / n; lijnen.push([[x, -hd], [x, hd]]); }
       return { w: b, h: d, hout: true, dun: true, lijnen, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
     }
     // ── Fixings (Lumberlok, Bowmac): it.view 'section' (end on) or 'elevation' (side on) ──
@@ -207,7 +216,7 @@ export function tekenSectie(ctx, ann) {
     ctx.font = '7px Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(el.item.name, cx, cy + h / 2 + 2);
+    ctx.fillText(labelNaam(el), cx, cy + h / 2 + 2);
   }
   ctx.restore();
 }
@@ -473,7 +482,7 @@ export function lidProfiel(shape, it, view) {
     else if (shape === 'channel') lijnen.push({ o: -b / 2 + tw, dash: true });
     else if (shape === 'angle') lijnen.push({ o: -b / 2 + t, dash: true });
     else if (shape === 'rhs' || shape === 'chs' || shape === 'lipped-c' || shape === 'lipped-z') lijnen.push({ o: -breedte / 2 + t, dash: true }, { o: breedte / 2 - t, dash: true });
-    else if (shape === 'rect') { const n = Math.max(1, Math.round(num(it.plies) || 1)); for (let i = 1; i < n; i++) lijnen.push({ o: -b / 2 + (b * i) / n }); }
+    else if (shape === 'rect' || shape === 'glulam' || shape === 'lvl') { const n = Math.max(1, Math.round(num(it.plies) || 1)); for (let i = 1; i < n; i++) lijnen.push({ o: -b / 2 + (b * i) / n }); }
     else if (shape === 'ijoist') { const w = num(it.tw); if (w > 0) lijnen.push({ o: -w / 2, dash: true }, { o: w / 2, dash: true }); else lijnen.push({ o: 0, dash: true }); }
   } else {
     breedte = d;
@@ -485,13 +494,55 @@ export function lidProfiel(shape, it, view) {
   return { breedte, lijnen };
 }
 
+// ── Members side by side (2/140x45) and the label text ──────────────────
+
+/** Shapes that can be doubled, tripled, ... (pieces side by side). */
+export const AANTAL_VORMEN = ['rect', 'glulam', 'lvl'];
+
+/**
+ * Set how many pieces side by side: the element's item becomes n times as
+ * wide with n plies; the single piece is kept in `enkel`. n = 1 restores it.
+ */
+export function metAantal(el, n) {
+  const basis = el.enkel || el.item;
+  n = Math.max(1, Math.min(20, Math.round(+n || 1)));
+  if (n > 1 && AANTAL_VORMEN.includes(el.shape)) {
+    el.enkel = basis;
+    el.item = { ...basis, b: num(basis.b) * n, plies: (Math.round(num(basis.plies)) || 1) * n };
+    el.aantal = n;
+  } else {
+    el.item = basis;
+    delete el.enkel;
+    delete el.aantal;
+  }
+  return el;
+}
+
+/** The label: the user's own text, else 2/140x45 for doubled members, else the name. */
+export function labelNaam(el) {
+  if (el?.labelTekst) return el.labelTekst;
+  const naam = el?.enkel?.name || el?.item?.name || '';
+  return el?.aantal > 1 ? `${el.aantal}/${naam}` : naam;
+}
+
+/** Where the drawn line sits on the member: centre, or one edge (top of steel, one face). */
+export const UITLIJNING = { centre: 'Centre', top: 'Top / left edge', bottom: 'Bottom / right edge' };
+
 export function lidGeometrie(ann) {
   const el = ann.element, k = el.ptsPerMm || 1;
-  const ax = ann.startX, ay = ann.startY, bx = ann.endX, by = ann.endY;
+  let ax = ann.startX, ay = ann.startY, bx = ann.endX, by = ann.endY;
   const L = Math.hypot(bx - ax, by - ay) || 1;
   const ux = (bx - ax) / L, uy = (by - ay) / L, nx = -uy, ny = ux;
   const p = lidProfiel(el.shape, el.item, el.view);
   const hw = (p.breedte * k) / 2;
+  // Line on an edge: the member moves off the line, below it (or to the
+  // right of a vertical line) for 'top', above (or left) for 'bottom'.
+  if (el.uitlijn === 'top' || el.uitlijn === 'bottom') {
+    let ox = nx, oy = ny;
+    if (oy < -1e-6 || (Math.abs(oy) <= 1e-6 && ox < 0)) { ox = -ox; oy = -oy; }
+    const af = (el.uitlijn === 'top' ? 1 : -1) * hw;
+    ax += ox * af; ay += oy * af; bx += ox * af; by += oy * af;
+  }
   const hoeken = [[ax + nx * hw, ay + ny * hw], [bx + nx * hw, by + ny * hw], [bx - nx * hw, by - ny * hw], [ax - nx * hw, ay - ny * hw]];
   return { ax, ay, bx, by, L, ux, uy, nx, ny, k, p, hoeken };
 }
@@ -549,7 +600,7 @@ export function tekenLid(ctx, ann) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     const lengte = Math.round(g.L / g.k);
-    ctx.fillText(`${el.item.name}${el.showLength === false ? '' : `  L=${lengte}`}`, 0, -af);
+    ctx.fillText(`${labelNaam(el)}${el.showLength === false ? '' : `  L=${lengte}`}`, 0, -af);
   }
   ctx.restore();
 }
