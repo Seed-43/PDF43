@@ -163,6 +163,21 @@ function kiesPunt(api, page, x, y, state, uitsluit) {
   return { x, y, snap: null };
 }
 
+/**
+ * Square to `vast` (Ctrl / Shift), but still snapping: with a snap point near
+ * the pointer, the end stops where a perpendicular from that point meets the
+ * square line.
+ */
+function haaksMetSnap(api, page, vast, x, y, stap, radius, uitsluit) {
+  const h = haaks(vast.x, vast.y, x, y, stap);
+  const s = zoekSnap(api, page, x, y, radius, uitsluit);
+  const L = Math.hypot(h.x - vast.x, h.y - vast.y);
+  if (!s || !(L > 0)) return { ...h, snap: null, haaks: stap };
+  const ux = (h.x - vast.x) / L, uy = (h.y - vast.y) / L;
+  const t = (s.x - vast.x) * ux + (s.y - vast.y) * uy;
+  return { x: vast.x + ux * t, y: vast.y + uy * t, snap: { ...s, tekst: `${s.tekst} (square)` }, haaks: stap };
+}
+
 function nieuwElement(api, soort, keuze, page, x, y) {
   const schaal = puntenPerMm(api, page, x, y);
   return soort === SECTIE
@@ -213,7 +228,7 @@ function lidAnnotatie(api, keuze, page, a, b) {
 /** Second point of a member: square to the first with Ctrl / Shift, else snapped. */
 function tweedePunt(api, page, p1, x, y, mods, state) {
   const stap = haaksStap(mods);
-  if (stap) return { ...haaks(p1.x, p1.y, x, y, stap), snap: null, haaks: stap };
+  if (stap) return haaksMetSnap(api, page, p1, x, y, stap, snapRadius(page, state?.docScale));
   return kiesPunt(api, page, x, y, state);
 }
 
@@ -290,7 +305,7 @@ function greepPunt(api, ann, soort, p) {
   const stap = haaksStap(laatste);
   if (stap && ann.type === LID && (soort === 'A' || soort === 'B')) {
     const vast = soort === 'A' ? { x: ann.endX, y: ann.endY } : { x: ann.startX, y: ann.startY };
-    return { ...haaks(vast.x, vast.y, p.x, p.y, stap), snap: null };
+    return haaksMetSnap(api, ann.page, vast, p.x, p.y, stap, SNAP_PX / p.s, ann.id);
   }
   const snap = zoekSnap(api, ann.page, p.x, p.y, SNAP_PX / p.s, ann.id);
   return snap ? { x: snap.x, y: snap.y, snap } : { x: p.x, y: p.y, snap: null };
