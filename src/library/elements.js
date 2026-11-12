@@ -13,6 +13,18 @@
 
 import { registreerEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
+import { maakMaatschets } from './maatschets.js';
+
+/** The dimension key of a section, in its own foldable group. */
+function schets(el, shape, item) {
+  const cv = maakMaatschets(shape, item);
+  if (!cv) return;
+  groep(el, 'Dimensions');
+  const w = document.createElement('div');
+  w.className = 's43f-schets';
+  w.appendChild(cv);
+  el.appendChild(w);
+}
 import { laadBibliotheek, categorie } from './store.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
@@ -464,6 +476,7 @@ function sectiePaneel() {
       if (k === 'name' || k === 'blocking' || k === 'view') continue;
       waarde(el, k, typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v));
     }
+    schets(el, e.shape, e.item);
     el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
     return el;
   };
@@ -573,6 +586,7 @@ function lidPaneel() {
       (v) => zet((x) => { x.label = v !== '0'; x.showLength = v === '1'; })));
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
+    schets(el, e.shape, e.item);
     el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
     return el;
   };
