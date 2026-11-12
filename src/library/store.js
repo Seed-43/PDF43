@@ -103,6 +103,11 @@ export async function laadBibliotheek(api) {
   return (huidig = await standaardBibliotheek(api));
 }
 
+/** The library if it is already loaded (for forms that cannot wait), else null. */
+export function geladenBibliotheek() {
+  return huidig;
+}
+
 export async function standaardBibliotheek(api) {
   const data = await api.readAsset('data/nz-steel.seed43lib.json');
   return JSON.parse(new TextDecoder().decode(data));

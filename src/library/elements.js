@@ -15,6 +15,46 @@ import { registreerEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { maakMaatschets } from './maatschets.js';
 
+/**
+ * Change element: a Category list and an Element list. Picking an element
+ * swaps the selected one for it (`kies(cat, item)`); position, rotation,
+ * view and scale stay. Fixings change only to fixings, sections and members
+ * only to sections.
+ */
+function wisselRijen(el, e, kies) {
+  const lib = geladenBibliotheek();
+  if (!lib) return;
+  const fixing = BEVESTIGINGEN.includes(e.shape);
+  const uit = leesRegios().off;
+  const cats = lib.categories.filter((c) => c.kind === 'section' && c.shape !== 'bracing'
+    && BEVESTIGINGEN.includes(c.shape) === fixing && !uit.includes(regioVan(c)) && c.items.length);
+  const nu = cats.find((c) => c.id === e.catId)
+    || cats.find((c) => c.name === e.category && c.shape === e.shape && c.items.some((i) => i.name === e.item?.name))
+    || cats.find((c) => c.name === e.category) || cats[0];
+  if (!nu) return;
+  const catLijst = keuze(cats.map((c) => [c.id, `${regioVan(c)} · ${c.name}`]), nu.id, () => vulItems());
+  const itemLijst = document.createElement('select');
+  itemLijst.style.cssText = INVOER;
+  const vulItems = () => {
+    const c = cats.find((x) => x.id === catLijst.value);
+    itemLijst.replaceChildren();
+    if (c !== nu) {
+      const o = document.createElement('option'); o.value = ''; o.textContent = 'Pick an element...'; itemLijst.appendChild(o);
+    }
+    for (const it of c?.items || []) { const o = document.createElement('option'); o.value = it.name; o.textContent = it.name; itemLijst.appendChild(o); }
+    itemLijst.value = c === nu ? (e.item?.name || '') : '';
+  };
+  vulItems();
+  itemLijst.addEventListener('change', () => {
+    const c = cats.find((x) => x.id === catLijst.value);
+    const it = c?.items.find((x) => x.name === itemLijst.value);
+    if (c && it && !(c === nu && it.name === e.item?.name)) kies(c, it);
+  });
+  groep(el, 'Change element');
+  veld(el, 'Category', catLijst);
+  veld(el, 'Element', itemLijst);
+}
+
 /** The dimension key of a section (no group of its own: it follows the dimensions). */
 function schets(el, shape, item) {
   const cv = maakMaatschets(shape, item);
@@ -72,7 +112,8 @@ function sectieGegevens(el, shape, item) {
     for (const [k, v] of rest) waarde(el, k, getalTekst(v));
   }
 }
-import { laadBibliotheek, categorie } from './store.js';
+import { laadBibliotheek, categorie, geladenBibliotheek, regioVan } from './store.js';
+import { leesRegios } from './window.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
@@ -504,6 +545,14 @@ function sectiePaneel() {
     const el = formulier();
     if (!e) return el;
     kop(el, e.item.name, `${e.category} section, ${e.scaleText || ''}`, '#1d4ed8', ICOON_SECTIE);
+    wisselRijen(el, e, (c, it) => {
+      werkBij(ann, update, sectieMaat, (x) => {
+        x.item = kopie(it);
+        if (BEVESTIGINGEN.includes(c.shape)) x.item.view = e.item?.view || 'section';
+        x.category = c.name; x.shape = c.shape; x.catId = c.id;
+      });
+      update('subject', it.name);
+    });
     groep(el, 'Display');
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => werkBij(ann, update, sectieMaat, (x) => { x.rotation = v; })));
     schaalVeld(el, ann, update, sectieMaat);
@@ -615,11 +664,15 @@ function lidPaneel() {
     const g = lidGeometrie(ann);
     if (e.shape === 'bracing') { bracingPaneel(el, ann, update, e, g); return el; }
     kop(el, e.item.name, `${e.category} member, ${e.view === 'plan' ? 'plan' : 'elevation'}, ${e.scaleText || ''}`, '#1d4ed8', ICOON_LID);
-    groep(el, 'Member');
     const zet = (wijzig) => {
       const x = kopie(ann.element); wijzig(x); update('element', x);
       const b = lidBounds(ann); update('x', b.x); update('y', b.y); update('width', b.width); update('height', b.height);
     };
+    wisselRijen(el, e, (c, it) => {
+      zet((x) => { x.item = kopie(it); x.category = c.name; x.shape = c.shape; x.catId = c.id; });
+      update('subject', it.name);
+    });
+    groep(el, 'Member');
     veld(el, 'View', keuze([['elevation', 'Elevation'], ['plan', 'Plan']], e.view || 'elevation', (v) => zet((x) => { x.view = v; })));
     const lengte = document.createElement('span');
     lengte.textContent = `${Math.round(g.L / g.k)} mm`;
@@ -743,6 +796,8 @@ let toets = null;
 let pointer = null;
 
 export function startElementen(api) {
+  // Load the library now, so Change element can list it straight away.
+  laadBibliotheek(api).catch(() => {});
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
