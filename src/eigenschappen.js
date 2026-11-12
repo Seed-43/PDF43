@@ -35,6 +35,8 @@ const CSS = `
 .s43d-tab{position:fixed;z-index:931;writing-mode:vertical-rl;padding:14px 7px;border:1px solid var(--theme-border,#c8ccd1);border-right:0;
   border-radius:8px 0 0 8px;background:var(--theme-surface,#fff);color:var(--theme-text,#1f2328);font:600 13px system-ui,Segoe UI,sans-serif;
   cursor:pointer;box-shadow:-3px 0 10px rgba(0,0,0,.18);transition:left .2s ease;}
+.s43d-tab[data-wijs]{animation:s43d-wijs 1s ease-in-out 3;}
+@keyframes s43d-wijs{0%,100%{box-shadow:-3px 0 10px rgba(0,0,0,.18);}50%{box-shadow:-3px 0 0 4px var(--theme-accent,#0078d7);}}
 .s43d-tab:hover,.s43d-tab[data-open]{border-color:var(--theme-accent,#0078d7);color:var(--theme-accent,#0078d7);}
 `;
 
@@ -80,6 +82,7 @@ function zetOpen(open) {
   lade.el.toggleAttribute('data-dicht', !open);
   lade.tab.toggleAttribute('data-open', open);
   plaats();
+  if (open) setTimeout(meldGids, 0);
 }
 
 function maakLade() {
@@ -195,6 +198,50 @@ function notitie() {
 // form is drawn again from the updated annotation.
 
 let teller = 0;     // goes up with every form shown; a pending clear checks it
+let laatstGetoond = null;   // the single item last shown in Properties
+let gidsHook = null;
+const gidsGezien = new Set();   // ids the guide was shown for this session
+
+/** `fn(ann)` runs when a Seed43 item's properties are on show in the open drawer. */
+export function bijEigenschappen(fn) { gidsHook = fn; }
+
+let hintHook = null;
+const hintGezien = new Set();
+/** `fn(ann, open)` runs when a Seed43 item is selected while the drawer is closed or off. */
+export function bijGeslotenEigenschappen(fn) { hintHook = fn; }
+function meldGesloten(ann) {
+  if (!ann || !hintHook || hintGezien.has(ann.id)) return;
+  hintGezien.add(ann.id);
+  const open = () => {
+    if (!vensterAan()) { try { localStorage.setItem(AAN, '1'); } catch {} aanUitHook?.(true); }
+    maakLade();
+    zetOpen(true);
+    if (ann) {
+      const vers = vorigApi?.getAnnotations?.().find((a) => a.id === ann.id);
+      if (vers && vorigRender[vers.type]) toon(vorigApi, vorigRender[vers.type], vers);
+    }
+  };
+  setTimeout(() => {
+    try {
+      lade?.tab.toggleAttribute('data-wijs', false);
+      void lade?.tab.offsetWidth;
+      lade?.tab.toggleAttribute('data-wijs', true);
+      hintHook(ann, open);
+    } catch {}
+  }, 0);
+}
+let vorigApi = null;
+let aanUitHook = null;
+/** `fn(aan)` runs when the drawer is switched on from the hint (the ribbon button follows). */
+export function bijAanUit(fn) { aanUitHook = fn; }
+const vorigRender = {};
+function meldGids() {
+  const ann = laatstGetoond;
+  if (!ann || !gidsHook || !lade || lade.el.hasAttribute('data-dicht') || lade.lijf.hidden) return;
+  if (gidsGezien.has(ann.id)) return;
+  gidsGezien.add(ann.id);
+  try { gidsHook(ann); } catch {}
+}
 let wis = null;
 
 function kopieVan(ann) {
@@ -228,6 +275,8 @@ function toon(api, renderFn, ann) {
   try { dom = renderFn(werk, update, () => {}, () => {}); } catch (e) { console.warn('[seed43] properties:', e); }
   l.lijf.replaceChildren(dom || leeg());
   zetTab('eigenschappen');
+  laatstGetoond = ann;
+  meldGids();
 }
 
 /**
@@ -236,15 +285,32 @@ function toon(api, renderFn, ann) {
  * with it off, the form shows in the app's panel as before.
  */
 export function registreerEigenschappen(api, type, renderFn) {
+  vorigApi = api;
+  vorigRender[type] = renderFn;
   api0 = api0 || api;
   api.registerPropertyPanel(type, (ann, update, commit, cancel) => {
-    if (!vensterAan()) return renderFn(ann, update, commit, cancel);
+    if (!vensterAan()) {
+      // Drawer off: the form is in the app's Properties panel; the editing
+      // guide shows the first time each item is selected there.
+      return renderFn(ann, update, commit, cancel);
+    }
     if (!ann) { try { renderFn(null, update, commit, cancel); } catch {} return null; }
     return notitie();
   });
   api.registerSelectionListener(type, (ann) => {
-    if (!vensterAan()) return;
-    if (ann) { clearTimeout(wis); toon(api, renderFn, ann); return; }
+    // Deselected: the next selection may show the card and guide again
+    // (they show on every new selection until switched off).
+    if (!ann) { hintGezien.clear(); gidsGezien.clear(); }
+    if (!vensterAan()) {
+      if (ann) meldGesloten(ann);
+      return;
+    }
+    if (ann) {
+      clearTimeout(wis);
+      toon(api, renderFn, ann);
+      if (lade?.el.hasAttribute('data-dicht')) meldGesloten(ann);
+      return;
+    }
     // A deselect calls every type's listener: clear once, unless something
     // was selected again straight after (moving to another Seed43 item).
     const nu = teller;

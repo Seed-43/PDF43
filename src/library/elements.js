@@ -11,9 +11,10 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
-import { registreerEigenschappen, registreerMeervoud } from '../eigenschappen.js';
+import { registreerEigenschappen, registreerMeervoud, bijEigenschappen, bijGeslotenEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
-import { maakMaatschets } from './maatschets.js';
+import { maakMaatschets, maakBoutSchets } from './maatschets.js';
+import { toonGids, gidsLink, toonEigenschappenHint } from './gids.js';
 
 /**
  * Change element: a Category list and an Element list. Picking an element
@@ -134,7 +135,18 @@ export function puntenPerMm(api, page, x, y, denom = 10) {
   try {
     const s = api.getScaleAt?.(page, x, y);
     const f = s && PER_MM[String(s.unit || '').toLowerCase()];
-    if (s && f && s.pixelsPerUnit > 0) return { ptsPerMm: s.pixelsPerUnit * f, scaleText: 'sheet scale' };
+    if (s && f && s.pixelsPerUnit > 0) {
+      const ptsPerMm = s.pixelsPerUnit * f;
+      // The ratio itself, e.g. "1:100 (sheet)", from the app's page or
+      // document scale; worked out from the points when it gives none.
+      let ratio = /^1\s*:\s*\d/.test(String(s.scaleRatio || '')) ? String(s.scaleRatio).replace(/\s+/g, '') : '';
+      if (!ratio) {
+        const n = PT_PER_PAPER_MM / ptsPerMm;
+        const rond = Math.abs(n - Math.round(n)) < 0.01 * n ? Math.round(n) : Math.round(n * 10) / 10;
+        if (rond > 0 && Number.isFinite(rond)) ratio = `1:${rond}`;
+      }
+      return { ptsPerMm, scaleText: ratio ? `${ratio} (sheet)` : 'sheet scale' };
+    }
   } catch {}
   return { ptsPerMm: PT_PER_PAPER_MM / denom, scaleText: `1:${denom}` };
 }
@@ -397,12 +409,12 @@ function herteken(api) {
           const L = Math.hypot(b.x - a.x, b.y - a.y) / (puntenPerMm(api, page, a.x, a.y).ptsPerMm || 1);
           const naam = plaatsing.greep === 'B' ? 'point A' : plaatsing.greep === 'mid' ? 'an end' : 'point B';
           const lijn = plaatsing.uitlijn && plaatsing.uitlijn !== 'centre' ? `  J: ${UITLIJNING[plaatsing.uitlijn]}` : '  J: centre';
-          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '  Tab: turn' : '  (Ctrl/Shift: square)'}${lijn}`);
+          tekenTekst(c, s, q.x, q.y, `L=${Math.round(L)}  Click ${naam}${q.haaks ? '  Tab: turn' : '  (Ctrl/Shift: square)'}${plaatsing.shape === 'bracing' ? '  Space: flip side' : lijn}`);
         } else {
           const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
           tekenSnap(c, s, q.snap);
           const naam = plaatsing.greep === 'B' ? 'point B' : plaatsing.greep === 'mid' ? 'the midpoint' : 'point A';
-          tekenTekst(c, s, q.x, q.y, `Click ${naam} of ${labelNaam(plaatsing)}  (J: ${(UITLIJNING[plaatsing.uitlijn || 'centre'] || 'Centre').toLowerCase()})`);
+          tekenTekst(c, s, q.x, q.y, plaatsing.shape === 'bracing' ? `Click ${naam} of ${labelNaam(plaatsing)}  (Space: flip side)` : `Click ${naam} of ${labelNaam(plaatsing)}  (J: ${(UITLIJNING[plaatsing.uitlijn || 'centre'] || 'Centre').toLowerCase()})`);
         }
       } else {
         const q = kiesPunt(api, page, p.x, p.y, { docScale: s });
@@ -661,7 +673,7 @@ function sectiePaneel() {
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
     }
     sectieGegevens(el, e.shape, e.item);
-    el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
+    el.appendChild((() => { const t = tip('Drag the centre grip to move it; it snaps to member ends, edges and corners. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('sectie-sel')); return t; })());
     return el;
   };
 }
@@ -733,17 +745,21 @@ function boutPaneel(api) {
     groep(el, 'Layout');
     veld(el, 'Rows', getal(g.rows, (n) => wb((x) => { x.rows = Math.max(1, Math.round(n)); })));
     veld(el, 'Columns', getal(g.cols, (n) => wb((x) => { x.cols = Math.max(1, Math.round(n)); })));
-    veld(el, 'Pitch (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));
-    veld(el, 'Gauge (mm)', getal(g.gauge, (n) => wb((x) => { x.gauge = n; }), 5));
-    veld(el, 'Edge across', getal(g.ex, (n) => wb((x) => { x.edgeX = n; }), 5));
-    veld(el, 'Edge along', getal(g.ey, (n) => wb((x) => { x.edgeY = n; }), 5));
+    veld(el, 'Pitch, p (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));
+    veld(el, 'Gauge, g (mm)', getal(g.gauge, (n) => wb((x) => { x.gauge = n; }), 5));
+    veld(el, 'Edge across, ex (mm)', getal(g.ex, (n) => wb((x) => { x.edgeX = n; }), 5));
+    veld(el, 'Edge along, ey (mm)', getal(g.ey, (n) => wb((x) => { x.edgeY = n; }), 5));
+    {
+      const cv = maakBoutSchets(e);
+      if (cv) { const w = document.createElement('div'); w.className = 's43f-schets'; w.appendChild(cv); el.appendChild(w); }
+    }
     groep(el, 'Display');
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => wb((x) => { x.rotation = v; })));
     veld(el, 'Plate', keuze([['1', 'Show'], ['0', 'Hide']], e.plate === false ? '0' : '1', (v) => wb((x) => { x.plate = v === '1'; })));
     schaalVeld(el, ann, update, boutMaat);
     toonStatus();
     el.appendChild(status);
-    el.appendChild(tip('Drag the centre grip to move the group; it snaps to member ends, midpoints and centre lines.'));
+    el.appendChild((() => { const t = tip('Drag the centre grip to move the group; it snaps to member ends, edges and corners. Enter places another with the same layout.'); t.appendChild(gidsLink('bout-sel')); return t; })());
     return el;
   };
 }
@@ -789,7 +805,7 @@ function lidPaneel() {
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
     sectieGegevens(el, e.shape, e.item);
-    el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
+    el.appendChild((() => { const t = tip('Drag end A or B to stretch it (Shift keeps it square, Tab turns the direction), the midpoint to move it; grips snap to ends, edges and corners. J: line on the centre or an edge. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('lid-sel')); return t; })());
     return el;
   };
 }
@@ -838,7 +854,7 @@ function bracingPaneel(el, ann, update, e, g) {
   const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
   groep(el, 'Scale');
   veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) { const x = kopie(ann.element); x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; update('element', x); } }));
-  el.appendChild(tip('Drag end A or B to change the braced length (Ctrl/Shift keeps it square). New bracing lines take the last tag and settings.'));
+  el.appendChild((() => { const t = tip('Drag end A or B to change the braced length (Shift keeps it square, Tab turns it); Space flips it to the other side. New bracing lines take the last tag and settings; Enter places another.'); t.appendChild(gidsLink('bracing-sel')); return t; })());
 }
 
 /** Arm the bracing line tool: click A, then B along the braced wall. */
@@ -849,6 +865,7 @@ export function plaatsBracing(api) {
   api.setTool(LID);
   api.setToolOverrides({ seed43Element: plaatsing });
   startLus(api);
+  toonGids('bracing', { nogBezig: () => api.getCurrentTool?.() === LID });
 }
 
 // ── Space bar: turn the selected element (or the one being placed) ────────
@@ -857,6 +874,14 @@ function draaiGeselecteerd(api, stap) {
   const ann = api.getAnnotations().find((a) => a.id === geselecteerd);
   if (!ann?.element) return false;
   const changes = {};
+  // A bracing line flips to the other side instead of turning.
+  if (ann.type === LID && ann.element.shape === 'bracing') {
+    const element = kopie(ann.element);
+    element.item = { ...element.item, flip: !element.item?.flip };
+    api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { element } }]);
+    api.redrawAnnotations?.();
+    return true;
+  }
   if (ann.type === LID) {
     const mx = (ann.startX + ann.endX) / 2, my = (ann.startY + ann.endY) / 2;
     const r = (stap * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
@@ -885,6 +910,16 @@ function spatieToets(api) {
     const t = e.target;
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName))) return;
     const stap = e.shiftKey ? -90 : 90;
+    // Placing a bracing line: Space flips the line and tag to the other side
+    // (and new bracing lines keep that side).
+    if (api.getCurrentTool?.() === LID && plaatsing?.shape === 'bracing') {
+      plaatsing.item = { ...plaatsing.item, flip: !plaatsing.item.flip };
+      laatsteBracing = { ...laatsteBracing, flip: plaatsing.item.flip };
+      api.setToolOverrides({ seed43Element: plaatsing });
+      e.preventDefault(); e.stopPropagation();
+      startLus(api);
+      return;
+    }
     // Placing: turn the element that is about to be placed.
     if ([SECTIE, BOUTEN].includes(api.getCurrentTool?.())) {
       if (plaatsing) {
@@ -949,6 +984,17 @@ export function startElementen(api) {
   registreerEigenschappen(api, BOUTEN, boutPaneel(api));
   registreerEigenschappen(api, LID, lidPaneel());
   registreerMeervoud(api, ONZE, meervoudPaneel);
+  // Selected while Seed43 Properties is closed or off: say it has properties.
+  bijGeslotenEigenschappen((ann, open) => {
+    const naam = ann.element ? (ann.element.shape === 'bracing' ? 'This bracing line' : labelNaam(ann.element) || ann.element.bolt?.name || 'This element') : 'This element';
+    toonEigenschappenHint({ naam, open, nogBezig: () => geselecteerd === ann.id });
+  });
+  // The editing guide for the selected kind, when its properties are on show.
+  bijEigenschappen((ann) => {
+    const soort = ann.type === BOUTEN ? 'bout-sel' : ann.type === SECTIE ? 'sectie-sel'
+      : ann.element?.shape === 'bracing' ? 'bracing-sel' : 'lid-sel';
+    toonGids(soort, { nogBezig: () => geselecteerd === ann.id });
+  });
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);
@@ -1052,6 +1098,7 @@ export function plaats(api, cat, it, view = 'section', greep = 'A') {
   api.setTool(soort);
   api.setToolOverrides({ seed43Element: plaatsing });
   startLus(api);
+  toonGids(soort === LID ? 'lid' : soort === BOUTEN ? 'bout' : 'sectie', { nogBezig: () => ONZE.includes(api.getCurrentTool?.()) });
 }
 
 // ── Several Seed43 items selected: one shared form ─────────────────────────
