@@ -3,6 +3,8 @@
 // stamp of a family shows the family's parameter values: change one stamp and
 // all stamps of that family in the file follow.
 
+import { registreerEigenschappen } from '../eigenschappen.js';
+import { formulier, kop as formKop, groep, veld as formVeld } from '../formulier.js';
 import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO } from './families.js';
 import { maat, teken } from './render.js';
 import { openBouwer } from './builder.js';
@@ -63,24 +65,16 @@ function paneel(api) {
     if (!ann) return document.createElement('div');   // the host calls this on deselect too
     const stamp = ann.stamp;
     const fam = stamp?.family;
-    const el = document.createElement('div');
-    el.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:8px;font-size:12px;border-top:2px solid ' + (fam?.color || '#c0392b') + ';';
+    const el = formulier();
     if (!fam) { el.textContent = 'Not a Seed43 stamp'; return el; }
-    const kop = document.createElement('div');
-    kop.innerHTML = `<div style="font-weight:bold;font-size:13px;color:${esc(fam.color || '#c0392b')}">${esc(fam.name)} stamp</div><div style="opacity:.7">Changes update every ${esc(fam.name)} stamp in this file.</div>`;
-    el.appendChild(kop);
-    // The app lists its own sections first: bring the stamp's parameters into view.
-    requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
+    formKop(el, `${fam.name} stamp`, `Changes update every ${fam.name} stamp in this file.`, fam.color || '#c0392b', familieIcoon(fam));
+    groep(el, 'Parameters');
     for (const veld of fam.fields) {
-      const rij = document.createElement('label');
-      rij.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
-      const l = document.createElement('span');
-      l.textContent = veld.label;
-      l.style.opacity = '0.8';
-      rij.appendChild(l);
       let invoer;
+      let extra = null;
       if (veld.kind === 'auto') {
         invoer = document.createElement('span');
+        invoer.className = 's43f-tekst';
         invoer.textContent = `${AUTO[veld.auto] || 'Automatic'} (automatic)`;
         invoer.style.opacity = '0.6';
       } else if (veld.kind === 'choice') {
@@ -109,7 +103,6 @@ function paneel(api) {
         const knop = (tekst, titel, waarde) => {
           const b = document.createElement('button');
           b.textContent = tekst; b.title = titel;
-          b.style.cssText = 'font:inherit;padding:2px 8px;cursor:pointer;';
           b.addEventListener('click', async (e) => { e.preventDefault(); invoer.value = waarde() || geplaatst; await zet(waarde()); });
           return b;
         };
@@ -117,14 +110,10 @@ function paneel(api) {
           knop('Today', `Set ${veld.label} to today on every ${fam.name} stamp`, () => new Date().toISOString().slice(0, 10)),
           knop('Placed', `Show the date each ${fam.name} stamp was placed`, () => ''),
         );
-        rij.append(l, invoer, knoppen);
+        extra = knoppen;
       }
-      if (veld.kind !== 'auto') {
-        invoer.style.cssText = 'font:inherit;padding:3px 5px;';
-        invoer.addEventListener('change', () => zet(invoer.value));
-      }
-      if (veld.kind !== 'date') rij.appendChild(invoer);
-      el.appendChild(rij);
+      if (veld.kind !== 'auto') invoer.addEventListener('change', () => zet(invoer.value));
+      formVeld(el, veld.label, invoer, extra);
     }
     return el;
   };
@@ -163,7 +152,7 @@ export async function startStamps(api) {
   if (actief) return;
   families = laadFamilies();
   api.registerAnnotationType(TYPE, markeringType(api));
-  api.registerPropertyPanel(TYPE, paneel(api));
+  registreerEigenschappen(api, TYPE, paneel(api));
   registreerPalet(api);
   actief = true;
 }

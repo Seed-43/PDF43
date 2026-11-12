@@ -15,9 +15,11 @@ import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
+import { vensterAan, wisselVenster, startLade, verwijderLade } from './eigenschappen.js';
 
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
+const ICOON_EIGENSCHAPPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M14 4v16"/><path d="M16.5 8h2"/><path d="M16.5 11h2"/><path d="M16.5 14h2"/></svg>';
 const ICOON_ABOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
 
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
@@ -68,6 +70,7 @@ export async function activate(api) {
   // Smart Stamps are always available: placed stamps must keep showing.
   try { await startStamps(api); } catch (e) { console.warn('[seed43] stamps did not start:', e); }
   try { startElementen(api); } catch (e) { console.warn('[seed43] element library did not start:', e); }
+  try { startLade(); } catch (e) { console.warn('[seed43] properties drawer:', e); }
 
   if (api.features?.ribbonTabs !== true) return;
   bouwTab(api, aan);
@@ -160,6 +163,14 @@ function bouwTab(api, aan) {
           zichtbaar: isZichtbaar,
           zet: (id, v) => { const z = leesZichtbaar(); z[id] = v; try { localStorage.setItem(ZICHTBAAR, JSON.stringify(z)); } catch {} bouwTab(api, aan); },
         }),
+      }, {
+        type: 'action', id: 'properties-window', label: { en: 'Properties', nl: 'Eigenschappen' }, icon: ICOON_EIGENSCHAPPEN, size: 'large',
+        title: {
+          en: 'Properties drawer: the options of the selected Seed43 item, in a drawer on the right of the page (Properties tab). Off: they show in the Properties panel.',
+          nl: 'Lade Seed43-eigenschappen: de opties van een gekozen element in een lade rechts van de pagina. Uit: in het eigenschappenpaneel van de app.',
+        },
+        active: vensterAan(),
+        onRun: () => { const aanNu = wisselVenster(); tab?.update('properties-window', { active: aanNu }); },
       }],
     },
     ...alle.map((g) => ({ ...g, items: g.items.filter((it) => zie(welk[it.id] || it.id)) })).filter((g) => g.items.length),
@@ -170,6 +181,7 @@ function bouwTab(api, aan) {
 
 export async function deactivate(api) {
   tab = null;
+  verwijderLade();
   stopElementen();
   for (const t of TOOLS) { try { await t.stop(api); } catch {} }
 }

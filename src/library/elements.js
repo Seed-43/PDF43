@@ -11,8 +11,10 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
+import { registreerEigenschappen } from '../eigenschappen.js';
+import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { laadBibliotheek, categorie } from './store.js';
-import { BRACING_STANDAARD, BRACING_CODES, bracingLengte } from './bracing.js';
+import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
@@ -147,6 +149,8 @@ function lidType(api) {
     getBounds(ann) { return ann.element ? lidBounds(ann) : { x: ann.x, y: ann.y, width: ann.width || 0, height: ann.height || 0 }; },
     hitTest(px, py, ann, tol = 2) {
       if (!ann.element) return false;
+      // A bracing line: the line or its tag text.
+      if (ann.element.shape === 'bracing') return bracingRaak(px, py, ann, tol);
       const g = lidGeometrie(ann);
       const t = (px - g.ax) * g.ux + (py - g.ay) * g.uy;
       const n = Math.abs((px - g.ax) * g.nx + (py - g.ay) * g.ny);
@@ -371,30 +375,13 @@ function luisteraars(api) {
 
 // ── Properties panels ──────────────────────────────────────────────────────
 
-const RIJ = 'display:grid;grid-template-columns:90px 1fr;gap:4px;align-items:center;';
-const INVOER = 'font:inherit;padding:2px 4px;min-width:0;';
+const INVOER = '';
 
-function kop(el, tekst, sub, kleur) {
-  const k = document.createElement('div');
-  k.innerHTML = `<div style="font-weight:bold;font-size:13px;color:${kleur}">${esc(tekst)}</div><div style="opacity:.7">${esc(sub)}</div>`;
-  el.appendChild(k);
-}
-
-function veld(el, label, invoer) {
-  const r = document.createElement('label');
-  r.style.cssText = RIJ;
-  const l = document.createElement('span'); l.textContent = label; l.style.opacity = '0.8';
-  r.append(l, invoer);
-  el.appendChild(r);
-  return invoer;
-}
-
-function tip(tekst) {
-  const t = document.createElement('div');
-  t.style.cssText = 'opacity:.7;margin-top:4px;';
-  t.textContent = tekst;
-  return t;
-}
+// Header icons in the Properties table.
+const ICOON_SECTIE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 4h14M5 20h14M12 4v16"/></svg>';
+const ICOON_LID = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="9" width="18" height="6" rx="1"/><path d="M3 12h18" opacity=".5"/></svg>';
+const ICOON_BOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><circle cx="16" cy="8" r="2.5"/><circle cx="8" cy="16" r="2.5"/><circle cx="16" cy="16" r="2.5"/></svg>';
+const ICOON_BRACING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 16h18" stroke-dasharray="3 2"/><path d="M7 9h10"/></svg>';
 
 function getal(waarde, wijzig, stap = 1) {
   const i = document.createElement('input');
@@ -453,10 +440,10 @@ function sectiePaneel() {
   return (ann, update) => {
     if (!ann) return document.createElement('div');   // the host calls this on deselect too
     const e = ann.element;
-    const el = document.createElement('div');
-    el.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding:8px;font-size:12px;border-top:2px solid #1d4ed8;';
+    const el = formulier();
     if (!e) return el;
-    kop(el, e.item.name, `${e.category} section, ${e.scaleText || ''}`, '#1d4ed8');
+    kop(el, e.item.name, `${e.category} section, ${e.scaleText || ''}`, '#1d4ed8', ICOON_SECTIE);
+    groep(el, 'Display');
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => werkBij(ann, update, sectieMaat, (x) => { x.rotation = v; })));
     schaalVeld(el, ann, update, sectieMaat);
     veld(el, 'Label', keuze([['1', 'Show'], ['0', 'Hide']], e.label === false ? '0' : '1',
@@ -470,17 +457,12 @@ function sectiePaneel() {
       veld(el, 'Look', keuze([['0', 'Timber (cross)'], ['1', 'Blocking (diagonal)']], e.item.blocking ? '1' : '0',
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
     }
-    const tabel = document.createElement('div');
-    tabel.style.cssText = 'display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin-top:4px;font-variant-numeric:tabular-nums;';
+    groep(el, 'Section data');
     for (const [k, v] of Object.entries(e.item)) {
       if (k === 'name' || k === 'blocking' || k === 'view') continue;
-      const a = document.createElement('span'); a.textContent = k; a.style.opacity = '0.7';
-      const b = document.createElement('span'); b.textContent = typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v);
-      tabel.append(a, b);
+      waarde(el, k, typeof v === 'number' ? v.toLocaleString('en-NZ') : String(v));
     }
-    el.appendChild(tabel);
     el.appendChild(tip('Drag the centre grip to move it; it snaps to member ends, midpoints and centre lines. Space turns it 90 degrees.'));
-    requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
 }
@@ -489,11 +471,11 @@ function boutPaneel(api) {
   return (ann, update) => {
     if (!ann) return document.createElement('div');   // the host calls this on deselect too
     const e = ann.element;
-    const el = document.createElement('div');
-    el.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding:8px;font-size:12px;border-top:2px solid #0f766e;';
+    const el = formulier();
     if (!e) return el;
     const g = boutGroep(e);
-    kop(el, `${g.rows * g.cols}-${e.bolt?.name || 'bolt'}`, `Bolt group, ${e.scaleText || ''}`, '#0f766e');
+    kop(el, `${g.rows * g.cols}-${e.bolt?.name || 'bolt'}`, `Bolt group, ${e.scaleText || ''}`, '#0f766e', ICOON_BOUT);
+    groep(el, 'Bolt');
     const status = document.createElement('div');
     status.style.cssText = 'margin-top:4px;padding:4px 6px;border-radius:3px;';
     const toonStatus = () => {
@@ -522,10 +504,12 @@ function boutPaneel(api) {
     });
     // Face (plan) or elevation (side on, through the plies).
     const zij = e.view === 'elevation';
+    groep(el, 'View');
     veld(el, 'View', keuze([['face', 'Face (holes)'], ['plan', 'Plan (heads)'], ['elevation', 'Elevation (side on)']], ['elevation', 'plan'].includes(e.view) ? e.view : 'face',
       (v) => { wb((x) => { x.view = v; }); }));
     // Bolt or threaded rod, nuts and washers.
     const o = boutOpties(e);
+    groep(el, 'Bolt, nuts and washers');
     veld(el, 'Kind', keuze([['bolt', 'Bolt (hex head)'], ['rod', 'Threaded rod']], o.kind, (v) => wb((x) => { x.kind = v; })));
     veld(el, 'Nuts', keuze(o.kind === 'rod'
       ? [['0', 'None'], ['1', 'One end'], ['2', 'Both ends'], ['1d', 'Double nuts, one end'], ['2d', 'Double nuts, both ends']]
@@ -547,19 +531,20 @@ function boutPaneel(api) {
       lengte.textContent = `${z.L} mm (grip + washer + nut + thread)`;
       veld(el, 'Bolt length', lengte);
     }
+    groep(el, 'Layout');
     veld(el, 'Rows', getal(g.rows, (n) => wb((x) => { x.rows = Math.max(1, Math.round(n)); })));
     veld(el, 'Columns', getal(g.cols, (n) => wb((x) => { x.cols = Math.max(1, Math.round(n)); })));
     veld(el, 'Pitch (mm)', getal(g.pitch, (n) => wb((x) => { x.pitch = n; }), 5));
     veld(el, 'Gauge (mm)', getal(g.gauge, (n) => wb((x) => { x.gauge = n; }), 5));
     veld(el, 'Edge across', getal(g.ex, (n) => wb((x) => { x.edgeX = n; }), 5));
     veld(el, 'Edge along', getal(g.ey, (n) => wb((x) => { x.edgeY = n; }), 5));
+    groep(el, 'Display');
     veld(el, 'Rotation °', hoekVeld(e.rotation || 0, (v) => wb((x) => { x.rotation = v; })));
     veld(el, 'Plate', keuze([['1', 'Show'], ['0', 'Hide']], e.plate === false ? '0' : '1', (v) => wb((x) => { x.plate = v === '1'; })));
     schaalVeld(el, ann, update, boutMaat);
     toonStatus();
     el.appendChild(status);
     el.appendChild(tip('Drag the centre grip to move the group; it snaps to member ends, midpoints and centre lines.'));
-    requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
 }
@@ -568,12 +553,12 @@ function lidPaneel() {
   return (ann, update) => {
     if (!ann) return document.createElement('div');   // the host calls this on deselect too
     const e = ann.element;
-    const el = document.createElement('div');
-    el.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding:8px;font-size:12px;border-top:2px solid #1d4ed8;';
+    const el = formulier();
     if (!e) return el;
     const g = lidGeometrie(ann);
     if (e.shape === 'bracing') { bracingPaneel(el, ann, update, e, g); return el; }
-    kop(el, e.item.name, `${e.category} member, ${e.view === 'plan' ? 'plan' : 'elevation'}, ${e.scaleText || ''}`, '#1d4ed8');
+    kop(el, e.item.name, `${e.category} member, ${e.view === 'plan' ? 'plan' : 'elevation'}, ${e.scaleText || ''}`, '#1d4ed8', ICOON_LID);
+    groep(el, 'Member');
     const zet = (wijzig) => {
       const x = kopie(ann.element); wijzig(x); update('element', x);
       const b = lidBounds(ann); update('x', b.x); update('y', b.y); update('width', b.width); update('height', b.height);
@@ -587,7 +572,6 @@ function lidPaneel() {
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
     el.appendChild(tip('Drag end A or B to stretch the member (Ctrl/Shift keeps it square), the midpoint to move it; grips snap to other elements. Space turns it 90 degrees about its middle.'));
-    requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'start' }); } catch {} });
     return el;
   };
 }
@@ -599,7 +583,8 @@ let laatsteBracing = { ...BRACING_STANDAARD };
 function bracingPaneel(el, ann, update, e, g) {
   const it = { ...BRACING_STANDAARD, ...e.item };
   el.style.borderTopColor = '#2563eb';
-  kop(el, `${it.tag || 'Bracing'} (${bracingLengte(g.L / g.k, it.round05).tekst})`, `Bracing line, ${e.scaleText || ''}`, '#2563eb');
+  kop(el, `${it.tag || 'Bracing'} (${bracingLengte(g.L / g.k, it.round05).tekst})`, `Bracing line, ${e.scaleText || ''}`, '#2563eb', ICOON_BRACING);
+  groep(el, 'Identity');
   const zet = (wijzig) => {
     const x = kopie(ann.element);
     x.item = { ...BRACING_STANDAARD, ...x.item };
@@ -623,14 +608,17 @@ function bracingPaneel(el, ann, update, e, g) {
   const lengte = document.createElement('span');
   lengte.textContent = `${Math.round(g.L / g.k)} mm, shown as ${bracingLengte(g.L / g.k, it.round05).tekst}`;
   veld(el, 'Length', lengte);
+  groep(el, 'Tag');
   veld(el, 'Round down to', keuze([['0', '0.01 m'], ['1', '0.05 m']], it.round05 ? '1' : '0', (v) => zet((x) => { x.round05 = v === '1'; })));
   veld(el, 'Layout', keuze([['0', 'TAG (2.81m)'], ['1', 'Tag above length']], it.above ? '1' : '0', (v) => zet((x) => { x.above = v === '1'; })));
   veld(el, 'Side', keuze([['0', 'Normal'], ['1', 'Flipped']], it.flip ? '1' : '0', (v) => zet((x) => { x.flip = v === '1'; })));
   veld(el, 'Both sides', keuze([['0', 'No'], ['1', 'Yes (line each side)']], it.both ? '1' : '0', (v) => zet((x) => { x.both = v === '1'; })));
+  groep(el, 'Placement');
   veld(el, 'Wall offset (paper mm)', getal(it.wallOffset, (n) => zet((x) => { x.wallOffset = n; }), 0.5));
   veld(el, 'Tag offset (paper mm)', getal(it.tagOffset, (n) => zet((x) => { x.tagOffset = n; }), 0.5));
   veld(el, 'Tag from end A (mm, 0 = middle)', getal(it.fromEnd, (n) => zet((x) => { x.fromEnd = Math.max(0, n); }), 50));
   const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
+  groep(el, 'Scale');
   veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) { const x = kopie(ann.element); x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; update('element', x); } }));
   el.appendChild(tip('Drag end A or B to change the braced length (Ctrl/Shift keeps it square). New bracing lines take the last tag and settings.'));
 }
@@ -700,9 +688,10 @@ export function startElementen(api) {
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
-  api.registerPropertyPanel(SECTIE, sectiePaneel());
-  api.registerPropertyPanel(BOUTEN, boutPaneel(api));
-  api.registerPropertyPanel(LID, lidPaneel());
+  // The forms go to the Seed43 Properties window (eigenschappen.js).
+  registreerEigenschappen(api, SECTIE, sectiePaneel());
+  registreerEigenschappen(api, BOUTEN, boutPaneel(api));
+  registreerEigenschappen(api, LID, lidPaneel());
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);

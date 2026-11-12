@@ -90,9 +90,10 @@ function notitiesHtml(n) {
  * `zichtbaar(id)` and `zet(id, aan)` to show or hide a tool on the ribbon.
  */
 export function openAbout({ tools, zichtbaar, zet }) {
-  if (!document.getElementById(STIJL_ID)) {
-    const s = document.createElement('style'); s.id = STIJL_ID; s.textContent = CSS; document.head.appendChild(s);
-  }
+  // Always rewrite: after a reinstall the page still holds the old sheet.
+  let s = document.getElementById(STIJL_ID);
+  if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
+  if (s.textContent !== CSS) s.textContent = CSS;
   document.querySelector('.s43a-achter')?.remove();
   const achter = document.createElement('div');
   achter.className = 's43a-achter';
