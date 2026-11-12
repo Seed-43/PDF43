@@ -35,7 +35,72 @@ const TOETS = (x, y, tekst, van, tot) => `<g opacity="0"><rect x="${x}" y="${y}"
   <text x="${x + 7}" y="${y + 14}" font-size="11" font-weight="700" font-family="Segoe UI,sans-serif" fill="#111">${tekst}</text>
   <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;${van};${van + 0.02};${tot};${tot + 0.02}" dur="6s" repeatCount="indefinite"/></g>`;
 
+// A grip being dragged: the pointer goes to (x1, y1), drags to (x2, y2).
+const SLEEP = (x1, y1, x2, y2) => `<rect x="${x1 - 4}" y="${y1 - 4}" width="8" height="8" fill="#2563eb" stroke="#fff">
+    <animate attributeName="x" values="${x1 - 4};${x1 - 4};${x2 - 4};${x2 - 4}" keyTimes="0;0.25;0.6;1" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="${y1 - 4};${y1 - 4};${y2 - 4};${y2 - 4}" keyTimes="0;0.25;0.6;1" dur="6s" repeatCount="indefinite"/></rect>
+  ${PIJL(`M${x1 - 40} ${y1 - 30} L${x1} ${y1} L${x2} ${y2}`).replace('keyPoints="0;0;1;1"', 'keyPoints="0;0.4;1;1"')}`;
+
 const GIDSEN = {
+  'lid-sel': {
+    titel: 'Editing a member',
+    svg: `<svg viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="56" height="18" width="140" fill="rgba(29,78,216,.16)" stroke="#1d4ed8" stroke-width="1.2">
+        <animate attributeName="width" values="140;140;200;200" keyTimes="0;0.25;0.6;1" dur="6s" repeatCount="indefinite"/></rect>
+      <rect x="36" y="61" width="8" height="8" fill="#2563eb" stroke="#fff"/>
+      ${SLEEP(180, 65, 240, 65)}
+      ${TOETS(110, 92, 'Enter', 0.72, 0.95)}
+    </svg>`,
+    stappen: [
+      'Drag end <b>A</b> or <b>B</b> to stretch it, the midpoint to move it. Grips snap to ends, edges and corners.',
+      'Hold <kbd>Shift</kbd> while dragging to keep it square (<kbd>Tab</kbd> turns it).',
+      '<kbd>Space</kbd> turns it 90°. <kbd>Enter</kbd> places another the same.',
+      'Seed43 Properties: change the size, view, line (centre or edge), pieces and label.',
+    ],
+  },
+  'sectie-sel': {
+    titel: 'Editing a section or fixing',
+    svg: `<svg viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+      <g><path d="M-8 -19 h16 v4 h-6 v30 h6 v4 h-16 v-4 h6 v-30 h-6 z" fill="rgba(29,78,216,.16)" stroke="#1d4ed8"/>
+        <animateTransform attributeName="transform" type="translate" values="100 60;100 60;180 60;180 60" keyTimes="0;0.25;0.6;1" dur="6s" repeatCount="indefinite"/></g>
+      ${SLEEP(100, 60, 180, 60)}
+      ${TOETS(110, 92, 'Space', 0.72, 0.95)}
+    </svg>`,
+    stappen: [
+      'Drag the centre grip to move it; it snaps to member ends, edges and corners.',
+      '<kbd>Space</kbd> turns it 90°. <kbd>Enter</kbd> places another the same.',
+      'Seed43 Properties: Change element (size or category), View (section, elevation or plan member), pieces and label.',
+    ],
+  },
+  'bout-sel': {
+    titel: 'Editing a bolt group',
+    svg: `<svg viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+      <g><rect x="-30" y="-30" width="60" height="60" fill="rgba(15,118,110,.12)" stroke="#0f766e"/>
+        <circle cx="-15" cy="-15" r="4" fill="#fff" stroke="#0f766e"/><circle cx="15" cy="-15" r="4" fill="#fff" stroke="#0f766e"/>
+        <circle cx="-15" cy="15" r="4" fill="#fff" stroke="#0f766e"/><circle cx="15" cy="15" r="4" fill="#fff" stroke="#0f766e"/>
+        <animateTransform attributeName="transform" type="translate" values="100 58;100 58;180 58;180 58" keyTimes="0;0.25;0.6;1" dur="6s" repeatCount="indefinite"/></g>
+      ${SLEEP(100, 58, 180, 58)}
+    </svg>`,
+    stappen: [
+      'Drag the centre grip to move the group; it snaps to member ends, edges and corners.',
+      'Seed43 Properties: bolt, rows, columns, pitch p, gauge g, edges ex and ey (see the key), view, nuts and washers.',
+      '<kbd>Enter</kbd> places another group with the same layout.',
+    ],
+  },
+  'bracing-sel': {
+    titel: 'Editing a bracing line',
+    svg: `<svg viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+      <rect x="30" y="80" width="220" height="10" fill="#e2e8f0" stroke="#94a3b8"/>
+      <line x1="40" y1="72" x2="180" y2="72" stroke="#2563eb" stroke-width="2" stroke-dasharray="6 4">
+        <animate attributeName="x2" values="180;180;240;240" keyTimes="0;0.25;0.6;1" dur="6s" repeatCount="indefinite"/></line>
+      ${SLEEP(180, 72, 240, 72)}
+    </svg>`,
+    stappen: [
+      'Drag end <b>A</b> or <b>B</b> to change the braced length; the length in metres updates.',
+      'Click the line or its text to select it.',
+      'Seed43 Properties: tag, rounding, layout, side, both sides and offsets. <kbd>Enter</kbd> places another.',
+    ],
+  },
   lid: {
     titel: 'Placing a member',
     svg: `<svg viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">

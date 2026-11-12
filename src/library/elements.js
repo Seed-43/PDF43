@@ -11,7 +11,7 @@
 // midpoint or centre to move. Space rotates the selected element (or the
 // one being placed) by 90 degrees.
 
-import { registreerEigenschappen, registreerMeervoud } from '../eigenschappen.js';
+import { registreerEigenschappen, registreerMeervoud, bijEigenschappen } from '../eigenschappen.js';
 import { formulier, kop, groep, veld, waarde, tip } from '../formulier.js';
 import { maakMaatschets, maakBoutSchets } from './maatschets.js';
 import { toonGids, gidsLink } from './gids.js';
@@ -662,7 +662,7 @@ function sectiePaneel() {
         (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item }; if (v === '1') x.item.blocking = true; else delete x.item.blocking; })));
     }
     sectieGegevens(el, e.shape, e.item);
-    el.appendChild((() => { const t = tip('Drag the centre grip to move it; it snaps to member ends, edges and corners. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('sectie')); return t; })());
+    el.appendChild((() => { const t = tip('Drag the centre grip to move it; it snaps to member ends, edges and corners. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('sectie-sel')); return t; })());
     return el;
   };
 }
@@ -748,7 +748,7 @@ function boutPaneel(api) {
     schaalVeld(el, ann, update, boutMaat);
     toonStatus();
     el.appendChild(status);
-    el.appendChild((() => { const t = tip('Drag the centre grip to move the group; it snaps to member ends, edges and corners. Enter places another with the same layout.'); t.appendChild(gidsLink('bout')); return t; })());
+    el.appendChild((() => { const t = tip('Drag the centre grip to move the group; it snaps to member ends, edges and corners. Enter places another with the same layout.'); t.appendChild(gidsLink('bout-sel')); return t; })());
     return el;
   };
 }
@@ -794,7 +794,7 @@ function lidPaneel() {
     const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
     veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) zet((x) => { x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; }); }));
     sectieGegevens(el, e.shape, e.item);
-    el.appendChild((() => { const t = tip('Drag end A or B to stretch it (Shift keeps it square, Tab turns the direction), the midpoint to move it; grips snap to ends, edges and corners. J: line on the centre or an edge. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('lid')); return t; })());
+    el.appendChild((() => { const t = tip('Drag end A or B to stretch it (Shift keeps it square, Tab turns the direction), the midpoint to move it; grips snap to ends, edges and corners. J: line on the centre or an edge. Space turns it 90°, Enter places another the same.'); t.appendChild(gidsLink('lid-sel')); return t; })());
     return el;
   };
 }
@@ -843,7 +843,7 @@ function bracingPaneel(el, ann, update, e, g) {
   const huidig = Math.round(PT_PER_PAPER_MM / (e.ptsPerMm || 1));
   groep(el, 'Scale');
   veld(el, 'Scale 1:', getal(huidig, (n) => { if (n > 0) { const x = kopie(ann.element); x.ptsPerMm = PT_PER_PAPER_MM / n; x.scaleText = `1:${n}`; update('element', x); } }));
-  el.appendChild((() => { const t = tip('Drag end A or B to change the braced length (Shift keeps it square, Tab turns it). New bracing lines take the last tag and settings; Enter places another.'); t.appendChild(gidsLink('bracing')); return t; })());
+  el.appendChild((() => { const t = tip('Drag end A or B to change the braced length (Shift keeps it square, Tab turns it). New bracing lines take the last tag and settings; Enter places another.'); t.appendChild(gidsLink('bracing-sel')); return t; })());
 }
 
 /** Arm the bracing line tool: click A, then B along the braced wall. */
@@ -955,6 +955,12 @@ export function startElementen(api) {
   registreerEigenschappen(api, BOUTEN, boutPaneel(api));
   registreerEigenschappen(api, LID, lidPaneel());
   registreerMeervoud(api, ONZE, meervoudPaneel);
+  // The editing guide for the selected kind, when its properties are on show.
+  bijEigenschappen((ann) => {
+    const soort = ann.type === BOUTEN ? 'bout-sel' : ann.type === SECTIE ? 'sectie-sel'
+      : ann.element?.shape === 'bracing' ? 'bracing-sel' : 'lid-sel';
+    toonGids(soort, { nogBezig: () => geselecteerd === ann.id });
+  });
   for (const type of ONZE) api.registerSelectionListener(type, (ann) => { geselecteerd = ann?.id || null; startLus(api); });
   stopElementen();
   startOverlay(api);

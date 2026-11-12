@@ -80,6 +80,7 @@ function zetOpen(open) {
   lade.el.toggleAttribute('data-dicht', !open);
   lade.tab.toggleAttribute('data-open', open);
   plaats();
+  if (open) setTimeout(meldGids, 0);
 }
 
 function maakLade() {
@@ -195,6 +196,19 @@ function notitie() {
 // form is drawn again from the updated annotation.
 
 let teller = 0;     // goes up with every form shown; a pending clear checks it
+let laatstGetoond = null;   // the single item last shown in Properties
+let gidsHook = null;
+const gidsGezien = new Set();   // ids the guide was shown for this session
+
+/** `fn(ann)` runs when a Seed43 item's properties are on show in the open drawer. */
+export function bijEigenschappen(fn) { gidsHook = fn; }
+function meldGids() {
+  const ann = laatstGetoond;
+  if (!ann || !gidsHook || !lade || lade.el.hasAttribute('data-dicht') || lade.lijf.hidden) return;
+  if (gidsGezien.has(ann.id)) return;
+  gidsGezien.add(ann.id);
+  try { gidsHook(ann); } catch {}
+}
 let wis = null;
 
 function kopieVan(ann) {
@@ -228,6 +242,8 @@ function toon(api, renderFn, ann) {
   try { dom = renderFn(werk, update, () => {}, () => {}); } catch (e) { console.warn('[seed43] properties:', e); }
   l.lijf.replaceChildren(dom || leeg());
   zetTab('eigenschappen');
+  laatstGetoond = ann;
+  meldGids();
 }
 
 /**
@@ -238,12 +254,20 @@ function toon(api, renderFn, ann) {
 export function registreerEigenschappen(api, type, renderFn) {
   api0 = api0 || api;
   api.registerPropertyPanel(type, (ann, update, commit, cancel) => {
-    if (!vensterAan()) return renderFn(ann, update, commit, cancel);
+    if (!vensterAan()) {
+      // Drawer off: the form is in the app's Properties panel; the editing
+      // guide shows the first time each item is selected there.
+      if (ann && gidsHook && !gidsGezien.has(ann.id)) { gidsGezien.add(ann.id); setTimeout(() => { try { gidsHook(ann); } catch {} }, 0); }
+      return renderFn(ann, update, commit, cancel);
+    }
     if (!ann) { try { renderFn(null, update, commit, cancel); } catch {} return null; }
     return notitie();
   });
   api.registerSelectionListener(type, (ann) => {
-    if (!vensterAan()) return;
+    if (!vensterAan()) {
+      if (ann && gidsHook && !gidsGezien.has(ann.id)) { gidsGezien.add(ann.id); setTimeout(() => { try { gidsHook(ann); } catch {} }, 0); }
+      return;
+    }
     if (ann) { clearTimeout(wis); toon(api, renderFn, ann); return; }
     // A deselect calls every type's listener: clear once, unless something
     // was selected again straight after (moving to another Seed43 item).
