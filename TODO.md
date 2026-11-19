@@ -58,3 +58,7 @@ the left, search across the top with breadcrumb, back, forward and home and
 a result count, a grid of to-scale preview tiles or the editable table
 (list view), a details panel, and Place as Section / Elevation / Plan in the
 footer.
+
+## Library requests
+
+- **Australia, MiTek beam list (timber, sawn)**: issue #6, 2026-11-18. Asked for MiTek's "beamlist" beam schedules; no link given. MiTek Australia does not publish a beam size list on its site that we could find, so we need the source: a link, or the beam list exported from the MiTek software (the requester's own stock list), before it can be added. Australia already has MGP10 / MGP12, F17 hardwood, meySPAN, e-beam, Hyne glulam and meyJOIST.
