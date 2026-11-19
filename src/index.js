@@ -16,6 +16,7 @@ import { startElementen, stopElementen, plaatsBracing } from './library/elements
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
 import { autoLink, samenvatting } from './links/index.js';
+import * as melding from './links/melding.js';
 import { tipsAan, wisselTips } from './library/gids.js';
 const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
 import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from './eigenschappen.js';
@@ -146,12 +147,13 @@ function bouwTab(api, aan) {
             type: 'action', id: 'auto-link', label: { en: 'Auto Link', nl: 'Auto-link' }, icon: ICOON_LINK, size: 'large',
             title: { en: 'Link section and detail bubbles both ways: plan bubble to detail title, and the title back. One undo step; run again to add only what is missing.', nl: 'Elke doorsnede- en detailbel met zijn tegenhanger verbinden, beide kanten op.' },
             onRun: async () => {
+              const m = melding.open('Auto Link', 'Reading the sheets...');
               try {
                 tab?.update('auto-link', { active: true });
-                const r = await autoLink(api);
-                alert(samenvatting(r));
+                const r = await autoLink(api, { bijVoortgang: (p, n) => m.zet(`Reading sheet ${p} of ${n}...`) });
+                m.klaar(samenvatting(r));
               } catch (e) {
-                alert(`Auto Link did not finish: ${e?.message || e}`);
+                m.klaar(`Auto Link did not finish: ${e?.message || e}`);
               } finally {
                 tab?.update('auto-link', { active: false });
               }
