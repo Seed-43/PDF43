@@ -1,0 +1,42 @@
+name: Feature request
+description: Ask for a new Seed43 tool, or a change to one.
+title: "Feature request: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Tell us what you want to do and how you do it today.
+
+        Please do not attach client drawings or anything confidential; a screenshot of a test sheet is fine.
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool
+      options:
+        - Element Library
+        - Bracing
+        - Auto Link
+        - Smart Stamps
+        - Seed43 Properties
+        - OCR
+        - Something new
+    validations:
+      required: true
+  - type: textarea
+    id: wish
+    attributes:
+      label: What would you like it to do?
+      placeholder: e.g. Place a base plate with its bolt group in one go.
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you do it now?
+      placeholder: The steps you take today, or the program you use for it.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      placeholder: Links, examples, screenshots.
