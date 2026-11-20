@@ -9,6 +9,7 @@
 import pakket from '../plugin.json';
 import wijzigingen from '../data/changelog.json';
 import { openLink } from './extern.js';
+import { LOGO_SVG } from './logo.js';
 
 export const VERSIE = pakket.version;
 const REPO = 'Seed-43/PDF43';
@@ -30,6 +31,9 @@ const CSS = `
   border:1px solid var(--rand);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.35);font:13px/1.45 system-ui,Segoe UI,sans-serif;overflow:hidden;}
 .s43a button{font:inherit;color:inherit;background:var(--vlak);border:1px solid var(--rand);border-radius:6px;padding:4px 10px;cursor:pointer;}
 .s43a button:hover{background:var(--hover);}
+.s43a-merk{display:block;height:34px;width:auto;overflow:visible;}
+.s43a-kop button{white-space:nowrap;}
+.s43a-merk .logo-glow{opacity:.8;}
 .s43a-steun h3{margin:0 0 4px;}
 .s43a-steun-knoppen{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
 .s43a-koffie{border-color:var(--acc)!important;}
@@ -110,7 +114,7 @@ export function openAbout({ tools, zichtbaar, zet }) {
   achter.innerHTML = `
     <div class="s43a" role="dialog" aria-label="About Seed43">
       <div class="s43a-kop">
-        <div class="s43a-logo"><b>Seed</b>43<small>Tools for Open PDF Studio, version ${esc(VERSIE)}</small></div>
+        <div class="s43a-logo" title="Seed43 ${esc(VERSIE)}">${LOGO_SVG}</div>
         <button class="s43a-check" title="Check GitHub for a newer Seed43">Check for updates</button>
         <button class="s43a-issue" title="Report a problem on GitHub">Report an issue</button>
         <button class="s43a-feature" title="Ask for a new tool or a change on GitHub">Request a feature</button>
