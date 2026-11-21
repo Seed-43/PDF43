@@ -1,5 +1,14 @@
 [
   {
+    "version": "26.11.21.2",
+    "date": "2026-11-21",
+    "notes": {
+      "General": [
+        "About: Update opens Open PDF Studio's Extensions window, where Seed43's Update installs the new version without a restart; if that window can't be opened, About installs it directly as before"
+      ]
+    }
+  },
+  {
     "version": "26.11.21.1",
     "date": "2026-11-21",
     "notes": {

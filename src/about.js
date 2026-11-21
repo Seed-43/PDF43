@@ -202,7 +202,7 @@ export function openAbout({ tools, zichtbaar, zet }) {
     toonUpdate();
   };
   $('.s43a-check').addEventListener('click', controleer);
-  // Update in place, the way Open PDF Studio's Extensions window does it: the
+  // If the Extensions window can't be opened: update in place, the way that window does it: the
   // app downloads the package (https only, size-limited, SHA-256 checked),
   // checks it is Seed43, installs it as one transaction and confirms it. The
   // new version runs after a restart. If any step fails, the manual way shows.
@@ -222,9 +222,31 @@ export function openAbout({ tools, zichtbaar, zet }) {
     k.querySelector('.s43a-dl')?.addEventListener('click', () => openLink(release.oppx));
     k.querySelector('.s43a-rel').addEventListener('click', () => openLink(release.url));
   };
+  // Open Open PDF Studio's own Extensions window, where Seed43 shows
+  // "Update to v…" and the new version starts without a restart. There is no
+  // API for it, so this presses the app's own buttons: the Help ribbon tab,
+  // then Extensions, then back to the tab you were on. False if any of them
+  // can't be found (a different app version), and the direct install is used.
+  const openExtensies = async () => {
+    const tabKnop = (id) => document.querySelector(`.ribbon-tab[role="tab"][data-tab="${id}"]`);
+    const help = tabKnop('help');
+    if (!help) return false;
+    const vorige = document.querySelector('.ribbon-tab[role="tab"][aria-selected="true"]');
+    help.click();
+    let knop = null;
+    for (let i = 0; i < 40 && !(knop = document.getElementById('ribbon-extensions')); i++) await new Promise((r) => setTimeout(r, 50));
+    if (knop) knop.click();
+    if (vorige && vorige !== help) setTimeout(() => vorige.click(), 0);
+    return !!knop;
+  };
   let bezig = false;
   $('.s43a-lint').addEventListener('click', async () => {
     if (bezig || !release) return;
+    if (await openExtensies().catch(() => false)) {
+      $('.s43a-status').innerHTML = `<h3>Update to Seed43 ${esc(release.versie)}</h3>
+        <p style="margin:0">Open PDF Studio's Extensions window is open: click <b>Update to v${esc(release.versie)}</b> next to Seed43.</p>`;
+      return;
+    }
     const invoke = window.__TAURI__?.core?.invoke;
     if (!release.oppx || !invoke) { handmatig(release.oppx ? 'this needs the desktop app' : 'the release has no seed43.oppx'); return; }
     bezig = true;
