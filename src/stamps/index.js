@@ -3,18 +3,19 @@
 // stamp of a family shows the family's parameter values: change one stamp and
 // all stamps of that family in the file follow.
 
-import { registreerEigenschappen } from '../eigenschappen.js';
+import { registreerEigenschappen, registreerStempelTab } from '../eigenschappen.js';
 import { formulier, kop as formKop, groep, veld as formVeld } from '../formulier.js';
 import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO } from './families.js';
 import { maat, teken } from './render.js';
 import { openBouwer } from './builder.js';
-import { openPaneel, sluitPaneel, werkPaneelBij, paneelOpen } from './panel.js';
+import { openPaneel, sluitPaneel, werkPaneelBij, paneelOpen, maakStempelLijst } from './panel.js';
 
 export const TYPE = 'seed43Stamp';
 export const PALET = 'smart-stamps';
 
 let families = [];
 let actief = false;
+let ladeLijst = null;   // the list in the drawer's Smart Stamps tab
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -155,12 +156,25 @@ export async function startStamps(api) {
   registreerEigenschappen(api, TYPE, paneel(api));
   registreerPalet(api);
   actief = true;
+  registreerStempelTab({
+    bouw: () => {
+      ladeLijst = maakStempelLijst({
+        families, icoon: familieIcoon,
+        kies: (f) => { api.setTool(TYPE); api.setToolOverrides({ seed43Family: f.id }); },
+        bouwer: () => bouwer(api),
+      });
+      return ladeLijst.el;
+    },
+    ververs: () => ladeLijst?.ververs(families),
+  });
 }
 
 export async function stopStamps(api) {
   if (!actief) return;
   actief = false;
   sluitPaneel();
+  registreerStempelTab(null);
+  ladeLijst = null;
   try { await api?.setToolPaletteVisible?.(PALET, false); } catch {}
   try { api?.unregisterToolPalette?.(PALET); } catch {}
   try { api?.unregisterPropertyPanel?.(TYPE); } catch {}
@@ -205,6 +219,7 @@ export function bouwer(api) {
     bewaarFamilies(families);
     registreerPalet(api);
     werkPaneelBij(families);
+    ladeLijst?.ververs(families);
     // Placed stamps of a changed family take its new design; values stay.
     for (const f of gewijzigd) {
       await werkFamilieBij(api, f.id, (s) => {
