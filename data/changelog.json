@@ -11,6 +11,7 @@
         "Drawer tabs renamed Properties, Elements, Stamps (and Collab)"
       ],
       "Fixed": [
+        "Collab: Open always opens the shared PDF again in a new tab, caught up with everyone's markups (after its tab was closed it did nothing)",
         "Linux: the Seed43 Properties tab on the page edge shows its text vertically",
         "Linux: dropdowns in Seed43 Properties and the Element Library follow the dark theme instead of white on white"
       ]

@@ -81,12 +81,19 @@ function limietTekst(l) {
 
 async function openInApp(s) {
   const al = koppelingen.get(s.key);
-  if (al && !al.stop) { zeg('It\'s already open: look for its tab.'); return; }
+  if (al && !al.stop && al.actief()) { zeg('It\'s open: it\'s the tab you\'re on.'); return; }
+  // Any earlier copy stops syncing. Its tab may have been closed (an extension
+  // can't see that), and an edited copy can't be matched to the server again:
+  // a fresh copy of the PDF, caught up from the server, always can.
+  al?.sluit();
+  koppelingen.delete(s.key);
   const T = tauri();
   if (!T?.fs || !T?.path || !T?.event) throw new Error('This needs the Open PDF Studio desktop app.');
   zeg('Downloading and decrypting…');
   const bytes = await S.downloadPdf(s);
-  const naam = `S43 Collab - ${veilig(s.title)} - ${s.id.slice(0, 6)}.pdf`;
+  // A new name each time, so the app opens a new tab rather than switching to
+  // an old one that's no longer synced.
+  const naam = `S43 Collab - ${veilig(s.title).slice(0, 60)} - ${s.id.slice(0, 6)}${Date.now().toString(36).slice(-4)}.pdf`;
   const map = (await T.path.tempDir()).replace(/[\\/]$/, '');
   const pad = `${map}/${naam}`;
   await T.core.invoke('allow_fs_scope', { path: pad });
@@ -95,7 +102,7 @@ async function openInApp(s) {
   const k = new Koppeling(api0, s, naam, { bijStatus: () => teken() });
   koppelingen.set(s.key, k);
   await T.event.emit('open-files', [pad]);
-  melding = null;
+  melding = { soort: 'melding', tekst: 'Opened in a new tab. If you still have an older tab of this PDF open, close it: only the new one is live.' };
   k.start().catch((e) => { zegFout(e); k.sluit(); });
   teken();
 }
@@ -182,7 +189,7 @@ function sessieKaart(s) {
   }
   const knoppen = maak('div', 's43c-knoppen');
   if (!st?.weg) {
-    knoppen.appendChild(knop(k && !k.stop ? 'Open (already open)' : 'Open', () => openInApp(s), 's43c-hoofd'));
+    knoppen.appendChild(knop('Open', () => openInApp(s), 's43c-hoofd'));
     knoppen.appendChild(knop('Copy key', async () => { await navigator.clipboard.writeText(s.key); zeg('Key copied.'); }));
   }
   if (s.role === 'owner' && !st?.weg) {
