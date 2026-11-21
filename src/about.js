@@ -88,7 +88,9 @@ async function laatsteRelease() {
     if (!r.ok) return null;
     const j = await r.json();
     const oppx = (j.assets || []).find((a) => /\.oppx$/i.test(a.name));
-    return { versie: String(j.tag_name || '').replace(/^v/i, ''), url: j.html_url || RELEASES, oppx: oppx?.browser_download_url || null, notities: j.body || '' };
+    // GitHub gives each asset's SHA-256 as "sha256:…"; the update checks the download against it.
+    const sha256 = /^sha256:[0-9a-f]{64}$/i.test(oppx?.digest || '') ? oppx.digest.slice(7).toLowerCase() : null;
+    return { versie: String(j.tag_name || '').replace(/^v/i, ''), url: j.html_url || RELEASES, oppx: oppx?.browser_download_url || null, sha256, notities: j.body || '' };
   } catch { return null; }
 }
 
@@ -188,7 +190,7 @@ export function openAbout({ tools, zichtbaar, zet }) {
     if (nieuwer(release.versie, VERSIE)) {
       const lint = $('.s43a-lint');
       lint.style.display = 'block';
-      lint.querySelector('span').textContent = `${release.versie} (you have ${VERSIE}), click for how to update`;
+      lint.querySelector('span').textContent = `${release.versie} (you have ${VERSIE}), click to update`;
       stand.innerHTML = `Seed43 <b>${esc(release.versie)}</b> is available.`;
     } else {
       stand.textContent = `You have the latest version (${VERSIE}).`;
@@ -200,9 +202,14 @@ export function openAbout({ tools, zichtbaar, zet }) {
     toonUpdate();
   };
   $('.s43a-check').addEventListener('click', controleer);
-  $('.s43a-lint').addEventListener('click', () => {
+  // Update in place, the way Open PDF Studio's Extensions window does it: the
+  // app downloads the package (https only, size-limited, SHA-256 checked),
+  // checks it is Seed43, installs it as one transaction and confirms it. The
+  // new version runs after a restart. If any step fails, the manual way shows.
+  const handmatig = (fout) => {
     const k = $('.s43a-status');
     k.innerHTML = `<h3>Update to Seed43 ${esc(release.versie)}</h3>
+      ${fout ? `<p class="s43a-zacht" style="margin:0 0 6px">The automatic update didn't work (${esc(fout)}). You can update by hand:</p>` : ''}
       <ol style="margin:4px 0 8px 18px;padding:0">
         <li>In Open PDF Studio open <b>File, Extensions</b>.</li>
         <li>Find <b>Seed43</b> under Installed or Browse and click <b>Update</b>.</li>
@@ -214,6 +221,35 @@ export function openAbout({ tools, zichtbaar, zet }) {
       </div>`;
     k.querySelector('.s43a-dl')?.addEventListener('click', () => openLink(release.oppx));
     k.querySelector('.s43a-rel').addEventListener('click', () => openLink(release.url));
+  };
+  let bezig = false;
+  $('.s43a-lint').addEventListener('click', async () => {
+    if (bezig || !release) return;
+    const invoke = window.__TAURI__?.core?.invoke;
+    if (!release.oppx || !invoke) { handmatig(release.oppx ? 'this needs the desktop app' : 'the release has no seed43.oppx'); return; }
+    bezig = true;
+    const k = $('.s43a-status');
+    const zeg = (t) => { k.innerHTML = `<h3>Updating to Seed43 ${esc(release.versie)}</h3><p style="margin:0">${esc(t)}</p>`; };
+    let pakket = null;
+    try {
+      zeg('Downloading from GitHub…');
+      pakket = await invoke('extensie_pakket_ophalen', { url: release.oppx, sha256: release.sha256, verwachtId: 'seed43' });
+      zeg(`Installing ${pakket.version}…`);
+      const r = await invoke('extensie_installeer', { pad: pakket.pad, beleid: 'always', verwachteSha256: pakket.sha256, bron: 'ui' });
+      if (r?.transactie) await invoke('extensie_bevestig', { transactie: r.transactie });
+      k.innerHTML = `<h3>Seed43 ${esc(pakket.version)} is installed</h3>
+        <p style="margin:0 0 8px">Restart Open PDF Studio to start using it.</p>
+        <button class="s43a-rel">What's new</button>`;
+      k.querySelector('.s43a-rel').addEventListener('click', () => openLink(release.url));
+      const lint = $('.s43a-lint');
+      lint.querySelector('span').textContent = 'installed, restart Open PDF Studio to use it';
+    } catch (e) {
+      console.warn('[seed43] update failed:', e);
+      handmatig(String(e?.message || e).slice(0, 160));
+    } finally {
+      if (pakket?.pad) invoke('extensie_pakket_opruimen', { pad: pakket.pad }).catch(() => {});
+      bezig = false;
+    }
   });
   controleer();
 }

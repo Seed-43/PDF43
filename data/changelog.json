@@ -3,6 +3,9 @@
     "version": "26.11.21.1",
     "date": "2026-11-21",
     "notes": {
+      "New": [
+        "About: Update installs the new version straight from GitHub (download checked against GitHub's SHA-256), then asks you to restart Open PDF Studio; if it can't, it shows the manual steps"
+      ],
       "General": [
         "Collab: this PC's decrypted copies of a shared PDF (the temporary files Open makes) are deleted on Delete now and Forget, when a session has ended or been deleted, and at start-up for sessions past their delete date"
       ]
