@@ -240,11 +240,12 @@ function steunKaart() {
     const m = maak('div', 's43c-meter');
     const vol = maak('div', 'vol'); vol.style.width = pct + '%';
     m.appendChild(vol);
-    const punten = [...(steun.milestonesNzd || []).map((v, i) => [v, `Milestone ${i + 1}`]), [steun.goalNzd, 'Goal']];
+    const punten = [...(steun.milestonesNzd || []).map((v, i) => [v, `M${i + 1}`]), [steun.goalNzd, 'Goal']];
     for (const [v, naam] of punten) {
       const x = Math.min(100, (v / steun.goalNzd) * 100);
       const mp = maak('div', 'mp'); mp.style.left = `calc(${x}% - 1px)`;
-      const ml = maak('div', 'ml' + (x >= 99 ? ' eind' : ''), `${naam} · ${nzd(v)}`); ml.style.left = x + '%';
+      const ml = maak('div', 'ml' + (x >= 99 ? ' eind' : ''), `${naam} ${nzd(v)}`); ml.style.left = x + '%';
+      ml.title = naam === 'Goal' ? `Goal: ${nzd(v)}` : `Milestone ${naam.slice(1)}: ${nzd(v)}`;
       m.append(mp, ml);
     }
     k.appendChild(m);
@@ -255,7 +256,14 @@ function steunKaart() {
   }
   k.appendChild(maak('div', 's43c-klein', 'Seed43 Collab runs on Seed43\'s own server. Your support helps it grow.'));
   const kn = maak('div', 's43c-knoppen');
-  kn.appendChild(knop('Support Seed43', () => openLink(steun?.url || 'https://buymeacoffee.com/Seed43'), 's43c-koffie'));
+  kn.appendChild(knop('Support Seed43', async () => {
+    const url = steun?.url || 'https://buymeacoffee.com/Seed43';
+    // Some Linux setups can't start the browser from the app (an AppImage with a
+    // WebKit browser such as GNOME Web as the default): copy the link as well.
+    try { await navigator.clipboard.writeText(url); } catch {}
+    zeg(`Opening the support page. If your browser didn't open, the link is copied: ${url.replace(/^https?:\/\//, '')}`);
+    await openLink(url);
+  }, 's43c-koffie'));
   k.appendChild(kn);
   return k;
 }
