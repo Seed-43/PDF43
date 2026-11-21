@@ -44,6 +44,15 @@ fs.copyFileSync('data/nz-steel.seed43lib.json', `${pkg}/data/nz-steel.seed43lib.
 fs.copyFileSync('plugin.json', `${pkg}/plugin.json`);
 for (const f of ['LICENSE', 'NOTICE.md', 'ort-LICENSE.txt']) if (fs.existsSync(f)) fs.copyFileSync(f, `${pkg}/${f}`);
 if (WEB) {
+  // Cloudflare tells browsers to keep .js for 4 hours, and the host imports
+  // index.js?v=<version>: stamp the script's hash into the version, so every
+  // build has a new address (22 November 2026). plugin.json is never cached.
+  const { createHash } = await import('crypto');
+  const hash = createHash('sha256').update(fs.readFileSync(`${pkg}/index.js`)).digest('hex').slice(0, 10);
+  const manifest = JSON.parse(fs.readFileSync(`${pkg}/plugin.json`, 'utf8'));
+  manifest.version = `${manifest.version}-web.${hash}`;
+  fs.writeFileSync(`${pkg}/plugin.json`, JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`version ${manifest.version}`);
   const mb = (d) => fs.readdirSync(d, { recursive: true }).map((f) => `${d}/${f}`).filter((p) => fs.statSync(p).isFile())
     .reduce((s, p) => s + fs.statSync(p).size, 0) / 1e6;
   console.log(`${pkg}/ ${mb(pkg).toFixed(1)} MB`);
