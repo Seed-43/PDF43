@@ -1,7 +1,7 @@
 // Web build only (seed43.org/pdf-studio, 21 November 2026). Two things the
 // self-hosted copy needs that the desktop app does not:
 //
-//   Close    a button in the title bar that goes back to the site: to Studio
+//   Back     "Back to Seed43" in the title bar, back to the site: to Studio
 //            when the PDF came from Studio, otherwise to where the visitor
 //            came from on seed43.org, otherwise the home page.
 //   Handover Seed43 Studio opens a 3D PDF itself and sends a 2D one here. It
@@ -22,6 +22,16 @@ const STIJL = `
 .s43-terug svg{width:12px;height:12px}
 .s43-terug-los{position:fixed;top:0;right:0;z-index:2147483000;height:30px;background:var(--theme-surface,#2b2b2b)}
 `;
+// Send Feedback goes to OpenAEC's own feedback service; on seed43.org the
+// title bar offers the desktop app instead (22 November 2026).
+const DESKTOP_URL = 'https://github.com/OpenAEC-Foundation/open-pdf-studio/releases/latest';
+const STIJL_DESKTOP = `
+.title-bar .send-feedback-btn:not(.s43-desktop){display:none!important}
+.title-bar a.s43-desktop{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.title-bar a.s43-desktop svg{width:12px;height:12px}
+`;
+const PIJL = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5v6.5M3.2 5.5L6 8.3l2.8-2.8M2 10.5h8"/></svg>';
+const TERUG = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 6h-9M5 2.5L1.5 6 5 9.5"/></svg>';
 const KRUIS = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>';
 
 function terugAdres() {
@@ -37,19 +47,27 @@ function terugAdres() {
 function sluitKnop() {
   if (document.querySelector('.s43-terug')) return;
   const stijl = document.createElement('style');
-  stijl.textContent = STIJL;
+  stijl.textContent = STIJL + STIJL_DESKTOP;
   document.head.appendChild(stijl);
 
   const knop = document.createElement('button');
   knop.type = 'button';
   knop.className = 's43-terug';
-  knop.title = 'Close Open PDF Studio and go back to seed43.org';
-  knop.innerHTML = `${KRUIS}<span>Close</span>`;
+  knop.title = 'Leave Open PDF Studio and go back to Seed43';
+  knop.innerHTML = `${TERUG}<span>Back to Seed43</span>`;
   knop.addEventListener('click', () => { location.href = terugAdres(); });
+
+  const desktop = document.createElement('a');
+  desktop.className = 'send-feedback-btn s43-desktop';
+  desktop.href = DESKTOP_URL;
+  desktop.target = '_blank';
+  desktop.rel = 'noopener noreferrer';
+  desktop.title = 'Download Open PDF Studio for Windows, macOS or Linux (free, by the OpenAEC Foundation). Add the Seed43 tools from File > Extensions.';
+  desktop.innerHTML = `${PIJL}<span>Get the desktop version</span>`;
 
   const plaats = () => {
     const balk = document.querySelector('.title-bar .window-controls');
-    if (balk) { balk.appendChild(knop); return true; }
+    if (balk) { balk.appendChild(desktop); balk.appendChild(knop); return true; }
     return false;
   };
   if (!plaats()) {
@@ -58,7 +76,7 @@ function sluitKnop() {
     document.body.appendChild(knop);
     const kijk = new MutationObserver(() => {
       const balk = document.querySelector('.title-bar .window-controls');
-      if (balk) { knop.classList.remove('s43-terug-los'); balk.appendChild(knop); kijk.disconnect(); }
+      if (balk) { knop.classList.remove('s43-terug-los'); balk.appendChild(desktop); balk.appendChild(knop); kijk.disconnect(); }
     });
     kijk.observe(document.body, { childList: true, subtree: true });
   }
