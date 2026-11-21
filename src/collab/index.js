@@ -98,13 +98,49 @@ async function openInApp(s) {
   const pad = `${map}/${naam}`;
   await T.core.invoke('allow_fs_scope', { path: pad });
   await T.fs.writeFile(pad, bytes);
-  S.werkBij(s.key, { file: pad });
+  const eerder = S.lijst().find((x) => x.key === s.key);
+  S.werkBij(s.key, { files: [...new Set([...(eerder?.files || []), ...(eerder?.file ? [eerder.file] : []), pad])], file: null });
   const k = new Koppeling(api0, s, naam, { bijStatus: () => teken() });
   koppelingen.set(s.key, k);
   await T.event.emit('open-files', [pad]);
   melding = { soort: 'melding', tekst: 'Opened in a new tab. If you still have an older tab of this PDF open, close it: only the new one is live.' };
   k.start().catch((e) => { zegFout(e); k.sluit(); });
   teken();
+}
+
+/**
+ * Delete this PC's decrypted copies of a session's PDF (the temp files Open
+ * writes). They're readable, so they shouldn't outlive the session: they go
+ * on Delete now, Forget, and once the session has ended or been deleted.
+ * A copy the system already cleared, or that can't be removed (open in
+ * another program on Windows), is skipped and tried again next time.
+ */
+async function wisKopieen(s) {
+  const T = tauri();
+  const paden = [...new Set([...(s.files || []), ...(s.file ? [s.file] : [])])];
+  if (!paden.length || !T?.fs) return;
+  const over = [];
+  for (const pad of paden) {
+    try {
+      await T.core.invoke('allow_fs_scope', { path: pad });
+      if (await T.fs.exists(pad)) await T.fs.remove(pad);
+    } catch (e) {
+      console.warn('[seed43 collab] could not remove a copy yet:', e);
+      over.push(pad);
+    }
+  }
+  S.werkBij(s.key, { files: over, file: null });
+}
+
+/** At start-up: copies of sessions past their delete date go, and so do the sessions. */
+async function ruimOp() {
+  const nu = Date.now() / 1000;
+  for (const s of S.lijst()) {
+    if (s.deleteAt && s.deleteAt <= nu) {
+      await wisKopieen(s);
+      if (!(S.lijst().find((x) => x.key === s.key)?.files || []).length) S.vergeet(s.key);
+    }
+  }
 }
 
 // ── share and join ──────────────────────────────────────────────────────
@@ -153,8 +189,10 @@ async function ververs() {
   for (const s of S.lijst()) {
     try { statussen.set(s.key, await S.status(s)); }
     catch (e) {
-      if (['gone', 'denied'].includes(e?.code)) statussen.set(s.key, { fout: uitleg(e), weg: true });
-      else if (e?.code === 'removed') statussen.set(s.key, { fout: uitleg(e), weg: true });
+      if (['gone', 'denied', 'removed'].includes(e?.code)) {
+        statussen.set(s.key, { fout: uitleg(e), weg: true });
+        await wisKopieen(s);
+      }
       else statussen.set(s.key, { fout: uitleg(e) });
     }
   }
@@ -200,12 +238,13 @@ function sessieKaart(s) {
     knoppen.appendChild(knop('Delete now', async () => {
       if (!await vraag(`Delete '${s.title}' from the server now? The other people lose access straight away, and this can't be undone. Save your own copy first (File › Save As on its tab).`)) return;
       koppelingen.get(s.key)?.sluit(); koppelingen.delete(s.key);
-      await S.verwijder(s); statussen.delete(s.key); zeg('Deleted from the server.');
+      await S.verwijder(s); await wisKopieen(s); statussen.delete(s.key);
+      zeg('Deleted from the server, and this PC\'s temporary copy removed.');
     }, 's43c-gevaar'));
   } else {
     knoppen.appendChild(knop('Forget', async () => {
       if (!await vraag(`Remove '${s.title}' from this list? You'd need the key to join again.`)) return;
-      koppelingen.get(s.key)?.sluit(); koppelingen.delete(s.key); S.vergeet(s.key); statussen.delete(s.key); teken();
+      koppelingen.get(s.key)?.sluit(); koppelingen.delete(s.key); await wisKopieen(s); S.vergeet(s.key); statussen.delete(s.key); teken();
     }));
   }
   if (s.role === 'owner' && !st?.weg) {
@@ -289,6 +328,7 @@ function teken() {
 
 export function startCollab(api) {
   api0 = api;
+  ruimOp().catch((e) => console.warn('[seed43 collab] clean-up:', e));
   let s = document.getElementById(STIJL_ID);
   if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
   if (s.textContent !== CSS) s.textContent = CSS;

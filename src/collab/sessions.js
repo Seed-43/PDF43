@@ -22,7 +22,7 @@ export function device() {
 export const mijnNaam = () => lees(NAAM, '');
 export const zetNaam = (n) => schrijf(NAAM, String(n || '').trim().slice(0, 80));
 
-/** This PC's sessions: [{ key, id, role, ownerToken?, title, editUntil, deleteAt, downloadedAt?, file? }] */
+/** This PC's sessions: [{ key, id, role, ownerToken?, title, editUntil, deleteAt, files? (this PC's decrypted temp copies) }] */
 export function lijst() {
   const l = lees(LIJST, []);
   return Array.isArray(l) ? l.filter((s) => s && typeof s.key === 'string') : [];

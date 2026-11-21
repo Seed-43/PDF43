@@ -1,5 +1,14 @@
 [
   {
+    "version": "26.11.21.1",
+    "date": "2026-11-21",
+    "notes": {
+      "General": [
+        "Collab: this PC's decrypted copies of a shared PDF (the temporary files Open makes) are deleted on Delete now and Forget, when a session has ended or been deleted, and at start-up for sessions past their delete date"
+      ]
+    }
+  },
+  {
     "version": "26.11.21",
     "date": "2026-11-21",
     "notes": {
