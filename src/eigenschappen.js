@@ -198,11 +198,24 @@ export function registreerLadeTab(id, t) {
 }
 export const registreerStempelTab = (t) => registreerLadeTab('stempels', t);
 
-/** Open the drawer on one of the tabs (the Collab warnings use this). */
-export function toonLadeTab(id) {
-  if (!lade) return;
+/**
+ * Open the drawer on one of its tabs (the ribbon's Smart Stamps and Collab
+ * buttons). A drawer that was switched off is switched on. With `wissel`, a
+ * second press on the tab that is already showing closes the drawer.
+ * Returns whether the drawer is now open on that tab.
+ */
+export function toonLadeTab(id, { wissel = false } = {}) {
+  if (!lade) {
+    try { localStorage.setItem(AAN, '1'); } catch {}
+    maakLade();
+    try { aanUitHook?.(true); } catch {}
+  }
+  if (!lade) return false;
+  const alOpen = isOpen() && lade.tabjes.find((b) => b.dataset.tab === id)?.hasAttribute('data-aan');
+  if (wissel && alOpen) { zetOpen(false); return false; }
   zetOpen(true);
   zetTab(id);
+  return true;
 }
 
 function toonExtraTabjes() {

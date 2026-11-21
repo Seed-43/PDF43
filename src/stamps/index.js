@@ -1,5 +1,5 @@
 // Smart Stamps: stamps built from families (stamps/families.js), placed from
-// the dockable Smart Stamps palette, edited in the properties panel. Every
+// the Stamps tab of the Seed43 drawer, edited in the properties panel. Every
 // stamp of a family shows the family's parameter values: change one stamp and
 // all stamps of that family in the file follow.
 
@@ -8,10 +8,9 @@ import { formulier, kop as formKop, groep, veld as formVeld } from '../formulier
 import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO } from './families.js';
 import { maat, teken } from './render.js';
 import { openBouwer } from './builder.js';
-import { openPaneel, sluitPaneel, werkPaneelBij, paneelOpen, maakStempelLijst } from './panel.js';
+import { maakStempelLijst } from './panel.js';
 
 export const TYPE = 'seed43Stamp';
-export const PALET = 'smart-stamps';
 
 let families = [];
 let actief = false;
@@ -24,24 +23,6 @@ function familieIcoon(f) {
   const kleur = /^#[0-9a-f]{3,8}$/i.test(f.color || '') ? f.color : '#c0392b';
   const letters = esc((f.name || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || '?');
   return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="${kleur}" stroke-width="1.8"/><line x1="4" y1="9" x2="20" y2="9" stroke="${kleur}" stroke-width="1"/><text x="12" y="17" font-size="6.5" font-family="Arial" font-weight="bold" text-anchor="middle" fill="${kleur}">${letters}</text></svg>`;
-}
-
-const PALET_ICOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
-
-function registreerPalet(api) {
-  api.registerToolPalette({
-    id: PALET,
-    label: 'Smart Stamps',
-    icon: PALET_ICOON,
-    defaultVisible: false,
-    defaultMode: 'docked-right',
-    // Floating: a list of each family's icon and name (hosts with floatLayout).
-    floatLayout: 'list',
-    tools: families.map((f, i) => ({
-      id: `stamp-${f.id}`, tool: TYPE, label: f.name, icon: familieIcoon(f), group: i,
-      overrides: { seed43Family: f.id },
-    })),
-  });
 }
 
 /** Load every page's markups, then update all stamps of `familieId`. */
@@ -154,7 +135,6 @@ export async function startStamps(api) {
   families = laadFamilies();
   api.registerAnnotationType(TYPE, markeringType(api));
   registreerEigenschappen(api, TYPE, paneel(api));
-  registreerPalet(api);
   actief = true;
   registreerStempelTab({
     bouw: () => {
@@ -172,53 +152,20 @@ export async function startStamps(api) {
 export async function stopStamps(api) {
   if (!actief) return;
   actief = false;
-  sluitPaneel();
   registreerStempelTab(null);
   ladeLijst = null;
-  try { await api?.setToolPaletteVisible?.(PALET, false); } catch {}
-  try { api?.unregisterToolPalette?.(PALET); } catch {}
+  try { api?.unregisterToolPalette?.('smart-stamps'); } catch {}   // left by versions before 26.11.21.1
   try { api?.unregisterPropertyPanel?.(TYPE); } catch {}
   // The markup type stays registered so placed stamps keep showing.
 }
 
 export function isActief() { return actief; }
 
-/**
- * Open or close the Smart Stamps palette. Returns whether it is now open.
- * A host without api.setToolPaletteVisible (the official app) cannot open an
- * extension palette at all; there Seed43 shows its own panel (panel.js).
- * `bijSluiten` runs when the user closes that panel with its own button.
- */
-export async function wisselPalet(api, bijSluiten) {
-  if (!actief) return false;
-  if (typeof api.setToolPaletteVisible === 'function') {
-    const open = await api.isToolPaletteVisible?.(PALET);
-    await api.setToolPaletteVisible(PALET, !open);
-    return !open;
-  }
-  if (paneelOpen()) { sluitPaneel(); return false; }
-  openPaneel({
-    families,
-    icoon: familieIcoon,
-    kies: (f) => { api.setTool(TYPE); api.setToolOverrides({ seed43Family: f.id }); },
-    bijSluiten,
-  });
-  return true;
-}
-
-/** Is the palette (or the fallback panel) open? */
-export async function paletOpen(api) {
-  if (typeof api?.isToolPaletteVisible === 'function') return !!(await api.isToolPaletteVisible(PALET));
-  return paneelOpen();
-}
-
 export function bouwer(api) {
   if (!actief) return;
   openBouwer(families, async (nieuw, gewijzigd) => {
     families = nieuw;
     bewaarFamilies(families);
-    registreerPalet(api);
-    werkPaneelBij(families);
     ladeLijst?.ververs(families);
     // Placed stamps of a changed family take its new design; values stay.
     for (const f of gewijzigd) {

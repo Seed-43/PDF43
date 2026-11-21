@@ -1,12 +1,6 @@
-// Smart Stamps panel for hosts without api.setToolPaletteVisible.
-//
-// The official Open PDF Studio registers extension tool palettes but gives
-// neither the add-on nor the user a way to open one. There Seed43 shows this
-// panel instead: the same stamp families, the same tool and overrides as the
-// palette buttons. It is a Seed43 window (venster.js): it floats or docks on
-// any edge of the page view and stacks with the other Seed43 windows.
+// Smart Stamps list for the Stamps tab of the Seed43 drawer: each stamp
+// family with its icon (click to place), a search box and the Stamp Builder.
 
-import { maakVenster } from '../venster.js';
 
 const STIJL_ID = 'seed43-stamp-panel-stijl';
 
@@ -26,25 +20,7 @@ const CSS = `
 .s43p-bouwer:hover{background:color-mix(in srgb,var(--acc,#0078d7) 15%,transparent);}
 `;
 
-let paneel = null;
 
-/**
- * Open the panel. `families` with `icoon(f)` (SVG string); `kies(f)` arms the
- * stamp tool for that family; `bijSluiten()` runs when the user closes it.
- */
-export function openPaneel({ families, icoon, kies, bijSluiten }) {
-  // Always rewrite: after a reinstall the page still holds the old sheet.
-  let s = document.getElementById(STIJL_ID);
-  if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
-  if (s.textContent !== CSS) s.textContent = CSS;
-  const venster = maakVenster({ id: 'stamps', titel: 'Smart Stamps', breedte: 210, hoogte: 90, bijSluiten: () => { paneel = null; bijSluiten?.(); } });
-  const lijst = document.createElement('div');
-  lijst.className = 's43p-lijst';
-  venster.lijf.replaceChildren(lijst);
-  vulLijst(lijst, families, icoon, kies);
-  venster.open();
-  paneel = { venster, lijst, icoon, kies };
-}
 
 function vulLijst(lijst, families, icoon, kies) {
   lijst.replaceChildren();
@@ -106,16 +82,5 @@ export function maakStempelLijst({ families, icoon, kies, bouwer }) {
   return { el, ververs: (f) => { alle = f; toon(); }, focus: () => setTimeout(() => invoer.focus(), 50) };
 }
 
-/** Refresh the list (after the Stamp Builder changed the families). */
-export function werkPaneelBij(families) {
-  if (paneel) vulLijst(paneel.lijst, families, paneel.icoon, paneel.kies);
-}
 
-export function sluitPaneel() {
-  paneel?.venster.sluit();
-  paneel = null;
-}
 
-export function paneelOpen() {
-  return !!paneel && paneel.venster.isOpen();
-}

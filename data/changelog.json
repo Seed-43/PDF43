@@ -4,10 +4,12 @@
     "date": "2026-11-21",
     "notes": {
       "New": [
-        "About: Update installs the new version straight from GitHub (download checked against GitHub's SHA-256), then asks you to restart Open PDF Studio; if it can't, it shows the manual steps"
+        "About: Update installs the new version straight from GitHub (download checked against GitHub's SHA-256), then asks you to restart Open PDF Studio; if it can't, it shows the manual steps",
+        "Seed43 ribbon: Smart Stamps and Collab buttons beside Properties open their tab in the Seed43 drawer (switching the drawer on if needed); press again to close it"
       ],
       "General": [
-        "Collab: this PC's decrypted copies of a shared PDF (the temporary files Open makes) are deleted on Delete now and Forget, when a session has ended or been deleted, and at start-up for sessions past their delete date"
+        "Collab: this PC's decrypted copies of a shared PDF (the temporary files Open makes) are deleted on Delete now and Forget, when a session has ended or been deleted, and at start-up for sessions past their delete date",
+        "The Stamps group (Smart Stamps and Stamp Builder buttons) and the floating Smart Stamps window are gone: the Stamp Builder is in the drawer's Stamps tab"
       ]
     }
   },

@@ -13,7 +13,7 @@
 //            checked against the library's edge distance and pitch
 
 import { registreerOcr, stopOcr } from './ocr/engine.js';
-import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
+import { startStamps } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
@@ -21,7 +21,7 @@ import { autoLink, samenvatting } from './links/index.js';
 import * as melding from './links/melding.js';
 import { tipsAan, wisselTips } from './library/gids.js';
 const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
-import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from './eigenschappen.js';
+import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit, toonLadeTab } from './eigenschappen.js';
 import { startCollab } from './collab/index.js';
 
 const OPSLAG = 'seed43.tools';
@@ -31,7 +31,7 @@ const ICOON_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const ICOON_ABOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
 
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
-const ICOON_BOUWER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M3 8h18"/><path d="M7 12h6"/><path d="M15 20l2-2 3 3"/><path d="M17 18l3-3"/></svg>';
+const ICOON_COLLAB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v6"/><path d="M14 3v4h4"/><path d="M6 3v18h6"/><circle cx="17" cy="16" r="2.2"/><path d="M13 21c.4-2 2-3 4-3s3.6 1 4 3"/><path d="M9 9h3"/><path d="M9 12h4"/></svg>';
 
 const ICOON_BRACING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17h18" stroke-dasharray="3 2"/><path d="M3 20h18"/><path d="M7 9h10"/><path d="M7 6h3"/></svg>';
 const ICOON_BIBLIOTHEEK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14"/><path d="M5 20h14"/><path d="M12 4v16"/><path d="M8 8h8"/><path d="M8 16h8"/></svg>';
@@ -89,7 +89,8 @@ export async function activate(api) {
 
 const ABOUT_TOOLS = [
   { id: 'ocr', label: 'Paddle OCR', beschrijving: 'OCR engine for scans and page labels; the ribbon button switches it on or off', icon: ICOON_OCR },
-  { id: 'stamps', label: 'Smart Stamps', beschrijving: 'Stamp families with shared parameters, and the Stamp Builder', icon: ICOON_STEMPEL },
+  { id: 'stamps', label: 'Smart Stamps', beschrijving: 'Stamp families with shared parameters, and the Stamp Builder (in the Seed43 drawer)', icon: ICOON_STEMPEL },
+  { id: 'collab', label: 'Collab', beschrijving: 'Share a PDF by key and mark it up together (in the Seed43 drawer)', icon: ICOON_COLLAB },
   { id: 'library', label: 'Element Library', beschrijving: 'Steel, timber, fixings and bolts placed to scale', icon: ICOON_BIBLIOTHEEK },
   { id: 'autolink', label: 'Auto Link', beschrijving: 'Links section and detail bubbles to each other, both ways', icon: ICOON_LINK },
   { id: 'bracing', label: 'Bracing', beschrijving: 'Bracing legend lines with type and length in metres', icon: ICOON_BRACING },
@@ -121,26 +122,6 @@ function bouwTab(api, aan) {
               tab?.update(`tool-${t.id}`, { active: nu });
             },
           })),
-        ],
-      },
-      {
-        id: 'stamps',
-        label: { en: 'Stamps', nl: 'Stempels' },
-        items: [
-          {
-            type: 'action', id: 'smart-stamps', label: 'Smart Stamps', icon: ICOON_STEMPEL, size: 'large',
-            title: { en: 'Open or close the Smart Stamps panel: pick a stamp, then click on the sheet.', nl: 'Het paneel Slimme stempels openen of sluiten: kies een stempel en klik op het blad.' },
-            active: false,
-            onRun: async () => {
-              const open = await wisselPalet(api, () => tab?.update('smart-stamps', { active: false }));
-              tab?.update('smart-stamps', { active: open });
-            },
-          },
-          {
-            type: 'action', id: 'stamp-builder', label: { en: 'Stamp Builder', nl: 'Stempelbouwer' }, icon: ICOON_BOUWER, size: 'large',
-            title: { en: 'Design stamp families and their parameters.', nl: 'Stempelfamilies en hun parameters ontwerpen.' },
-            onRun: () => bouwer(api),
-          },
         ],
       },
       {
@@ -183,7 +164,15 @@ function bouwTab(api, aan) {
       },
   ];
   // Hide the tools switched off in About; a group with nothing left goes.
-  const welk = { 'tool-ocr': 'ocr', 'smart-stamps': 'stamps', 'stamp-builder': 'stamps', 'element-library': 'library', 'bracing-line': 'bracing', 'auto-link': 'autolink' };
+  const welk = { 'tool-ocr': 'ocr', 'element-library': 'library', 'bracing-line': 'bracing', 'auto-link': 'autolink' };
+  // Smart Stamps and Collab open their tab in the Seed43 drawer.
+  const ladeKnop = (id, tabId, label, icon, title) => ({
+    type: 'action', id, label, icon, size: 'large', title, active: false,
+    onRun: () => {
+      const open = toonLadeTab(tabId, { wissel: true });
+      for (const k of ['smart-stamps', 'collab']) { try { tab?.update(k, { active: open && k === id }); } catch {} }
+    },
+  });
   const groups = [
     {
       id: 'seed43', label: 'Seed43',
@@ -208,13 +197,17 @@ function bouwTab(api, aan) {
         },
         active: vensterAan(),
         onRun: () => { const aanNu = wisselVenster(); tab?.update('properties-window', { active: aanNu }); },
-      }],
+      },
+      ...(zie('stamps') ? [ladeKnop('smart-stamps', 'stempels', 'Smart Stamps', ICOON_STEMPEL,
+        { en: 'Smart Stamps in the Seed43 drawer: search and place a stamp, or open the Stamp Builder.', nl: 'Slimme stempels in de Seed43-lade: zoek en plaats een stempel, of open de stempelbouwer.' })] : []),
+      ...(zie('collab') ? [ladeKnop('collab', 'collab', 'Collab', ICOON_COLLAB,
+        { en: 'Seed43 Collab in the Seed43 drawer: share a PDF by key and mark it up together.', nl: 'Seed43 Collab in de Seed43-lade: deel een pdf met een sleutel en werk er samen aan.' })] : []),
+      ],
     },
     ...alle.map((g) => ({ ...g, items: g.items.filter((it) => zie(welk[it.id] || it.id)) })).filter((g) => g.items.length),
   ];
   tab = api.registerRibbonTab({ id: 'main', label: 'Seed43', groups });
   bijAanUit((aanNu) => { try { tab?.update('properties-window', { active: aanNu }); } catch {} });
-  paletOpen(api).then((o) => { try { tab.update('smart-stamps', { active: o }); } catch {} }).catch(() => {});
 }
 
 export async function deactivate(api) {
