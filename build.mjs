@@ -10,7 +10,19 @@ const pkg = WEB ? 'dist-web/seed43' : 'dist/pkg';
 fs.rmSync(WEB ? 'dist-web' : 'dist', { recursive: true, force: true });
 fs.mkdirSync(`${pkg}/models`, { recursive: true });
 fs.mkdirSync(`${pkg}/ort`, { recursive: true });
+// Web: no Paddle OCR (21 November 2026). The engine module is swapped for a
+// stub, so ONNX Runtime and the models are not in the bundle at all.
+const zonderOcr = {
+  name: 'zonder-ocr',
+  setup(b) {
+    b.onResolve({ filter: /[\\/]ocr[\\/]engine\.js$|^\.\/ocr\/engine\.js$/ }, () => ({ path: 'ocr-stub', namespace: 'seed43' }));
+    b.onLoad({ filter: /.*/, namespace: 'seed43' }, () => ({
+      contents: 'export async function registreerOcr() {}\nexport async function stopOcr() {}\n', loader: 'js',
+    }));
+  },
+};
 await build({
+  plugins: WEB ? [zonderOcr] : [],
   entryPoints: ['src/index.js'], bundle: true, format: 'esm', platform: 'browser',
   target: 'es2022', minify: true,
   // Desktop: loaded from a blob: URL; ONNX Runtime builds URLs from import.meta.url.
@@ -20,8 +32,13 @@ await build({
     : { __SEED43_WEB__: 'false', 'import.meta.url': JSON.stringify('http://tauri.localhost/__seed43__/index.js') },
   outfile: `${pkg}/index.js`, legalComments: 'eof',
 });
-for (const f of ['det_ppocrv4_mobile.onnx', 'cls_mobile_v2.onnx', 'rec_en_ppocrv5.onnx', 'rec_en_dict.txt']) fs.copyFileSync(`models/${f}`, `${pkg}/models/${f}`);
-fs.copyFileSync('node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', `${pkg}/ort/ort-wasm-simd-threaded.wasm`);
+if (!WEB) {
+  for (const f of ['det_ppocrv4_mobile.onnx', 'cls_mobile_v2.onnx', 'rec_en_ppocrv5.onnx', 'rec_en_dict.txt']) fs.copyFileSync(`models/${f}`, `${pkg}/models/${f}`);
+  fs.copyFileSync('node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', `${pkg}/ort/ort-wasm-simd-threaded.wasm`);
+} else {
+  fs.rmSync(`${pkg}/models`, { recursive: true, force: true });
+  fs.rmSync(`${pkg}/ort`, { recursive: true, force: true });
+}
 fs.mkdirSync(`${pkg}/data`, { recursive: true });
 fs.copyFileSync('data/nz-steel.seed43lib.json', `${pkg}/data/nz-steel.seed43lib.json`);
 fs.copyFileSync('plugin.json', `${pkg}/plugin.json`);

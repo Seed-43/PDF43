@@ -23,6 +23,7 @@ import { tipsAan, wisselTips } from './library/gids.js';
 const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
 import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit, wisselLadeTab, ladeTabAan } from './eigenschappen.js';
 import { startCollab } from './collab/index.js';
+import { startWeb } from './web/index.js';
 
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
@@ -83,10 +84,16 @@ function webStandaard() {
   } catch {}
 }
 
+// The web build has no Paddle OCR (21 November 2026): the engine is not even bundled (build.mjs).
+const tools = () => (WEB ? TOOLS.filter((t) => t.id !== 'ocr') : TOOLS);
+
 export async function activate(api) {
-  if (WEB) webStandaard();
+  if (WEB) {
+    webStandaard();
+    try { startWeb(api); } catch (e) { console.warn('[seed43] web:', e); }
+  }
   const aan = leesAan();
-  for (const t of TOOLS) {
+  for (const t of tools()) {
     if (aan[t.id] !== false) {
       try { await t.start(api); } catch (e) { console.warn(`[seed43] ${t.id} did not start:`, e); aan[t.id] = false; }
     }
@@ -130,7 +137,7 @@ function bouwTab(api, aan) {
         id: 'tools',
         label: { en: 'Tools', nl: 'Tools' },
         items: [
-          ...TOOLS.map(t => ({
+          ...tools().map(t => ({
             type: 'action', id: `tool-${t.id}`, label: t.label, title: t.title, icon: t.icon,
             size: 'large', active: aan[t.id] !== false,
             onRun: async () => {
@@ -198,7 +205,7 @@ function bouwTab(api, aan) {
   };
   const groups = WEB ? [
     { id: 'seed43', label: 'Seed43', items: [tipsKnop] },
-    ...alle,
+    ...alle.filter((g) => g.items.length),
   ] : [
     {
       id: 'seed43', label: 'Seed43',
@@ -240,5 +247,5 @@ export async function deactivate(api) {
   tab = null;
   verwijderLade();
   stopElementen();
-  for (const t of TOOLS) { try { await t.stop(api); } catch {} }
+  for (const t of tools()) { try { await t.stop(api); } catch {} }
 }
