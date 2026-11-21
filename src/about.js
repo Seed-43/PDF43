@@ -242,11 +242,8 @@ export function openAbout({ tools, zichtbaar, zet }) {
   let bezig = false;
   $('.s43a-lint').addEventListener('click', async () => {
     if (bezig || !release) return;
-    if (await openExtensies().catch(() => false)) {
-      $('.s43a-status').innerHTML = `<h3>Update to Seed43 ${esc(release.versie)}</h3>
-        <p style="margin:0">Open PDF Studio's Extensions window is open: click <b>Update to v${esc(release.versie)}</b> next to Seed43.</p>`;
-      return;
-    }
+    // The Extensions window opens behind About: close About so it's in view.
+    if (await openExtensies().catch(() => false)) { sluit(); return; }
     const invoke = window.__TAURI__?.core?.invoke;
     if (!release.oppx || !invoke) { handmatig(release.oppx ? 'this needs the desktop app' : 'the release has no seed43.oppx'); return; }
     bezig = true;
