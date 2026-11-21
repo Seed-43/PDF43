@@ -1,5 +1,22 @@
 [
   {
+    "version": "26.11.21",
+    "date": "2026-11-21",
+    "notes": {
+      "New": [
+        "Seed43 Collab (test): a Collab tab in the Seed43 drawer. Share a PDF by key with up to 2 people and mark it up together, live. End-to-end encrypted: the server can't read the PDF, the markups or anyone's name. 7 days of editing, then 7 days read-only, then deleted",
+        "Stamps tab in the Seed43 drawer, beside Elements: search your stamp families, place one, or open the Stamp Builder"
+      ],
+      "General": [
+        "Drawer tabs renamed Properties, Elements, Stamps (and Collab)"
+      ],
+      "Fixed": [
+        "Linux: the Seed43 Properties tab on the page edge shows its text vertically",
+        "Linux: dropdowns in Seed43 Properties and the Element Library follow the dark theme instead of white on white"
+      ]
+    }
+  },
+  {
     "version": "26.11.20",
     "date": "2026-11-20",
     "notes": {

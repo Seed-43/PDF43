@@ -6,6 +6,8 @@
 //            form recognition)
 //   stamps/  Smart Stamps: stamp families with shared parameters, a
 //            dockable palette to place them and a stamp builder
+//   collab/  Seed43 Collab: share a PDF by key and mark it up together
+//            (end-to-end encrypted, server at collab.seed43.org)
 //   library/ Element Library: sections and bolts (NZ Steel to start) the
 //            user edits like a CAD library, placed to scale; bolt groups
 //            checked against the library's edge distance and pitch
@@ -20,6 +22,7 @@ import * as melding from './links/melding.js';
 import { tipsAan, wisselTips } from './library/gids.js';
 const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
 import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from './eigenschappen.js';
+import { startCollab } from './collab/index.js';
 
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
@@ -76,6 +79,7 @@ export async function activate(api) {
   try { await startStamps(api); } catch (e) { console.warn('[seed43] stamps did not start:', e); }
   try { startElementen(api); } catch (e) { console.warn('[seed43] element library did not start:', e); }
   try { startLade(api); } catch (e) { console.warn('[seed43] properties drawer:', e); }
+  try { startCollab(api); } catch (e) { console.warn('[seed43] collab:', e); }
 
   if (api.features?.ribbonTabs !== true) return;
   bouwTab(api, aan);

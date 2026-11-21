@@ -32,7 +32,9 @@ const CSS = `
   border:1px solid transparent;border-radius:3px;padding:4px 5px;min-width:0;}
 .s43f-waarde input:hover,.s43f-waarde select:hover{border-color:var(--rand);}
 .s43f-waarde input:focus,.s43f-waarde select:focus{border-color:var(--acc);outline:none;}
+/* Dropdowns drawn by us: the Linux app (WebKitGTK) otherwise paints a light GTK box under the theme text. */
 .s43f-waarde select option{background:var(--bg);color:var(--tx);}
+.s43f-waarde select{-webkit-appearance:none;appearance:none;background-color:var(--bg);background-image:linear-gradient(45deg,transparent 50%,var(--tx2) 50%),linear-gradient(135deg,var(--tx2) 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 8px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:22px;}
 .s43f-waarde .s43f-tekst{padding:4px 5px;font-variant-numeric:tabular-nums;}
 .s43f-waarde button{font:inherit;font-size:12px;padding:2px 8px;cursor:pointer;}
 .s43f-tip{padding:10px 14px;color:var(--tx2);font-size:12px;}

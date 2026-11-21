@@ -56,7 +56,10 @@ const CSS = `
 .s43l button.prim:hover:not(:disabled){filter:brightness(1.08);background:var(--acc);}
 .s43l button.ikoon{padding:3px 7px;min-width:28px;}
 .s43l button.aan{background:var(--hover);border-color:var(--acc);}
+/* Dropdowns drawn by us: the Linux app (WebKitGTK) otherwise paints a light GTK box under the theme text. */
 .s43l input,.s43l select,.s43l textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--rand);border-radius:5px;padding:3px 6px;}
+.s43l select{-webkit-appearance:none;appearance:none;background-color:var(--bg);background-image:linear-gradient(45deg,transparent 50%,var(--zacht) 50%),linear-gradient(135deg,var(--zacht) 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 8px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:22px;}
+.s43l select option{background:var(--bg);color:inherit;}
 .s43l input:focus,.s43l select:focus,.s43l textarea:focus,.s43l button:focus-visible,.s43l .s43l-tegel:focus-visible{outline:2px solid var(--acc);outline-offset:-1px;}
 .s43l-kop{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--lijn);}
 .s43l-titel{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
