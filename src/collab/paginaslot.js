@@ -10,7 +10,7 @@
 // Anything that still gets through (a shortcut, a future command) is caught by
 // sync.js, which pauses syncing until the page change is undone.
 
-import { PAGINA_LABELS } from './paginalabels.js';
+import { PAGINA_LABELS, PAGINA_PATRONEN, KNIP_LABELS } from './paginalabels.js';
 
 // Organize tab: page structure, and changes to the PDF's own content.
 const RIBBON_IDS = [
@@ -31,10 +31,25 @@ const CSS = RIBBON_IDS.map((id) => `body.${KLASSE} #${id}`).join(',\n')
 let aan = false;
 let waker = null;
 
+const labelVan = (item) => item?.querySelector('.context-menu-label')?.textContent?.trim() || '';
+const isPaginaLabel = (label) => PAGINA_LABELS.has(label) || PAGINA_PATRONEN.some((r) => r.test(label));
+
+/**
+ * A page command on the page-thumbnail menu. Cut, Copy and Paste count only
+ * there (a menu that also holds page commands): on markups they stay usable.
+ */
 function isPaginaMenuItem(el) {
   const item = el?.closest?.('.context-menu-item');
-  const label = item?.querySelector('.context-menu-label')?.textContent?.trim();
-  return label && PAGINA_LABELS.has(label) ? item : null;
+  const label = labelVan(item);
+  if (!label) return null;
+  if (isPaginaLabel(label)) return item;
+  if (KNIP_LABELS.has(label)) {
+    // Look a few levels up for the menu it sits in (sections may be wrapped).
+    for (let p = item.parentElement, i = 0; p && p !== document.body && i < 4; p = p.parentElement, i++) {
+      if ([...p.querySelectorAll('.context-menu-item')].some((x) => x !== item && isPaginaLabel(labelVan(x)))) return item;
+    }
+  }
+  return null;
 }
 
 // Clicks on a blocked thumbnail-menu item never reach the app.
