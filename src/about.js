@@ -237,10 +237,15 @@ export function openAbout({ tools, zichtbaar, zet }) {
       zeg(`Installing ${pakket.version}…`);
       const r = await invoke('extensie_installeer', { pad: pakket.pad, beleid: 'always', verwachteSha256: pakket.sha256, bron: 'ui' });
       if (r?.transactie) await invoke('extensie_bevestig', { transactie: r.transactie });
+      const herstart = window.__TAURI__?.process?.relaunch;
       k.innerHTML = `<h3>Seed43 ${esc(pakket.version)} is installed</h3>
-        <p style="margin:0 0 8px">Restart Open PDF Studio to start using it.</p>
-        <button class="s43a-rel">What's new</button>`;
+        <p style="margin:0 0 8px">It starts with Open PDF Studio${herstart ? '. Save your work, then restart' : ': close and reopen the app to use it'}.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${herstart ? '<button class="s43a-herstart">Restart now</button>' : ''}
+          <button class="s43a-rel">What's new</button>
+        </div>`;
       k.querySelector('.s43a-rel').addEventListener('click', () => openLink(release.url));
+      k.querySelector('.s43a-herstart')?.addEventListener('click', () => herstart().catch((e) => console.warn('[seed43] restart:', e)));
       const lint = $('.s43a-lint');
       lint.querySelector('span').textContent = 'installed, restart Open PDF Studio to use it';
     } catch (e) {
