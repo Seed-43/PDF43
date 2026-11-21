@@ -2,10 +2,11 @@
 // up to 2 others, join with a key, and mark it up together, end-to-end
 // encrypted. The server: https://collab.seed43.org (see the Seed43 Collab design).
 
-import { registreerLadeTab } from '../eigenschappen.js';
+import { registreerLadeTab, toonLadeTab } from '../eigenschappen.js';
 import { uitleg } from './client.js';
 import * as S from './sessions.js';
 import { Koppeling } from './sync.js';
+import { startPaginaSlot } from './paginaslot.js';
 
 const STIJL_ID = 'seed43-collab-stijl';
 const CSS = `
@@ -39,6 +40,13 @@ const CSS = `
   background:var(--theme-surface,#fff);color:var(--theme-text,#1f2328);border:1px solid var(--theme-accent,#0078d7);
   box-shadow:0 3px 12px rgba(0,0,0,.25);pointer-events:none;transform:translateX(-50%);white-space:nowrap;}
 .s43c-wie span{font-weight:400;opacity:.75;margin-left:6px;}
+.s43c-band{position:fixed;z-index:939;display:flex;align-items:center;gap:8px;padding:4px 12px 4px 10px;border-radius:0 0 8px 0;
+  font:600 12px system-ui,Segoe UI,sans-serif;background:var(--theme-accent,#0078d7);color:#fff;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;}
+.s43c-band span{font-weight:400;opacity:.9;}
+.s43c-band i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2ecc71;font-style:normal;}
+.s43c-band i[data-staat="alleen-lezen"],.s43c-band i[data-staat="gepauzeerd"]{background:#f5c04a;}
+.s43c-band i[data-staat="offline"],.s43c-band i[data-staat="einde"],.s43c-band i[data-staat="fout"]{background:#ff6b6b;}
 `;
 
 let api0 = null;
@@ -353,8 +361,34 @@ function toonWie(gekozen) {
   wieTag.style.top = `${(v ? v.top : 60) + 10}px`;
 }
 
+// ── the banner on a shared PDF ──────────────────────────────────────────
+
+let band = null;
+const actieveKoppeling = () => [...koppelingen.values()].find((x) => !x.stop && x.actief());
+
+/** While a shared PDF's tab is active: a banner at the top-left of the page view. */
+function tekenBand() {
+  const k = actieveKoppeling();
+  if (!k) { band?.remove(); band = null; return; }
+  if (!band) {
+    band = maak('div', 's43c-band');
+    band.title = 'Seed43 Collab: open the Collab tab';
+    band.addEventListener('click', () => toonLadeTab('collab'));
+    document.body.appendChild(band);
+  }
+  const mensen = k.namen.size;
+  const stip = maak('i'); stip.dataset.staat = k.status.staat;
+  band.replaceChildren(stip, document.createTextNode(`Seed43 Collab · ${k.status.tekst}`),
+    maak('span', null, `🔒 pages locked${mensen ? ` · ${mensen} ${mensen === 1 ? 'person' : 'people'}` : ''}`));
+  const v = document.querySelector('.main-view')?.getBoundingClientRect();
+  band.style.left = `${v ? v.left : 0}px`;
+  band.style.top = `${v ? v.top : 0}px`;
+}
+
 export function startCollab(api) {
   api0 = api;
+  startPaginaSlot(() => !!actieveKoppeling());
+  setInterval(tekenBand, 500);
   try { api.onSelectionChange?.((gekozen) => toonWie(gekozen)); } catch (e) { console.warn('[seed43 collab] selection:', e); }
   ruimOp().catch((e) => console.warn('[seed43 collab] clean-up:', e));
   let s = document.getElementById(STIJL_ID);
@@ -374,6 +408,7 @@ export function startCollab(api) {
 
 export function stopCollab() {
   wieTag?.remove(); wieTag = null;
+  band?.remove(); band = null;
   for (const k of koppelingen.values()) k.sluit();
   koppelingen.clear();
   registreerLadeTab('collab', null);
