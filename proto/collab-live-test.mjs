@@ -85,10 +85,26 @@ try {
   assert.equal(uf.find((a) => a.subject === 'ana-box').width, 99);
   stap('each person editing or deleting their own markup reaches everyone');
 
+  await ben.doe('paginaWeg');
+  await ben.doe('teken', { id: 'b1', type: 'line', page: 1, subject: 'ben-while-paused', x1: 1, y1: 1, x2: 9, y2: 9 });
+  await ana.doe('teken', { id: 'a2', type: 'line', page: 2, subject: 'ana-later', x1: 2, y1: 2, x2: 8, y2: 8 });
+  await slaap(3500);
+  assert.match(await ben.doe('melding'), /Pages are locked/);
+  assert.equal((await fred.doe('stand')).some((a) => a.subject === 'ben-while-paused'), false);
+  assert.equal((await ben.doe('stand')).some((a) => a.subject === 'ana-later'), false);
+  stap('Ben deletes a page: his sync pauses (nothing sent, Ana\'s new markup waits)');
+  await ben.doe('paginaTerug');
+  await slaap(4000);
+  const [pf, pa, pb] = await Promise.all([fred.doe('stand'), ana.doe('stand'), ben.doe('stand')]);
+  assert.deepEqual(pa, pf); assert.deepEqual(pb, pf);
+  assert.ok(pf.some((a) => a.subject === 'ben-while-paused') && pf.some((a) => a.subject === 'ana-later'));
+  stap('Ben undoes it: his markup goes out, Ana\'s comes in, all three match');
+
+  const voorEinde = (await fred.doe('stand')).length;
   await fred.doe('beeindig');
   await ben.doe('teken', { id: 'b9', type: 'line', page: 1, subject: 'late', x1: 1, y1: 1, x2: 2, y2: 2 });
   await slaap(2500);
-  assert.equal((await fred.doe('stand')).length, 2);
+  assert.equal((await fred.doe('stand')).length, voorEinde);
   stap('after End now, a late markup isn\'t shared (read-only)');
 } finally {
   for (const p of [fred, ana, ben]) await p.doe('stop').catch(() => {});

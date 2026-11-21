@@ -54,6 +54,21 @@ export class Koppeling {
     this.mijnStoel = null;       // this PC's seat number
     this.makers = new Map();     // key -> seat of whoever made the markup
     this.namen = new Map();      // seat -> name (for "that's Ana's")
+    this.paginas = null;         // the page layout when it opened
+    this.gepauzeerd = false;     // pages changed: nothing sent or applied until undone
+  }
+
+  /**
+   * The pages of a shared PDF are locked: everyone's markups point at page
+   * numbers, so inserting, deleting, rotating or resizing pages here would put
+   * them on the wrong pages for everyone else. (The server's PDF can't be
+   * replaced at all.) This is the layout to compare: page count, and each
+   * page's size and rotation.
+   */
+  async paginaVingerafdruk() {
+    const n = this.api.getPageCount();
+    const info = await Promise.all(Array.from({ length: n }, (_, i) => this.api.getPageInfo(i + 1).catch(() => null)));
+    return n + '|' + info.map((p) => p ? `${Math.round(p.width)}x${Math.round(p.height)}r${p.rotation || 0}` : '?').join(',');
   }
 
   // Markups belong to whoever made them; those already in the PDF belong to
@@ -80,6 +95,7 @@ export class Koppeling {
     for (let i = 0; i < 300 && !this.actief(); i++) await new Promise((r) => setTimeout(r, 100));
     if (!this.actief()) { this.zet('fout', 'The shared PDF didn\'t open.'); return; }
     await this.allePaginas();
+    this.paginas = await this.paginaVingerafdruk();
     // Fingerprints for the markups already in the PDF, the same on every PC.
     const tel = new Map();
     const bestaand = this.api.getAnnotations().map((a) => ({ a, v: vast(a) }));
@@ -165,7 +181,7 @@ export class Koppeling {
         this.wachtrij.push(...r.events);
         this.opgehaald = r.cursor;
         if (r.phase !== 'edit' && !this.alleenLezen) { this.alleenLezen = true; this.zet('alleen-lezen', 'Read-only'); }
-        else if (this.status.staat === 'offline') this.zet(this.alleenLezen ? 'alleen-lezen' : 'live', this.alleenLezen ? 'Read-only' : 'Live');
+        else if (this.status.staat === 'offline' && !this.gepauzeerd) this.zet(this.alleenLezen ? 'alleen-lezen' : 'live', this.alleenLezen ? 'Read-only' : 'Live');
         if (this.actief()) await this.verwerk();
       } catch (e) {
         if (this.stop || e?.name === 'AbortError') return;
@@ -179,7 +195,7 @@ export class Koppeling {
   }
 
   async verwerk() {
-    if (!this.wachtrij.length || this.bezig) return;
+    if (!this.wachtrij.length || this.bezig || this.gepauzeerd) return;
     this.bezig = true;
     try {
       // Apply only after our own pending changes are sent, so ours aren't lost.
@@ -208,17 +224,31 @@ export class Koppeling {
   async tik() {
     if (this.stop || this.bezig || !this.actief()) return;
     const rev = this.api.getDocumentInfo()?.revision;
+    if (rev !== this.rev) {
+      const nu = await this.paginaVingerafdruk().catch(() => this.paginas);
+      // Something changed while the pages were being read: look again next tick,
+      // so an edit made together with a page change is never sent.
+      if (this.api.getDocumentInfo()?.revision !== rev) return;
+      if (nu !== this.paginas) {
+        if (!this.gepauzeerd) { this.gepauzeerd = true; this.zet('gepauzeerd', 'Pages are locked in shared PDFs: undo the page change (Ctrl+Z) to carry on'); }
+        this.rev = rev;
+        return;
+      }
+      if (this.gepauzeerd) { this.gepauzeerd = false; this.zet(this.alleenLezen ? 'alleen-lezen' : 'live', this.alleenLezen ? 'Read-only' : 'Live'); }
+    }
+    if (this.gepauzeerd) return;
     if (rev !== this.rev && !this.alleenLezen) {
       this.bezig = true;
-      try { await this.verstuur(); } finally { this.bezig = false; }
+      try { await this.verstuur(rev); } finally { this.bezig = false; }
     }
     await this.verwerk();
   }
 
-  async verstuur() {
+  async verstuur(gecontroleerd) {
     // The revision this comparison sees. Anything edited during the sends below
     // changes the revision again, so the next tick picks it up.
     const rev = this.api.getDocumentInfo()?.revision;
+    if (gecontroleerd !== undefined && rev !== gecontroleerd) return;   // changed since the page check
     const nu = new Map(this.api.getAnnotations().map((a) => [a.id, a]));
     const wijzigingen = [];
     for (const [id, a] of nu) {

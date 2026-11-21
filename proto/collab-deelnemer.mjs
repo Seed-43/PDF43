@@ -6,11 +6,12 @@ globalThis.localStorage = { getItem: (k) => opslag.get(k) ?? null, setItem: (k, 
 const S = await import('../src/collab/sessions.js');
 const { Koppeling } = await import('../src/collab/sync.js');
 
-const doc = { name: null, revision: 0, annotations: [] };
+const doc = { name: null, revision: 0, annotations: [], pages: [[612, 792], [612, 792], [842, 595]] };
 const api = {
   getDocumentInfo: () => doc.name ? { name: doc.name, revision: doc.revision } : null,
   getAnnotations: () => doc.annotations,
-  getPageCount: () => 1,
+  getPageCount: () => doc.pages.length,
+  getPageInfo: async (n) => ({ width: doc.pages[n - 1][0], height: doc.pages[n - 1][1], rotation: 0 }),
   waitForPageAnnotations: async () => doc.annotations,
   applyAnnotationBatch(ops) {
     for (const o of ops) {
@@ -43,6 +44,8 @@ parentPort.on('message', async ({ id, cmd, arg }) => {
     else if (cmd === 'stand') r = doc.annotations.map(({ id, locked, ...a }) => a).sort((x, y) => (x.subject > y.subject ? 1 : -1));
     else if (cmd === 'slot') r = Object.fromEntries(doc.annotations.map((a) => [a.subject, !!a.locked]));
     else if (cmd === 'melding') r = koppeling.status.tekst;
+    else if (cmd === 'paginaWeg') { doc.weg = doc.pages.pop(); doc.revision++; }
+    else if (cmd === 'paginaTerug') { doc.pages.push(doc.weg); doc.revision++; }
     else if (cmd === 'status') r = await S.status(sessie);
     else if (cmd === 'stop') { koppeling?.sluit(); }
     else if (cmd === 'verwijder') { await S.verwijder(sessie); }

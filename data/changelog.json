@@ -7,7 +7,8 @@
         "Collab: select a markup in a shared PDF and a tag at the top of the page says whose it is (\"Your markup\" or \"Ana's markup\")"
       ],
       "General": [
-        "Collab: markups belong to whoever made them; markups that were already in the PDF belong to the person who shared it. Everyone else's arrive locked, and a change to one is undone with a note saying whose it is (the server refuses it too)"
+        "Collab: markups belong to whoever made them; markups that were already in the PDF belong to the person who shared it. Everyone else's arrive locked, and a change to one is undone with a note saying whose it is (the server refuses it too)",
+        "Collab: a shared PDF's pages are locked. If pages are inserted, deleted, rotated or resized in a shared PDF's tab, syncing pauses (nothing is sent, others' changes wait) until the page change is undone; the session card says \"Pages locked\""
       ]
     }
   },

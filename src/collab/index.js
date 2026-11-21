@@ -31,7 +31,7 @@ const CSS = `
 .s43c-fout{padding:8px 10px;border-radius:6px;background:color-mix(in srgb,#c0392b 18%,transparent);}
 .s43c-live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:6px;}
 .s43c-live[data-staat="live"]{background:#2ecc71;}
-.s43c-live[data-staat="alleen-lezen"]{background:#e6a23c;}
+.s43c-live[data-staat="alleen-lezen"],.s43c-live[data-staat="gepauzeerd"]{background:#e6a23c;}
 .s43c-live[data-staat="offline"],.s43c-live[data-staat="einde"],.s43c-live[data-staat="fout"]{background:#c0392b;}
 .s43c ul{margin:4px 0 0;padding-left:18px;}
 .s43c li{margin:2px 0;}
@@ -75,6 +75,7 @@ function limietTekst(l) {
     'You can share 1 PDF at a time. When it turns read-only, or you end or delete it, you can share another',
     `${l.editDays} days of editing, then ${l.graceDays} days read-only, then the PDF and markups are deleted from our server`,
     `PDFs up to ${l.maxPdfMiB} MB`,
+    'The PDF\'s pages are locked: everyone marks up the same pages, and nobody can add, delete or replace them',
     'Anyone with the key can join until the seats are full, so share it only with people you trust',
     'Your PDF and markups are encrypted on your PC before upload. Seed43\'s server in New Zealand stores them but can\'t read them. Keep your key safe: if it\'s lost, nobody (not even Seed43) can recover the document',
   ]) ul.appendChild(maak('li', null, t));
@@ -213,7 +214,9 @@ function sessieKaart(s) {
   const regel = st?.fout ? st.fout
     : (fase === 'edit' || (!fase && s.editUntil > nu)) ? `${s.role === 'owner' ? 'You shared this' : 'Shared with you'} · editing until ${datum(s.editUntil)}`
     : `Read-only · deleted on ${datum(s.deleteAt)}`;
+  // (Pages locked: a later paid tier may allow new page versions.)
   kaart.appendChild(maak('div', 's43c-sub', regel));
+  if (!st?.weg) kaart.appendChild(maak('div', 's43c-klein', '🔒 Pages locked: markups only'));
   if (k) {
     const l = maak('div', 's43c-klein');
     const stip = maak('span', 's43c-live'); stip.dataset.staat = k.status.staat;
