@@ -67,7 +67,24 @@ function bewaarAan(aan) {
 
 let tab = null;
 
+// Web build for seed43.org/pdf-studio (`node build.mjs --web`, 21 November
+// 2026): no Collab and no About; the Properties drawer and the Smart Stamps
+// drawer tab are always on, so they get no ribbon button. Tips stays, the
+// user can turn it off. The desktop build defines this as false.
+const WEB = typeof __SEED43_WEB__ !== 'undefined' && __SEED43_WEB__ === true;
+
+function webStandaard() {
+  try {
+    localStorage.setItem('seed43.eigenschappenVenster', '1');
+    const tabs = JSON.parse(localStorage.getItem('seed43.drawerTabs') || '{}') || {};
+    tabs.stempels = true;
+    tabs.collab = false;
+    localStorage.setItem('seed43.drawerTabs', JSON.stringify(tabs));
+  } catch {}
+}
+
 export async function activate(api) {
+  if (WEB) webStandaard();
   const aan = leesAan();
   for (const t of TOOLS) {
     if (aan[t.id] !== false) {
@@ -79,7 +96,9 @@ export async function activate(api) {
   try { await startStamps(api); } catch (e) { console.warn('[seed43] stamps did not start:', e); }
   try { startElementen(api); } catch (e) { console.warn('[seed43] element library did not start:', e); }
   try { startLade(api); } catch (e) { console.warn('[seed43] properties drawer:', e); }
-  try { startCollab(api); } catch (e) { console.warn('[seed43] collab:', e); }
+  if (!WEB) {
+    try { startCollab(api); } catch (e) { console.warn('[seed43] collab:', e); }
+  }
 
   if (api.features?.ribbonTabs !== true) return;
   bouwTab(api, aan);
@@ -171,7 +190,16 @@ function bouwTab(api, aan) {
     type: 'action', id, label, icon, size: 'large', title, active: ladeTabAan(tabId),
     onRun: () => { const aan = wisselLadeTab(tabId); try { tab?.update(id, { active: aan }); } catch {} },
   });
-  const groups = [
+  const tipsKnop = {
+    type: 'action', id: 'tips', label: { en: 'Tips', nl: 'Tips' }, icon: ICOON_TIPS, size: 'large',
+    title: { en: 'Show or hide the Seed43 tips: the animated guides when placing or selecting, and the properties card. On again brings back the ones you ticked off.', nl: 'Seed43-tips tonen of verbergen.' },
+    active: tipsAan(),
+    onRun: () => { const aanNu = wisselTips(); tab?.update('tips', { active: aanNu }); },
+  };
+  const groups = WEB ? [
+    { id: 'seed43', label: 'Seed43', items: [tipsKnop] },
+    ...alle,
+  ] : [
     {
       id: 'seed43', label: 'Seed43',
       items: [{
