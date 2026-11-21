@@ -15,6 +15,8 @@ import { startStamps, wisselPalet, paletOpen, bouwer } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
+import { autoLink, samenvatting } from './links/index.js';
+import * as melding from './links/melding.js';
 import { tipsAan, wisselTips } from './library/gids.js';
 const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
 import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from './eigenschappen.js';
@@ -22,6 +24,7 @@ import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit } from '
 const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
 const ICOON_EIGENSCHAPPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M14 4v16"/><path d="M16.5 8h2"/><path d="M16.5 11h2"/><path d="M16.5 14h2"/></svg>';
+const ICOON_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="7" r="3.5"/><path d="M3 7h7"/><circle cx="17.5" cy="17" r="3.5"/><path d="M14 17h7"/><path d="M9 10.5l5.5 3"/><path d="M12.5 14l2 -0.5 -0.6 -2"/></svg>';
 const ICOON_ABOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
 
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
@@ -84,6 +87,7 @@ const ABOUT_TOOLS = [
   { id: 'ocr', label: 'Paddle OCR', beschrijving: 'OCR engine for scans and page labels; the ribbon button switches it on or off', icon: ICOON_OCR },
   { id: 'stamps', label: 'Smart Stamps', beschrijving: 'Stamp families with shared parameters, and the Stamp Builder', icon: ICOON_STEMPEL },
   { id: 'library', label: 'Element Library', beschrijving: 'Steel, timber, fixings and bolts placed to scale', icon: ICOON_BIBLIOTHEEK },
+  { id: 'autolink', label: 'Auto Link', beschrijving: 'Links section and detail bubbles to each other, both ways', icon: ICOON_LINK },
   { id: 'bracing', label: 'Bracing', beschrijving: 'Bracing legend lines with type and length in metres', icon: ICOON_BRACING },
 ];
 
@@ -136,6 +140,28 @@ function bouwTab(api, aan) {
         ],
       },
       {
+        id: 'sheets',
+        label: { en: 'Sheets', nl: 'Bladen' },
+        items: [
+          {
+            type: 'action', id: 'auto-link', label: { en: 'Auto Link', nl: 'Auto-link' }, icon: ICOON_LINK, size: 'large',
+            title: { en: 'Link section and detail bubbles both ways: plan bubble to detail title, and the title back. One undo step; run again to add only what is missing.', nl: 'Elke doorsnede- en detailbel met zijn tegenhanger verbinden, beide kanten op.' },
+            onRun: async () => {
+              const m = melding.open('Auto Link', 'Reading the sheets...');
+              try {
+                tab?.update('auto-link', { active: true });
+                const r = await autoLink(api, { bijVoortgang: (p, n) => m.zet(`Reading sheet ${p} of ${n}...`) });
+                m.klaar(samenvatting(r));
+              } catch (e) {
+                m.klaar(`Auto Link did not finish: ${e?.message || e}`);
+              } finally {
+                tab?.update('auto-link', { active: false });
+              }
+            },
+          },
+        ],
+      },
+      {
         id: 'library',
         label: { en: 'Elements', nl: 'Elementen' },
         items: [
@@ -153,7 +179,7 @@ function bouwTab(api, aan) {
       },
   ];
   // Hide the tools switched off in About; a group with nothing left goes.
-  const welk = { 'tool-ocr': 'ocr', 'smart-stamps': 'stamps', 'stamp-builder': 'stamps', 'element-library': 'library', 'bracing-line': 'bracing' };
+  const welk = { 'tool-ocr': 'ocr', 'smart-stamps': 'stamps', 'stamp-builder': 'stamps', 'element-library': 'library', 'bracing-line': 'bracing', 'auto-link': 'autolink' };
   const groups = [
     {
       id: 'seed43', label: 'Seed43',
