@@ -12,7 +12,7 @@
 
 import { call, CollabError, uitleg } from './client.js';
 import { sha256hex } from './crypto.js';
-import { device, keys, sluitEvent, openEvent, openKop } from './sessions.js';
+import { device, keys, status, sluitEvent, openEvent, openKop } from './sessions.js';
 
 const MAX_DATA = 200 * 1024;
 const VLUCHTIG = new Set(['id', 'createdAt', 'modifiedAt']);
@@ -51,6 +51,20 @@ export class Koppeling {
     this.stop = false;
     this.alleenLezen = false;
     this.rev = null;
+    this.mijnStoel = null;       // this PC's seat number
+    this.makers = new Map();     // key -> seat of whoever made the markup
+    this.namen = new Map();      // seat -> name (for "that's Ana's")
+  }
+
+  // Markups belong to whoever made them; those already in the PDF belong to
+  // the sharer (seat 1). The server refuses anyone else's change as well.
+  makerVan(key) { return this.makers.get(key) ?? (key.startsWith('f-') ? 1 : this.mijnStoel); }
+  isMijn(key) { return this.makerVan(key) === this.mijnStoel; }
+  naamVan(seat) { return this.namen.get(seat) || (seat ? `seat ${seat}` : 'someone else'); }
+
+  /** Names of people who joined after this tab opened. */
+  async verversNamen() {
+    try { const st = await status(this.s); for (const x of st.seats) this.namen.set(x.seat, x.name); } catch {}
   }
 
   zet(staat, tekst) { this.status = { staat, tekst }; try { this.bijStatus(this.status); } catch {} }
@@ -59,6 +73,9 @@ export class Koppeling {
 
   async start() {
     this.k = await keys(this.s.key);
+    const st = await status(this.s);
+    for (const seat of st.seats) this.namen.set(seat.seat, seat.name);
+    this.mijnStoel = st.seats.find((x) => x.you)?.seat ?? null;
     // Wait for the app to open the temp file in a tab.
     for (let i = 0; i < 300 && !this.actief(); i++) await new Promise((r) => setTimeout(r, 100));
     if (!this.actief()) { this.zet('fout', 'The shared PDF didn\'t open.'); return; }
@@ -79,10 +96,14 @@ export class Koppeling {
     const ops = [];
     for (const h of snap.annotations) {
       this.koppen.set(h.id, h.base);
+      if (h.seat) this.makers.set(h.id, h.seat);
       const data = h.data ? await openKop(this.k.content, h).catch(() => null) : null;
       ops.push(...this.plan(h.id, h.data ? 'edit' : 'delete', data));
     }
     this.toepassen(ops);
+    const slot = this.api.getAnnotations().filter((a) => !this.isMijn(this.sleutel(a.id)) && !a.locked)
+      .map((a) => ({ op: 'update', id: a.id, changes: { locked: true } }));
+    this.toepassen(slot);
     this.rev = this.api.getDocumentInfo()?.revision;
     this.cursor = this.opgehaald = snap.cursor;
     this.alleenLezen = snap.phase !== 'edit';
@@ -109,7 +130,7 @@ export class Koppeling {
     const id = this.terug.get(key) || key;
     const er = this.api.getAnnotations().some((a) => a.id === id);
     if (op === 'delete' || !data) return er ? [{ op: 'delete', id }] : [];
-    const a = { ...data, id };
+    const a = { ...data, id, ...(this.isMijn(key) ? {} : { locked: true }) };
     if (!er) return [{ op: 'create', annotation: a }];
     const { id: _i, type: _t, ...changes } = a;
     return [{ op: 'update', id, changes }];
@@ -166,6 +187,7 @@ export class Koppeling {
       const events = this.wachtrij.splice(0);
       for (const ev of events) {
         this.koppen.set(ev.ann, ev.id);
+        if (!this.makers.has(ev.ann) && ev.seat) this.makers.set(ev.ann, ev.seat);
         this.cursor = ev.revision;
         if (this.verzonden.has(ev.id)) continue;
         const data = ev.op === 'delete' ? null : await openEvent(this.k.content, ev).catch(() => null);
@@ -205,8 +227,16 @@ export class Koppeling {
       else if (this.basis.get(id) !== j) wijzigingen.push({ id, a, j, soort: 'anders' });
     }
     for (const id of this.basis.keys()) if (!nu.has(id)) wijzigingen.push({ id, soort: 'weg' });
+    const terugzetten = [];
+    const zetTerug = (w, key) => {
+      const vorige = JSON.parse(this.basis.get(w.id));
+      if (w.soort === 'weg') terugzetten.push({ op: 'create', annotation: { ...vorige, locked: true } });
+      else { const { id: _i, type: _t, ...rest } = vorige; terugzetten.push({ op: 'update', id: w.id, changes: { ...rest, locked: true } }); }
+      this.melding(`That markup is ${this.naamVan(this.makerVan(key))}'s, so your change was undone.`);
+    };
     for (const w of wijzigingen) {
       const key = this.sleutel(w.id);
+      if (w.soort !== 'nieuw' && !this.isMijn(key)) { zetTerug(w, key); continue; }
       const kop = this.koppen.get(key) || null;
       const data = w.a ? kopie(w.a) : null;
       if (data && JSON.stringify(data).length > MAX_DATA) { console.warn('[seed43 collab] markup too large to share:', w.id); this.basis.set(w.id, w.j); continue; }
@@ -230,13 +260,27 @@ export class Koppeling {
           this.basis.set(w.id, w.j);
           continue;
         }
+        if (e instanceof CollabError && e.code === 'not_yours') {
+          if (e.data?.seat) this.makers.set(key, e.data.seat);
+          if (w.soort !== 'nieuw') zetTerug(w, key);
+          continue;
+        }
         if (e instanceof CollabError && e.code === 'read_only') { this.alleenLezen = true; this.zet('alleen-lezen', 'Read-only: your changes aren\'t shared'); return; }
         if (e instanceof CollabError && ['gone', 'removed', 'denied'].includes(e.code)) { this.zet('einde', uitleg(e)); this.sluit(); return; }
         this.zet('offline', 'Reconnecting…');
         return;   // try again next tick; nothing in basis changed for this one
       }
     }
+    this.toepassen(terugzetten);
     this.rev = rev;
+  }
+
+  /** A short note in the status line, then back to Live. */
+  melding(tekst) {
+    const voor = { ...this.status };
+    this.zet(voor.staat, tekst);
+    clearTimeout(this.meldKlok);
+    this.meldKlok = setTimeout(() => { if (this.status.tekst === tekst) this.zet(voor.staat, voor.staat === 'alleen-lezen' ? 'Read-only' : 'Live'); }, 6000);
   }
 
   async zend(ann, op, base, data) {

@@ -1,5 +1,17 @@
 [
   {
+    "version": "26.11.21.3",
+    "date": "2026-11-21",
+    "notes": {
+      "New": [
+        "Collab: select a markup in a shared PDF and a tag at the top of the page says whose it is (\"Your markup\" or \"Ana's markup\")"
+      ],
+      "General": [
+        "Collab: markups belong to whoever made them; markups that were already in the PDF belong to the person who shared it. Everyone else's arrive locked, and a change to one is undone with a note saying whose it is (the server refuses it too)"
+      ]
+    }
+  },
+  {
     "version": "26.11.21.2",
     "date": "2026-11-21",
     "notes": {

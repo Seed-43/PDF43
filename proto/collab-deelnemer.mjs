@@ -40,7 +40,9 @@ parentPort.on('message', async ({ id, cmd, arg }) => {
     else if (cmd === 'wijzig') { const a = doc.annotations.find((x) => x.id === arg.id || x.subject === arg.subject); Object.assign(a, arg.changes); doc.revision++; }
     else if (cmd === 'wis') { doc.annotations.splice(doc.annotations.findIndex((x) => x.subject === arg), 1); doc.revision++; }
     else if (cmd === 'debug') r = { status: koppeling.status, cursor: koppeling.cursor, opgehaald: koppeling.opgehaald, wachtrij: koppeling.wachtrij.length, bezig: koppeling.bezig, rev: koppeling.rev, docrev: doc.revision, koppen: [...koppeling.koppen] };
-    else if (cmd === 'stand') r = doc.annotations.map(({ id, ...a }) => a).sort((x, y) => (x.subject > y.subject ? 1 : -1));
+    else if (cmd === 'stand') r = doc.annotations.map(({ id, locked, ...a }) => a).sort((x, y) => (x.subject > y.subject ? 1 : -1));
+    else if (cmd === 'slot') r = Object.fromEntries(doc.annotations.map((a) => [a.subject, !!a.locked]));
+    else if (cmd === 'melding') r = koppeling.status.tekst;
     else if (cmd === 'status') r = await S.status(sessie);
     else if (cmd === 'stop') { koppeling?.sluit(); }
     else if (cmd === 'verwijder') { await S.verwijder(sessie); }

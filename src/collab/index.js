@@ -35,6 +35,10 @@ const CSS = `
 .s43c-live[data-staat="offline"],.s43c-live[data-staat="einde"],.s43c-live[data-staat="fout"]{background:#c0392b;}
 .s43c ul{margin:4px 0 0;padding-left:18px;}
 .s43c li{margin:2px 0;}
+.s43c-wie{position:fixed;z-index:940;padding:5px 12px;border-radius:999px;font:600 12.5px system-ui,Segoe UI,sans-serif;
+  background:var(--theme-surface,#fff);color:var(--theme-text,#1f2328);border:1px solid var(--theme-accent,#0078d7);
+  box-shadow:0 3px 12px rgba(0,0,0,.25);pointer-events:none;transform:translateX(-50%);white-space:nowrap;}
+.s43c-wie span{font-weight:400;opacity:.75;margin-left:6px;}
 `;
 
 let api0 = null;
@@ -326,8 +330,29 @@ function teken() {
   wortel.replaceChildren(w);
 }
 
+// ── whose markup is this? ───────────────────────────────────────────────
+
+let wieTag = null;
+
+/** On selecting one markup in a live session tab: a tag at the top of the page saying whose it is. */
+function toonWie(gekozen) {
+  const k = [...koppelingen.values()].find((x) => !x.stop && x.actief() && x.mijnStoel != null);
+  const a = gekozen?.length === 1 ? gekozen[0] : null;
+  if (!k || !a) { wieTag?.remove(); wieTag = null; return; }
+  const seat = k.makerVan(k.sleutel(a.id));
+  if (seat != null && !k.namen.has(seat)) k.verversNamen().then(() => { if (wieTag && k.namen.has(seat)) toonWie(gekozen); });
+  const mijn = seat === k.mijnStoel;
+  if (!wieTag) { wieTag = maak('div', 's43c-wie'); document.body.appendChild(wieTag); }
+  wieTag.replaceChildren(document.createTextNode(mijn ? 'Your markup' : `${k.naamVan(seat)}'s markup`));
+  if (!mijn) wieTag.appendChild(maak('span', null, 'locked: only they can change it'));
+  const v = document.querySelector('.main-view')?.getBoundingClientRect();
+  wieTag.style.left = `${v ? v.left + v.width / 2 : window.innerWidth / 2}px`;
+  wieTag.style.top = `${(v ? v.top : 60) + 10}px`;
+}
+
 export function startCollab(api) {
   api0 = api;
+  try { api.onSelectionChange?.((gekozen) => toonWie(gekozen)); } catch (e) { console.warn('[seed43 collab] selection:', e); }
   ruimOp().catch((e) => console.warn('[seed43 collab] clean-up:', e));
   let s = document.getElementById(STIJL_ID);
   if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
@@ -345,6 +370,7 @@ export function startCollab(api) {
 }
 
 export function stopCollab() {
+  wieTag?.remove(); wieTag = null;
   for (const k of koppelingen.values()) k.sluit();
   koppelingen.clear();
   registreerLadeTab('collab', null);
