@@ -255,7 +255,7 @@ function steunKaart() {
   }
   k.appendChild(maak('div', 's43c-klein', 'Seed43 Collab runs on Seed43\'s own server. Your support helps it grow.'));
   const kn = maak('div', 's43c-knoppen');
-  kn.appendChild(knop('Support on Buy Me a Coffee', () => openLink(steun?.url || 'https://buymeacoffee.com/Seed43'), 's43c-koffie'));
+  kn.appendChild(knop('Support Seed43', () => openLink(steun?.url || 'https://buymeacoffee.com/Seed43'), 's43c-koffie'));
   k.appendChild(kn);
   return k;
 }
