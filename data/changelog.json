@@ -3,6 +3,9 @@
     "version": "26.11.21.2",
     "date": "2026-11-21",
     "notes": {
+      "New": [
+        "Seed43 ribbon: Smart Stamps and Collab switch their tab in the Seed43 drawer on or off (lit when on), like Paddle OCR; switching one on opens the drawer on it"
+      ],
       "General": [
         "About: Update opens Open PDF Studio's Extensions window, where Seed43's Update installs the new version without a restart; if that window can't be opened, About installs it directly as before"
       ]

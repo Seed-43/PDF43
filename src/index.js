@@ -21,7 +21,7 @@ import { autoLink, samenvatting } from './links/index.js';
 import * as melding from './links/melding.js';
 import { tipsAan, wisselTips } from './library/gids.js';
 const ICOON_TIPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/></svg>';
-import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit, toonLadeTab } from './eigenschappen.js';
+import { vensterAan, wisselVenster, startLade, verwijderLade, bijAanUit, wisselLadeTab, ladeTabAan } from './eigenschappen.js';
 import { startCollab } from './collab/index.js';
 
 const OPSLAG = 'seed43.tools';
@@ -165,13 +165,11 @@ function bouwTab(api, aan) {
   ];
   // Hide the tools switched off in About; a group with nothing left goes.
   const welk = { 'tool-ocr': 'ocr', 'element-library': 'library', 'bracing-line': 'bracing', 'auto-link': 'autolink' };
-  // Smart Stamps and Collab open their tab in the Seed43 drawer.
+  // Smart Stamps and Collab switch their tab in the Seed43 drawer on or off,
+  // like Paddle OCR: on (lit) shows the tab and opens the drawer on it.
   const ladeKnop = (id, tabId, label, icon, title) => ({
-    type: 'action', id, label, icon, size: 'large', title, active: false,
-    onRun: () => {
-      const open = toonLadeTab(tabId, { wissel: true });
-      for (const k of ['smart-stamps', 'collab']) { try { tab?.update(k, { active: open && k === id }); } catch {} }
-    },
+    type: 'action', id, label, icon, size: 'large', title, active: ladeTabAan(tabId),
+    onRun: () => { const aan = wisselLadeTab(tabId); try { tab?.update(id, { active: aan }); } catch {} },
   });
   const groups = [
     {
@@ -199,9 +197,9 @@ function bouwTab(api, aan) {
         onRun: () => { const aanNu = wisselVenster(); tab?.update('properties-window', { active: aanNu }); },
       },
       ...(zie('stamps') ? [ladeKnop('smart-stamps', 'stempels', 'Smart Stamps', ICOON_STEMPEL,
-        { en: 'Smart Stamps in the Seed43 drawer: search and place a stamp, or open the Stamp Builder.', nl: 'Slimme stempels in de Seed43-lade: zoek en plaats een stempel, of open de stempelbouwer.' })] : []),
+        { en: 'Smart Stamps tab in the Seed43 drawer on or off. On: search and place a stamp, or open the Stamp Builder.', nl: 'Tabblad Slimme stempels in de Seed43-lade aan of uit.' })] : []),
       ...(zie('collab') ? [ladeKnop('collab', 'collab', 'Collab', ICOON_COLLAB,
-        { en: 'Seed43 Collab in the Seed43 drawer: share a PDF by key and mark it up together.', nl: 'Seed43 Collab in de Seed43-lade: deel een pdf met een sleutel en werk er samen aan.' })] : []),
+        { en: 'Collab tab in the Seed43 drawer on or off. On: share a PDF by key and mark it up together.', nl: 'Tabblad Collab in de Seed43-lade aan of uit.' })] : []),
       ],
     },
     ...alle.map((g) => ({ ...g, items: g.items.filter((it) => zie(welk[it.id] || it.id)) })).filter((g) => g.items.length),

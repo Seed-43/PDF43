@@ -55,6 +55,12 @@ let lade = null;   // { el, lijf, kies, extra, tab, tabjes }
 // (collab/index.js). Each is { bouw() -> element, ververs() }, or null (hidden).
 const EXTRA = ['stempels', 'collab'];
 const extraTabs = { stempels: null, collab: null };
+// Which of those tabs the ribbon has switched on (the Smart Stamps and Collab
+// buttons). Remembered on this PC; both on until switched off.
+const TABS_AAN = 'seed43.drawerTabs';
+function tabAan(id) {
+  try { return (JSON.parse(localStorage.getItem(TABS_AAN) || '{}') || {})[id] !== false; } catch { return true; }
+}
 let api0 = null;   // the extension API, for the Elements tab
 
 // The drawer and its tab are fixed over the right edge of the page view, but
@@ -166,7 +172,7 @@ function zetTab(naam, opZoek = false) {
   for (const id of EXTRA) lade.extra[id].vak.hidden = naam !== id;
   if (EXTRA.includes(naam)) {
     const t = extraTabs[naam], x = lade.extra[naam];
-    if (!t) { zetTab('elementen'); return; }
+    if (!t || !tabAan(naam)) { zetTab('elementen'); return; }
     if (!x.el) { x.el = t.bouw(); x.vak.replaceChildren(x.el); }
     else t.ververs();
   }
@@ -213,13 +219,39 @@ export function toonLadeTab(id, { wissel = false } = {}) {
   if (!lade) return false;
   const alOpen = isOpen() && lade.tabjes.find((b) => b.dataset.tab === id)?.hasAttribute('data-aan');
   if (wissel && alOpen) { zetOpen(false); return false; }
+  toonExtraTabjes();
   zetOpen(true);
   zetTab(id);
   return true;
 }
 
 function toonExtraTabjes() {
-  for (const b of lade?.tabjes || []) if (EXTRA.includes(b.dataset.tab)) b.hidden = !extraTabs[b.dataset.tab];
+  for (const b of lade?.tabjes || []) if (EXTRA.includes(b.dataset.tab)) b.hidden = !extraTabs[b.dataset.tab] || !tabAan(b.dataset.tab);
+}
+
+export const ladeTabAan = tabAan;
+
+/**
+ * Ribbon: switch one of the drawer's tabs on or off ('stempels', 'collab').
+ * On also opens the drawer on it (switching the drawer on if needed); off
+ * hides the tab, and if it was showing, the drawer moves to Elements.
+ * Returns whether the tab is now on.
+ */
+export function wisselLadeTab(id) {
+  if (!EXTRA.includes(id)) return false;
+  const aan = !tabAan(id);
+  try {
+    const v = JSON.parse(localStorage.getItem(TABS_AAN) || '{}') || {};
+    v[id] = aan;
+    localStorage.setItem(TABS_AAN, JSON.stringify(v));
+  } catch {}
+  if (aan) { toonLadeTab(id); return true; }
+  if (lade) {
+    const zichtbaar = !lade.extra[id].vak.hidden;
+    toonExtraTabjes();
+    if (zichtbaar) zetTab('elementen');
+  }
+  return false;
 }
 
 export function verwijderLade() {
