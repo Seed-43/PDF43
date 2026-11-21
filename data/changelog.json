@@ -5,7 +5,7 @@
     "notes": {
       "New": [
         "Collab: select a markup in a shared PDF and a tag at the top of the page says whose it is (\"Your markup\" or \"Ana's markup\")",
-        "Collab: in a shared PDF's tab, the page commands (Insert, Delete, Rotate, Replace pages and other changes to the PDF itself, on the Organize ribbon and the page-thumbnail menu) are greyed out, and a Seed43 Collab banner at the top of the page shows the live status, \"pages locked\" and how many people are in; click it to open the Collab tab"
+        "Collab: in a shared PDF's tab, the page commands (Insert, Delete, Rotate, Replace and Extract pages, and other changes to the PDF itself, on the Organize ribbon and the page-thumbnail menu) are greyed out, and a Seed43 Collab banner at the top of the page shows the live status, \"pages locked\" and how many people are in; click it to open the Collab tab"
       ],
       "General": [
         "Collab: markups belong to whoever made them; markups that were already in the PDF belong to the person who shared it. Everyone else's arrive locked, and a change to one is undone with a note saying whose it is (the server refuses it too)",
