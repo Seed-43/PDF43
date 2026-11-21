@@ -1,5 +1,14 @@
 [
   {
+    "version": "26.11.21.4",
+    "date": "2026-11-21",
+    "notes": {
+      "New": [
+        "Collab: a support meter in the Collab tab (goal, milestones and how much has been raised, from seed43.org) with a Support on Buy Me a Coffee button"
+      ]
+    }
+  },
+  {
     "version": "26.11.21.3",
     "date": "2026-11-21",
     "notes": {

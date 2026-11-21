@@ -7,6 +7,7 @@ import { uitleg } from './client.js';
 import * as S from './sessions.js';
 import { Koppeling } from './sync.js';
 import { startPaginaSlot } from './paginaslot.js';
+import { openLink } from '../extern.js';
 
 const STIJL_ID = 'seed43-collab-stijl';
 const CSS = `
@@ -44,6 +45,17 @@ const CSS = `
   font:600 12px system-ui,Segoe UI,sans-serif;background:var(--theme-accent,#0078d7);color:#fff;cursor:pointer;
   box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;}
 .s43c-band span{font-weight:400;opacity:.9;}
+.s43c-steun{border:1px solid color-mix(in srgb,#208A3C 60%,var(--rand));border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;
+  background:color-mix(in srgb,#208A3C 8%,transparent);}
+.s43c-steun .kop{font-weight:800;font-size:14px;}
+.s43c-meter{position:relative;height:12px;border-radius:6px;background:color-mix(in srgb,var(--tx) 14%,transparent);margin:4px 0 22px;}
+.s43c-meter .vol{height:100%;border-radius:6px;background:linear-gradient(90deg,#1f893c,#3fb35a);}
+.s43c-meter .mp{position:absolute;top:-4px;width:2px;height:20px;background:var(--tx);opacity:.55;}
+.s43c-meter .ml{position:absolute;top:18px;transform:translateX(-50%);font-size:10.5px;color:var(--theme-text-secondary,#888);white-space:nowrap;}
+.s43c-meter .ml.eind{transform:translateX(-100%);}
+.s43c-steun .som{font-size:13px;}
+.s43c-steun .som b{font-size:15px;}
+.s43c button.s43c-koffie{border-color:#3fb35a;background:color-mix(in srgb,#208A3C 25%,transparent);font-weight:700;}
 .s43c-band i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2ecc71;font-style:normal;}
 .s43c-band i[data-staat="alleen-lezen"],.s43c-band i[data-staat="gepauzeerd"]{background:#f5c04a;}
 .s43c-band i[data-staat="offline"],.s43c-band i[data-staat="einde"],.s43c-band i[data-staat="fout"]{background:#ff6b6b;}
@@ -194,6 +206,60 @@ async function doeMee(invoer) {
   await openInApp(s);
 }
 
+// ── support meter (Buy Me a Coffee goal, set on seed43.org) ─────────────
+
+const STEUN_URL = 'https://seed43.org/collab/support';
+const STEUN_CACHE = 'seed43.collab.support';
+let steun = null;
+
+/** Totals only: goal, raised, milestone points, supporter count. Cached for an hour. */
+async function laadSteun() {
+  try {
+    const c = JSON.parse(localStorage.getItem(STEUN_CACHE) || 'null');
+    if (c && Date.now() - c.at < 3600e3) { steun = c.data; return; }
+    if (c) steun = c.data;
+  } catch {}
+  try {
+    const r = await fetch(STEUN_URL, { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (typeof d?.goalNzd !== 'number' || typeof d?.raisedNzd !== 'number') return;
+    steun = d;
+    try { localStorage.setItem(STEUN_CACHE, JSON.stringify({ at: Date.now(), data: d })); } catch {}
+    teken();
+  } catch {}
+}
+
+const nzd = (n) => '$' + Math.round(n).toLocaleString('en-NZ');
+
+function steunKaart() {
+  const k = maak('div', 's43c-steun');
+  k.appendChild(maak('div', 'kop', 'Help Seed43 Collab grow'));
+  if (steun && steun.goalNzd > 0) {
+    const pct = Math.max(0, Math.min(100, (steun.raisedNzd / steun.goalNzd) * 100));
+    const m = maak('div', 's43c-meter');
+    const vol = maak('div', 'vol'); vol.style.width = pct + '%';
+    m.appendChild(vol);
+    const punten = [...(steun.milestonesNzd || []).map((v, i) => [v, `Milestone ${i + 1}`]), [steun.goalNzd, 'Goal']];
+    for (const [v, naam] of punten) {
+      const x = Math.min(100, (v / steun.goalNzd) * 100);
+      const mp = maak('div', 'mp'); mp.style.left = `calc(${x}% - 1px)`;
+      const ml = maak('div', 'ml' + (x >= 99 ? ' eind' : ''), `${naam} · ${nzd(v)}`); ml.style.left = x + '%';
+      m.append(mp, ml);
+    }
+    k.appendChild(m);
+    const som = maak('div', 'som');
+    som.innerHTML = `<b>${nzd(steun.raisedNzd)}</b> of ${nzd(steun.goalNzd)} NZD (${Math.round(pct)}%)`
+      + (steun.supporters ? ` · ${steun.supporters} supporter${steun.supporters === 1 ? '' : 's'}` : '');
+    k.appendChild(som);
+  }
+  k.appendChild(maak('div', 's43c-klein', 'Seed43 Collab runs on Seed43\'s own server. Your support helps it grow.'));
+  const kn = maak('div', 's43c-knoppen');
+  kn.appendChild(knop('Support on Buy Me a Coffee', () => openLink(steun?.url || 'https://buymeacoffee.com/Seed43'), 's43c-koffie'));
+  k.appendChild(kn);
+  return k;
+}
+
 // ── the tab ─────────────────────────────────────────────────────────────
 
 const statussen = new Map();   // key -> last status from the server (seats etc.)
@@ -332,6 +398,8 @@ function teken() {
     w.appendChild(vak);
   }
 
+  w.appendChild(steunKaart());
+
   if (limieten && !concept) {
     const v = maak('details');
     v.appendChild(maak('summary', 's43c-klein', 'The limits of the free service'));
@@ -399,6 +467,7 @@ export function startCollab(api) {
       wortel = maak('div');
       teken();
       S.limieten().then((l) => { limieten = l; teken(); }).catch(() => {});
+      laadSteun();
       ververs().catch(() => {});
       return wortel;
     },
