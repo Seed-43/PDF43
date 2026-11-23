@@ -15,14 +15,15 @@ Each tool can be switched on or off on the **Seed43** ribbon tab, and the choice
 
 ## Element Library
 
-**Seed43 › Element Library** opens the library window: NZ steel and timber to start (UB, UC, WB, WC, PFC, angles, hollow sections, bars, purlins, sawn and gauged timber, Prolam posts, hyJOIST I-joists, bolts and the NZ gauge tables), and MiTek Lumberlok and Bowmac fixings. You edit and save it like a CAD block library. The **Elements** tab of the drawer finds and places the same elements without opening the window.
+**Seed43 › Element Library** opens the library window: 3,500 steel, timber, fixing and bolt elements for **Australia**, **New Zealand**, **South Africa** and the **United Kingdom** (UB, UC, WB, WC, PFC, angles, hollow sections, bars, purlins, sawn and gauged timber, Prolam posts, hyJOIST I-joists, MiTek Lumberlok and Bowmac fixings, bolts and gauge tables). The **Elements** tab of the drawer finds and places the same elements without opening the window.
 
 ![Element Library window](docs/screenshots/library-window.jpg)
 
-- **Find:** type in the search box (names and sizes: `310UB`, `90x45`, `M20`, `JH47x90`, `B21`); filter by kind, shape and category, or browse the tree.
-- **Look:** tiles with a to-scale preview of each section, or **List** for the editable table. The details panel shows all fields, a larger preview and the source note.
-- **Edit:** edit cells, add, duplicate or delete rows and columns, **Import CSV** (paste from Excel), rename a category or change its shape. **Save** keeps the library in the app; **Export library** and **Import library** move it between computers; **Reset to default** goes back to the shipped library.
-- **Place:** **Section**, **Elevation** or **Plan**, Enter, or double-click a tile. Bolts: **Place bolt group**.
+- **Find:** type in the search box (names and sizes: `310UB`, `90x45`, `M20`, `JH47x90`, `B21`), or browse by country on the left. **Countries** chooses which countries show. Back, forward and home work like a file browser.
+- **Look:** tiles with a preview of each element (**To scale** draws them to one common scale; **−** and **+** change the tile size), or **List** for the table. Select an element to see its preview and properties on the right.
+- **Edit:** in List view: add, duplicate or delete rows and columns, **Import CSV** (paste a table from Excel), or delete a category. Ctrl+S saves.
+- **Place:** **Place as section**, Enter, or double-click a tile; a member offers **Section**, **Elevation** and **Plan**, a bolt group **Face**, **Plan** and **Elevation**.
+- **Missing something?** **Request a library** asks for one for your country or supplier.
 
 On the sheet:
 
