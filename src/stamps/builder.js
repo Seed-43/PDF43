@@ -8,6 +8,7 @@
 import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan, STANDAARD, merkVerwijderd, merkTerug } from './families.js';
 import { opmaak } from './render.js';
 import { zorgStijl, leesTab } from './panel.js';
+import { naarPagina } from '../library/overlay.js';
 import { laadProfiel, bewaarProfiel, PROFIEL_VELDEN, inktPlaatje } from './profile.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
@@ -25,11 +26,92 @@ const KNOP = 'font:inherit;padding:4px 10px;cursor:pointer;border:1px solid var(
 const INVOER = 'font:inherit;padding:3px 5px;border:1px solid var(--theme-app-menu-sidebar-border,#999);background:var(--theme-app-menu-bg,#fff);color:inherit;min-width:0;';
 const SELECT = INVOER + 'appearance:none;-webkit-appearance:none;padding-right:16px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 9px) 55%,calc(100% - 5px) 55%;background-size:4px 4px;background-repeat:no-repeat;';
 
-function kiesBestand(accept) {
+const T = () => window.__TAURI__;
+const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', json: 'application/json', seed43stamps: 'application/json' };
+
+/**
+ * Pick a file: { name, type, text(), arrayBuffer() } like a File, or null.
+ * The desktop app (WebKitGTK) does not open a browser file input made by
+ * code, so its own Open dialog is used there.
+ */
+async function kiesBestand(extensies, naam = 'Files') {
+  const t = T();
+  if (t?.dialog?.open && t?.fs?.readFile) {
+    const pad = await t.dialog.open({ multiple: false, filters: [{ name: naam, extensions: extensies }] });
+    if (!pad) return null;
+    const p = Array.isArray(pad) ? pad[0] : pad;
+    try { await t.core.invoke('allow_fs_scope', { path: p }); } catch {}
+    const bytes = await t.fs.readFile(p);
+    const ext = String(p).split('.').pop().toLowerCase();
+    return new File([bytes], String(p).split(/[\\/]/).pop(), { type: MIME[ext] || 'application/octet-stream' });
+  }
   return new Promise((ok) => {
-    const inp = maak('input'); inp.type = 'file'; inp.accept = accept;
-    inp.addEventListener('change', () => ok(inp.files[0] || null));
+    const inp = maak('input', 'display:none'); inp.type = 'file';
+    inp.accept = extensies.map((e) => `.${e}`).join(',');
+    inp.addEventListener('change', () => { ok(inp.files[0] || null); inp.remove(); });
+    inp.addEventListener('cancel', () => { ok(null); inp.remove(); });
+    document.body.appendChild(inp);
     inp.click();
+  });
+}
+
+/** Save text to a file the user picks (the app's Save dialog), or download it in a browser. */
+async function bewaarBestand(naam, tekst, extensie, soort) {
+  const t = T();
+  if (t?.dialog?.save && t?.fs?.writeFile) {
+    const pad = await t.dialog.save({ defaultPath: naam, filters: [{ name: soort, extensions: [extensie] }] });
+    if (!pad) return false;
+    try { await t.core.invoke('allow_fs_scope', { path: pad }); } catch {}
+    await t.fs.writeFile(pad, new TextEncoder().encode(tekst));
+    return pad;
+  }
+  const a = maak('a'); a.href = URL.createObjectURL(new Blob([tekst], { type: 'application/json' })); a.download = naam;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  return naam;
+}
+
+/**
+ * Let the user drag a box on the open page. Resolves to { page, x, y, width,
+ * height } in page points, or null (Esc, or a click without a box).
+ */
+function kiesVlak() {
+  return new Promise((ok) => {
+    const laag = maak('div', 'position:fixed;inset:0;z-index:2147483000;cursor:crosshair;');
+    const tip = maak('div', 'position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:2147483001;background:#1f2328;color:#fff;'
+      + 'padding:7px 14px;border-radius:6px;font:13px system-ui,sans-serif;pointer-events:none;', 'Drag a box around the part of the page to use for the stamp. Esc cancels.');
+    const doos = maak('div', 'position:fixed;z-index:2147483001;border:2px dashed #0078d7;background:rgba(0,120,215,.08);pointer-events:none;display:none;');
+    let start = null;
+    // The Seed43 drawer sits over the page: out of the way while picking.
+    const lade = [...document.querySelectorAll('.s43d-lade, .s43d-tab')].filter((x) => x.style.visibility !== 'hidden');
+    for (const x of lade) x.style.visibility = 'hidden';
+    // The page point under the pointer, looking through this layer.
+    const punt = (e) => { laag.style.pointerEvents = 'none'; try { return naarPagina(e); } finally { laag.style.pointerEvents = ''; } };
+    const klaar = (uit) => {
+      laag.remove(); tip.remove(); doos.remove(); window.removeEventListener('keydown', toets, true);
+      for (const x of lade) x.style.visibility = '';
+      ok(uit);
+    };
+    const toets = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); klaar(null); } };
+    laag.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { laag.setPointerCapture(e.pointerId); } catch {}
+      start = { cx: e.clientX, cy: e.clientY, p: punt(e) };
+    });
+    laag.addEventListener('pointermove', (e) => {
+      if (!start) return;
+      Object.assign(doos.style, { display: 'block', left: `${Math.min(start.cx, e.clientX)}px`, top: `${Math.min(start.cy, e.clientY)}px`,
+        width: `${Math.abs(e.clientX - start.cx)}px`, height: `${Math.abs(e.clientY - start.cy)}px` });
+    });
+    laag.addEventListener('pointerup', (e) => {
+      if (!start) return;
+      const a = start.p, b = punt(e);
+      if (!a || !b || a.page !== b.page) { alert('Drag the box on one page of the open PDF.'); klaar(null); return; }
+      const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), width = Math.abs(a.x - b.x), height = Math.abs(a.y - b.y);
+      klaar(width > 4 && height > 4 ? { page: a.page, x, y, width, height } : null);
+    });
+    window.addEventListener('keydown', toets, true);
+    document.body.append(laag, doos, tip);
   });
 }
 
@@ -327,12 +409,29 @@ export function openBouwer(families, api, opslaan) {
     f.height = Math.round(info.height * 100) / 100;
   }
   async function achtergrondVanPlaatje(f) {
-    const b = await kiesBestand('image/png,image/jpeg,image/webp');
+    const b = await kiesBestand(['png', 'jpg', 'jpeg', 'webp'], 'Pictures');
     if (!b) return false;
     const ink = await inktPlaatje(b, { max: 2048, bijsnijden: false });
     f.background = ink.url;
     if (!f.width || !f.height || f.layout !== 'placed') { f.width = Math.round(ink.width * 0.36); f.height = Math.round(ink.height * 0.36); }
     else f.height = Math.round(f.width * ink.height / ink.width);
+    return true;
+  }
+
+  /** A stamp's picture from an area of the open page: the builder steps aside while you drag. */
+  async function achtergrondVanVlak(f) {
+    if (!api?.getPageCount?.()) throw new Error('Open the PDF with the stamp on it first.');
+    achter.style.display = 'none';
+    let vlak;
+    try { vlak = await kiesVlak(); } finally { achter.style.display = 'flex'; }
+    if (!vlak) return false;
+    const s = Math.min(2048 / vlak.width, 2048 / vlak.height, 6);
+    const tegel = await api.renderPageTile(vlak.page, { x: vlak.x, y: vlak.y, width: vlak.width, height: vlak.height }, { scale: s });
+    // White turns see-through; the stamp keeps the size of the box on the page.
+    const ink = await inktPlaatje(tegel.blob, { max: 2048, bijsnijden: false });
+    f.background = ink.url;
+    f.width = Math.round(vlak.width * 100) / 100;
+    f.height = Math.round(vlak.height * 100) / 100;
     return true;
   }
 
@@ -352,7 +451,7 @@ export function openBouwer(families, api, opslaan) {
     rechts.appendChild(vak);
     rechts.appendChild(maak('div', 'display:flex;gap:6px;')).append(
       knop('Choose picture…', async () => {
-        const b = await kiesBestand('image/png,image/jpeg,image/webp');
+        const b = await kiesBestand(['png', 'jpg', 'jpeg', 'webp'], 'Pictures');
         if (!b) return;
         profiel.signature = (await inktPlaatje(b, { max: 700 })).url; profielGewijzigd = true; tekenAlles();
       }),
@@ -469,14 +568,19 @@ export function openBouwer(families, api, opslaan) {
     // A family moved to another group (Group field), or a new one: its tab opens.
     const f = fam();
     if (f && gekozen !== 'profiel' && groepVan(f) !== tab) tab = groepVan(f);
-    tekenTabs(); tekenLijst(); tekenRechts();
+    tekenTabs(); tekenLijst(); tekenRechts(); vulNieuw();
     rechts.scrollTop = y;
   }
 
   // ── buttons ─────────────────────────────────────────────────────────
+  // New…: only what fits the open tab.
+  const NIEUW = {
+    stamp: { stamp: 'Stamp (table)', banner: 'Stamp (banner)', picture: 'Stamp from a picture…', area: 'Stamp from an area of the page…' },
+    sheet: { page: 'Sheet from the open page', sheet: 'Blank sheet (A3)' },
+    form: { pageForm: 'Memo from the open page', form: 'Blank memo (A4)' },
+  };
   const nieuwMenu = keuzelijst({
-    '': 'New…', stamp: 'Stamp (table)', banner: 'Stamp (banner)', picture: 'Stamp from a picture…',
-    page: 'Sheet from the open page', sheet: 'Blank sheet (A3)', form: 'Blank memo (A4)',
+    '': 'New…', ...NIEUW.stamp, ...NIEUW.sheet, ...NIEUW.form,
   }, '', async (w) => {
     nieuwMenu.value = '';
     let f = null;
@@ -486,8 +590,12 @@ export function openBouwer(families, api, opslaan) {
       f = { id: nieuwId(), name: 'Picture stamp', layout: 'placed', color: '#1f2328', width: 200, height: 100, fields: [] };
       try { if (!(await achtergrondVanPlaatje(f))) return; } catch (e) { alert(e.message || e); return; }
     }
-    if (w === 'page') {
-      f = { id: nieuwId(), name: 'My sheet', group: 'sheet', layout: 'placed', color: '#1f2328', fields: [] };
+    if (w === 'area') {
+      f = { id: nieuwId(), name: 'Page stamp', layout: 'placed', color: '#1f2328', width: 200, height: 100, fields: [] };
+      try { if (!(await achtergrondVanVlak(f))) return; } catch (e) { alert(e.message || e); return; }
+    }
+    if (w === 'page' || w === 'pageForm') {
+      f = { id: nieuwId(), name: w === 'page' ? 'My sheet' : 'My memo', group: w === 'page' ? 'sheet' : 'form', layout: 'placed', color: '#1f2328', fields: [] };
       try { await achtergrondVanPagina(f); } catch (e) { alert(e.message || e); return; }
     }
     if (w === 'sheet') f = { id: nieuwId(), name: 'New sheet', group: 'sheet', layout: 'placed', color: '#1f2328', width: PAPIER.A3L[0], height: PAPIER.A3L[1], frame: [{ t: 'rect', x: 25, y: 15, w: PAPIER.A3L[0] - 40, h: PAPIER.A3L[1] - 30, lw: 1.2 }], fields: [] };
@@ -495,6 +603,11 @@ export function openBouwer(families, api, opslaan) {
     if (!f) return;
     lijst.push(f); gekozen = f.id; gekozenVeld = null; tekenAlles();
   }, 'width:100%;');
+  function vulNieuw() {
+    nieuwMenu.replaceChildren();
+    for (const [k, t] of Object.entries({ '': 'New…', ...NIEUW[tab] })) { const o = maak('option', '', t); o.value = k; nieuwMenu.appendChild(o); }
+    nieuwMenu.value = '';
+  }
   linksKnoppen.append(
     nieuwMenu,
     knop('Duplicate', () => {
@@ -521,17 +634,15 @@ export function openBouwer(families, api, opslaan) {
       }
       tekenAlles();
     }),
-    knop('Export', () => {
+    knop('Export', async () => {
       const f = fam();
       const welke = f && confirm(`Export only "${f.name}"?\n\nOK: just this one. Cancel: everything.`) ? [f] : lijst;
-      const blob = new Blob([JSON.stringify({ seed43StampFamilies: 1, families: welke }, null, 2)], { type: 'application/json' });
-      const a = maak('a'); a.href = URL.createObjectURL(blob);
-      a.download = welke.length === 1 ? `${welke[0].name.replace(/[\\/:*?"<>|]/g, '_')}.seed43stamps` : 'seed43-stamps.seed43stamps';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      const naam = welke.length === 1 ? `${welke[0].name.replace(/[\\/:*?"<>|]/g, '_')}.seed43stamps` : 'seed43-stamps.seed43stamps';
+      const pad = await bewaarBestand(naam, JSON.stringify({ seed43StampFamilies: 1, families: welke }, null, 2), 'seed43stamps', 'Seed43 stamps');
+      if (pad) alert(`Saved ${welke.length === 1 ? `"${welke[0].name}"` : `${welke.length} stamps, sheets and memos`} to ${pad}`);
     }),
     knop('Import', async () => {
-      const b = await kiesBestand('.seed43stamps,.json,application/json');
+      const b = await kiesBestand(['seed43stamps', 'json'], 'Seed43 stamps');
       if (!b) return;
       try {
         const data = JSON.parse(await b.text());

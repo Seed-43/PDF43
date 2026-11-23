@@ -150,7 +150,7 @@ export function startInPlaats(api, { type, zet, profiel }) {
   };
 
   const opDubbel = (e) => {
-    if (open || e.target?.closest?.('.s43d, .s43d-tab, [data-seed43-edit]')) return;
+    if (open || e.target?.closest?.('.s43d-lade, .s43d-tab, [data-seed43-edit]')) return;
     if (!magNu(api)) return;
     const p = naarPagina(e);
     if (!p) return;
@@ -165,7 +165,7 @@ export function startInPlaats(api, { type, zet, profiel }) {
   const zweef = () => {
     wacht = false;
     const e = laatst;
-    if (!e || open || e.buttons || !magNu(api) || e.target?.closest?.('.s43d, .s43d-tab')) { rand?.remove(); rand = null; return; }
+    if (!e || open || e.buttons || !magNu(api) || e.target?.closest?.('.s43d-lade, .s43d-tab')) { rand?.remove(); rand = null; return; }
     const p = naarPagina(e);
     const hit = p && veldOnder(api, type, p);
     if (!hit || hit.ann.locked || hit.veld.kind === 'auto') { rand?.remove(); rand = null; return; }
