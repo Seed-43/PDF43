@@ -12,6 +12,7 @@
 //            user edits like a CAD library, placed to scale; bolt groups
 //            checked against the library's edge distance and pitch
 
+import { hertekenOveral } from './herteken.js';
 import { registreerOcr, stopOcr } from './ocr/engine.js';
 import { startStamps } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
@@ -88,6 +89,7 @@ function webStandaard() {
 const tools = () => (WEB ? TOOLS.filter((t) => t.id !== 'ocr') : TOOLS);
 
 export async function activate(api) {
+  hertekenOveral(api);   // changes show at once in continuous view too
   if (WEB) {
     webStandaard();
     try { startWeb(api); } catch (e) { console.warn('[seed43] web:', e); }
