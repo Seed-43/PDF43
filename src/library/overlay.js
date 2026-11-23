@@ -7,8 +7,8 @@
 // does it (zoom and offset of the page canvas). Every point the host hands
 // over (a click) is a sample that checks and corrects the mapping. What
 // lands on the sheet always comes from the host's own click points or from
-// this mapping checked against them; see docs/host-changes.md for the API
-// that would make the mapping unnecessary.
+// this mapping checked against them. A host API for plug-in click points
+// would make the mapping unnecessary.
 
 let api = null;
 let doek = null, ctx = null;

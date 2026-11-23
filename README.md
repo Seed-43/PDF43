@@ -25,7 +25,6 @@ On the sheet:
 - **Snapping:** while placing or dragging a grip, points snap to member ends A and B, midpoints and centre lines, and to section and bolt group centres; a marker and its name show the snap point. Otherwise the app's own snap (PDF lines, grid) is used for the clicked point.
 - **Grips:** select an element with the Select tool to see its grips. Drag end A or B to stretch a member (Ctrl or Shift keeps it square), its midpoint to move it, or the centre of a section or bolt group to move it. One drag is one undo step.
 
-What would need a change in the app itself (the app's own tools snapping to Seed43 elements, a two-point draw mode for plug-ins) is written up in [docs/host-changes.md](docs/host-changes.md).
 
 ## Install
 
@@ -38,7 +37,6 @@ In Open PDF Studio: **File > Extensions > Browse**, find Seed43, **Install**. Or
 ```bash
 npm install
 node build.mjs                      # dist/seed43.oppx
-node test/run-node.mjs page.png     # the OCR pipeline in Node, for testing
 ```
 
 Add a tool: give it a folder under `src/` and an entry in the `TOOLS` list in `src/index.js` (`start(api)` and `stop(api)`).
