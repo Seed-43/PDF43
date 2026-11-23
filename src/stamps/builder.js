@@ -5,13 +5,13 @@
 // New › Sheet from the open page. White turns see-through; drag boxes onto
 // the picture where the values go.
 
-import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan, STANDAARD } from './families.js';
+import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan, STANDAARD, merkVerwijderd, merkTerug } from './families.js';
 import { opmaak } from './render.js';
 import { laadProfiel, bewaarProfiel, PROFIEL_VELDEN, inktPlaatje } from './profile.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const MAATEN = { l: 'Large', m: 'Medium', s: 'Small' };
-const PAPIER = { A4P: [595.28, 841.89], A4L: [841.89, 595.28], A3L: [1190.55, 841.89], A3P: [841.89, 1190.55], A1L: [2383.94, 1683.78] };
+const PAPIER = { A4P: [595.28, 841.89], A4L: [841.89, 595.28], A3L: [1190.55, 841.89], A3P: [841.89, 1190.55], A2L: [1683.78, 1190.55], A2P: [1190.55, 1683.78], A1L: [2383.94, 1683.78], A1P: [1683.78, 2383.94], A0L: [3370.39, 2383.94], A0P: [2383.94, 3370.39] };
 
 function maak(tag, stijl = '', tekst = '') {
   const el = document.createElement(tag);
@@ -44,6 +44,7 @@ export function openBouwer(families, api, opslaan) {
   let gekozenVeld = null;               // key of the field selected in the sheet editor
   let profiel = laadProfiel();
   let profielGewijzigd = false;
+  const verwijderd = new Set();         // built-ins deleted in this session (recorded on Save)
 
   const achter = maak('div', 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000;display:flex;align-items:center;justify-content:center;');
   const venster = maak('div', 'width:min(1100px,96vw);height:min(760px,92vh);display:flex;flex-direction:column;background:var(--theme-app-menu-bg,#fff);color:var(--theme-app-menu-text,#222);border:1px solid var(--theme-app-menu-sidebar-border,#888);box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:12px;');
@@ -378,7 +379,7 @@ export function openBouwer(families, api, opslaan) {
       maat.append(
         invoer(f.width, (w) => { f.width = Math.max(20, Number(w) || 595); tekenAlles(); }, 'width:80px;', 'number'), '×',
         invoer(f.height, (w) => { f.height = Math.max(20, Number(w) || 842); tekenAlles(); }, 'width:80px;', 'number'), 'pt',
-        keuzelijst({ '': 'Paper size…', A4P: 'A4 portrait', A4L: 'A4 landscape', A3L: 'A3 landscape', A3P: 'A3 portrait', A1L: 'A1 landscape' }, '', (w) => { if (PAPIER[w]) { [f.width, f.height] = PAPIER[w]; tekenAlles(); } }),
+        keuzelijst({ '': 'Paper size…', A4P: 'A4 portrait', A4L: 'A4 landscape', A3L: 'A3 landscape', A3P: 'A3 portrait', A2L: 'A2 landscape', A2P: 'A2 portrait', A1L: 'A1 landscape', A1P: 'A1 portrait', A0L: 'A0 landscape', A0P: 'A0 portrait' }, '', (w) => { if (PAPIER[w]) { [f.width, f.height] = PAPIER[w]; tekenAlles(); } }),
       );
       veld('Size', maat);
       const bg = maak('div', 'display:flex;gap:6px;flex-wrap:wrap;');
@@ -480,7 +481,7 @@ export function openBouwer(families, api, opslaan) {
     knop('Delete', () => {
       const f = fam(); if (!f) return;
       if (!confirm(`Delete "${f.name}"? Stamps and sheets already placed keep showing.`)) return;
-      lijst = lijst.filter((x) => x.id !== f.id); gekozen = lijst[0]?.id || null; tekenAlles();
+      lijst = lijst.filter((x) => x.id !== f.id); verwijderd.add(f.id); gekozen = lijst[0]?.id || null; tekenAlles();
     }),
     knop('Reset', () => {
       const f = fam();
@@ -525,6 +526,8 @@ export function openBouwer(families, api, opslaan) {
     knop('Cancel', sluit),
     knop('Save', () => {
       if (profielGewijzigd) bewaarProfiel(profiel);
+      for (const id of verwijderd) if (!lijst.some((f) => f.id === id)) merkVerwijderd(id);
+      for (const f of lijst) merkTerug(f.id);
       const oud = JSON.parse(oorspronkelijk);
       const gewijzigd = lijst.filter((f) => JSON.stringify(f) !== JSON.stringify(oud.find((o) => o.id === f.id)));
       sluit();

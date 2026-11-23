@@ -17,6 +17,8 @@ import { maakStempelLijst } from './panel.js';
 import { laadProfiel, profielWaarden } from './profile.js';
 import { maakQa, stopQa } from './qa.js';
 import { legePdf } from './pdf.js';
+import { startInPlaats, stopInPlaats } from './inplace.js';
+import { revVeld, revRijen, revLijst, revIndex, volgendeRev, metRevs } from './revs.js';
 
 export const TYPE = 'seed43Stamp';
 
@@ -81,6 +83,47 @@ function nieuwStempel(api, familie, page, x, y, extra = {}) {
     stamp: { family: kopie(familie), values: nieuweWaarden(api, familie), placed: new Date().toISOString() },
     ...extra,
   };
+}
+
+/**
+ * Save one value of a placed stamp: a per-stamp value on this stamp only, a
+ * shared one on every stamp of its family in the file.
+ */
+export async function zetVeld(api, ann, veld, waarde) {
+  const r = revVeld(veld.key);
+  if (r) {
+    // A revision-row box: the newest revision, or a new one on the next empty row.
+    const vers = api.getAnnotations().find((a) => a.id === ann.id) || ann;
+    const k = revIndex(vers.stamp, r.rij);
+    return zetRevs(api, vers, (lijst) => {
+      if (k === lijst.length) lijst.push(nieuweRev(lijst));
+      if (k === lijst.length - 1) lijst[k][r.kol] = waarde;
+      return lijst;
+    });
+  }
+  if (veld.perStamp) {
+    const vers = api.getAnnotations().find((a) => a.id === ann.id) || ann;
+    const s = kopie(vers.stamp); s.values = { ...(s.values || {}), [veld.key]: waarde };
+    api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { stamp: s } }]);
+  } else {
+    await werkFamilieBij(api, ann.stamp.family.id, (s) => { s.values = { ...(s.values || {}), [veld.key]: waarde }; return s; });
+  }
+  api.redrawAnnotations?.();
+}
+
+/** Change a sheet's revision list (it belongs to this sheet only). */
+export function zetRevs(api, ann, wijzig) {
+  const vers = api.getAnnotations().find((a) => a.id === ann.id) || ann;
+  const s = kopie(vers.stamp);
+  s.values = metRevs(s, wijzig);
+  api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { stamp: s } }]);
+  api.redrawAnnotations?.();
+}
+
+/** A new revision: the next code, today, my initials. */
+function nieuweRev(lijst) {
+  const laatste = lijst[lijst.length - 1];
+  return { rev: volgendeRev(laatste?.rev), desc: '', by: laadProfiel().initials || '', date: new Date().toISOString().slice(0, 10) };
 }
 
 // ── sheets: fit to the page, keep at the back ─────────────────────────
@@ -194,7 +237,7 @@ async function kopieerNaarPaginas(api, ann, keuze, bereik) {
 }
 
 function paneel(api) {
-  return (ann) => {
+  return (ann, update) => {
     if (!ann) return document.createElement('div');   // the host calls this on deselect too
     const stamp = ann.stamp;
     const fam = stamp?.family;
@@ -203,25 +246,16 @@ function paneel(api) {
     const blad = isBlad(fam);
     const vergrendeld = !!ann.locked;
     formKop(el, blad ? fam.name : `${fam.name} stamp`,
-      blad ? 'Shared values change every sheet of this kind in the file. Per-sheet values belong to this page.' : `Changes update every ${fam.name} stamp in this file.`,
+      blad ? 'Shared values change every sheet of this kind in the file. Per-sheet values belong to this page. Or double-click a box on the sheet to fill it in there.' : `Changes update every ${fam.name} stamp in this file.`,
       fam.color || '#c0392b', familieIcoon(fam));
     if (vergrendeld) el.appendChild(tip('Locked: unlock it below to change it.'));
 
-    const zetGedeeld = async (key, waarde) => {
-      await werkFamilieBij(api, fam.id, (s) => { s.values = { ...(s.values || {}), [key]: waarde }; return s; });
-      api.redrawAnnotations?.();
-    };
-    const zetHier = async (key, waarde) => {
-      const s = kopie(stamp); s.values = { ...(s.values || {}), [key]: waarde };
-      api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { stamp: s } }]);
-      api.redrawAnnotations?.();
-    };
 
     const toonVelden = (titel, velden) => {
       if (!velden.length) return;
       groep(el, titel);
       for (const veld of velden) {
-        const zet = (w) => (veld.perStamp ? zetHier(veld.key, w) : zetGedeeld(veld.key, w));
+        const zet = (w) => zetVeld(api, ann, veld, w);
         let invoer;
         let extra = null;
         if (veld.kind === 'auto') {
@@ -281,9 +315,11 @@ function paneel(api) {
         formVeld(el, veld.label + (veld.perStamp && !blad ? ' (this stamp)' : ''), invoer, extra);
       }
     };
-    const velden = fam.fields.filter((v) => !v.hidden || v.kind === 'profile');
+    const metRevRijen = revRijen(fam) > 0;
+    const velden = fam.fields.filter((v) => (!v.hidden || v.kind === 'profile') && !(metRevRijen && revVeld(v.key)));
     if (blad) {
       toonVelden('This sheet', velden.filter((v) => v.perStamp));
+      if (metRevRijen) toonRevisies(el, api, ann, vergrendeld, update);
       toonVelden('Shared by every sheet', velden.filter((v) => !v.perStamp));
     } else toonVelden('Parameters', velden);
 
@@ -330,6 +366,54 @@ function paneel(api) {
   };
 }
 
+/**
+ * Revisions of a sheet in Properties: older ones greyed (history), the newest
+ * editable, and Add revision for the next one. The sheet shows as many of the
+ * newest as it has revision rows.
+ */
+function toonRevisies(el, api, ann, vergrendeld, update) {
+  // Through the panel's update when there is one, so the form redraws.
+  const wijzig = (fn) => {
+    if (typeof update !== 'function') return zetRevs(api, ann, fn);
+    const s = kopie(ann.stamp);
+    s.values = metRevs(s, fn);
+    update('stamp', s);
+  };
+  const lijst = revLijst(ann.stamp);
+  const n = revRijen(ann.stamp.family);
+  groep(el, n === 1 ? 'Revisions (the sheet shows the newest)' : `Revisions (the sheet shows the newest ${n})`);
+  const invoer = (waarde, type, uit) => {
+    const i = document.createElement('input');
+    i.type = type; i.value = waarde || ''; i.disabled = uit || vergrendeld;
+    i.style.cssText = 'width:100%;min-width:0;box-sizing:border-box;';
+    return i;
+  };
+  lijst.forEach((r, k) => {
+    const nieuwste = k === lijst.length - 1;
+    const rij = document.createElement('div');
+    // Rev, By and Date on one line, the description under them.
+    rij.style.cssText = `display:grid;grid-template-columns:42px 46px minmax(0,1fr);gap:3px;width:100%;${nieuwste ? '' : 'opacity:.5;'}`;
+    const delen = [invoer(r.rev, 'text', !nieuwste), invoer(r.desc, 'text', !nieuwste), invoer(r.by, 'text', !nieuwste), invoer(r.date, 'date', !nieuwste)];
+    delen[0].placeholder = 'Rev'; delen[1].placeholder = 'Description'; delen[2].placeholder = 'By';
+    if (nieuwste) {
+      ['rev', 'desc', 'by', 'date'].forEach((kol, i) => delen[i].addEventListener('change', () => wijzig((l) => { l[l.length - 1][kol] = delen[i].value; return l; })));
+    } else rij.title = 'An older revision: only the newest can be changed';
+    delen[1].style.gridColumn = '1 / -1';
+    rij.append(delen[0], delen[2], delen[3], delen[1]);
+    formVeld(el, nieuwste ? 'Newest' : k >= lijst.length - n ? 'On the sheet' : 'Off the sheet', rij);
+  });
+  if (!lijst.length) el.appendChild(tip('No revisions yet: add the first one.'));
+  const laatste = lijst[lijst.length - 1];
+  const toevoegen = knopje('Add revision', 'Start the next revision on a new line; the one before is kept, greyed out', () => wijzig((l) => { l.push(nieuweRev(l)); return l; }));
+  toevoegen.disabled = vergrendeld || !!(laatste && !laatste.rev && !laatste.desc);
+  const weg = knopje('Remove newest', 'Take the newest revision off this sheet', async () => {
+    if (!confirm(`Remove revision ${laatste?.rev || ''} from this sheet?`)) return;
+    wijzig((l) => { l.pop(); return l; });
+  });
+  weg.disabled = vergrendeld || !lijst.length;
+  formVeld(el, '', rijKnoppen(toevoegen, weg));
+}
+
 function markeringType(api) {
   return {
     drawMode: 'click',
@@ -361,6 +445,8 @@ export async function startStamps(api) {
   registreerEigenschappen(api, TYPE, paneel(api));
   actief = true;
   achterKlok = setInterval(() => { try { naarAchter(api); } catch {} }, 700);
+  // Double-click a box on a sheet, memo or placed stamp to fill it in there.
+  startInPlaats(api, { type: TYPE, zet: (ann, veld, w) => zetVeld(api, ann, veld, w), profiel: laadProfiel });
   registreerStempelTab({
     bouw: () => {
       ladeLijst = maakStempelLijst({
@@ -385,6 +471,7 @@ export async function stopStamps(api) {
   actief = false;
   clearInterval(achterKlok);
   stopQa();
+  stopInPlaats();
   registreerStempelTab(null);
   ladeLijst = null;
   try { api?.unregisterToolPalette?.('smart-stamps'); } catch {}   // left by versions before 26.11.21.1

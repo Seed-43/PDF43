@@ -13,7 +13,13 @@
 let api = null;
 let doek = null, ctx = null;
 let docSchaal = 0;                 // last doc.scale the host reported
-const paginaBreedte = new Map();   // page -> width in page points
+const breedtes = new Map();        // 'document:page' -> width in page points (0 while asking)
+const sleutel = (page) => `${api?.getDocumentInfo?.()?.id ?? ''}:${page}`;
+const paginaBreedte = {
+  get: (page) => breedtes.get(sleutel(page)),
+  has: (page) => breedtes.has(sleutel(page)),
+  set: (page, w) => breedtes.set(sleutel(page), w),
+};
 let correctie = null;              // { page, dx, dy } screen px, from a host sample
 
 export function startOverlay(a) {
@@ -47,8 +53,13 @@ function maatDoek() {
 
 function vraagBreedte(page) {
   if (paginaBreedte.has(page) || !api?.getPageInfo) return;
-  paginaBreedte.set(page, 0);
-  Promise.resolve(api.getPageInfo(page)).then((i) => { if (i?.width > 0) paginaBreedte.set(page, i.width); }).catch(() => {});
+  // Per document: a width asked before a PDF was open (or for another file)
+  // must not stick, or the mapping falls back to a stale zoom for good.
+  const k = sleutel(page);
+  breedtes.set(k, 0);
+  Promise.resolve(api.getPageInfo(page))
+    .then((i) => { if (i?.width > 0) breedtes.set(k, i.width); else breedtes.delete(k); })
+    .catch(() => breedtes.delete(k));
 }
 
 /** What the host knows about the page, from a tool callback's state. */
@@ -93,7 +104,13 @@ function vlak(clientX, clientY, page) {
   const vp = window.__pdfViewport;
   let v;
   if (vp?.active && Number(vp.zoom) > 0) v = { page: huidig, rect: r, s: Number(vp.zoom), ox: r.left + (Number(vp.offsetX) || 0), oy: r.top + (Number(vp.offsetY) || 0) };
-  else { const b = vlakVanElement(doekEl, huidig); if (!b) return null; v = b; if (docSchaal > 0) v.s = docSchaal; }
+  else {
+    const b = vlakVanElement(doekEl, huidig); if (!b) return null; v = b;
+    // The canvas is the page here: its measured width is the zoom. The last
+    // zoom a tool callback reported is only a fallback; it goes stale when the
+    // user zooms without using a Seed43 tool (in-place editing of sheets).
+    if (!(paginaBreedte.get(huidig) > 0) && docSchaal > 0) v.s = docSchaal;
+  }
   return v;
 }
 

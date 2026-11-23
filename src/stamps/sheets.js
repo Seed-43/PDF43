@@ -269,5 +269,28 @@ function notesSheet() {
   };
 }
 
-export const STANDAARD_BLADEN = [a3(), a4(), notesSheet()];
+// ── A1 and A0 drawing sheets ──────────────────────────────────────────
+// Every A size has the same shape, so the A1 and A0 sheets are the A3 sheet
+// drawn bigger (an A1 printed at A3 is the A3 sheet). They matter for a new
+// PDF: its pages get the real A1 or A0 size.
+
+function vergroot(f, k, maat) {
+  const g = JSON.parse(JSON.stringify(f));
+  const m = (v) => (typeof v === 'number' ? v * k : v);
+  g.width *= k; g.height *= k;
+  for (const p of g.frame) for (const a of ['x', 'y', 'w', 'h', 'x1', 'y1', 'x2', 'y2', 'lw', 's']) if (a in p) p[a] = m(p[a]);
+  for (const v of g.fields) {
+    const h = v.h;
+    for (const a of ['x', 'y', 'w', 'h']) if (a in v) v[a] = m(v[a]);
+    if (v.x != null) v.size = (v.size || Math.min(10, (h || 12) * 0.62)) * k;
+    if (/@ A3/.test(v.label || '')) v.label = v.label.replace('@ A3', `@ ${maat}`);
+  }
+  for (const p of g.frame) if (p.t === 'text' && /@ A3/.test(p.text)) p.text = p.text.replace('@ A3', `@ ${maat}`);
+  if (g.hit) for (const a of ['x', 'y', 'w', 'h']) g.hit[a] *= k;
+  g.id = `sheet-${maat.toLowerCase()}`; g.name = `${maat} drawing sheet`; g.title = `${maat} SHEET`;
+  return g;
+}
+
+const A3 = a3();
+export const STANDAARD_BLADEN = [vergroot(A3, 3370.39 / 1190.55, 'A0'), vergroot(A3, 2383.94 / 1190.55, 'A1'), A3, a4(), notesSheet()];
 export const STANDAARD_FORMULIEREN = [rfi(), siteInstruction(), siteVisit(), snagList(), transmittal(), memo(), shopReviewCover()];

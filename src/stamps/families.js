@@ -24,7 +24,7 @@ export const AUTO = {
   placed: 'Date placed', time: 'Time placed', today: 'Today',
 };
 export const LAYOUTS = { table: 'Table', banner: 'Banner', diagonal: 'Diagonal', placed: 'Placed boxes (sheet or picture)' };
-export const GROEPEN = { stamp: 'Stamps', sheet: 'Sheets', form: 'Forms' };
+export const GROEPEN = { stamp: 'Stamps', sheet: 'Sheets', form: 'Memos' };
 
 const NIET_VOOR_BOUW = ['Draft', 'Preliminary', 'For Coordination', 'For Tender', 'For Information', 'For Peer Review'];
 const STATUS_KLEUR = {
@@ -218,21 +218,43 @@ export function sleutelVan(label, bestaand = []) {
   return uit;
 }
 
+const WEG = `${OPSLAG}.deleted`;
+
+function leesWeg() {
+  try { return new Set(JSON.parse(localStorage.getItem(WEG) || '[]')); } catch { return new Set(); }
+}
+
+/** The user deleted a built-in family: don't add it back on the next start. */
+export function merkVerwijderd(id) {
+  if (!STANDAARD.some((f) => f.id === id)) return;
+  const weg = leesWeg(); weg.add(id);
+  try { localStorage.setItem(WEG, JSON.stringify([...weg])); } catch {}
+}
+
+/** A deleted built-in put back (Reset, or a family of that id saved again). */
+export function merkTerug(id) {
+  const weg = leesWeg();
+  if (weg.delete(id)) try { localStorage.setItem(WEG, JSON.stringify([...weg])); } catch {}
+}
+
 /**
- * Stored families, with any built-in family this computer hasn't seen yet
- * added. A built-in the user changed or deleted stays as they left it.
+ * Stored families, with every built-in family added that is not in them and
+ * that the user did not delete. A built-in the user changed stays as they
+ * left it. (Deletes are recorded on their own: an earlier test build marked
+ * built-ins as seen without saving them, so they went missing.)
  */
 export function laadFamilies() {
-  let lijst = null, gezien = [];
+  let lijst = null;
   try {
     const v = JSON.parse(localStorage.getItem(OPSLAG) || 'null');
     if (Array.isArray(v) && v.length) lijst = v.filter(geldig);
-    gezien = JSON.parse(localStorage.getItem(`${OPSLAG}.seen`) || '[]');
   } catch {}
   if (!lijst) lijst = [];
-  const bekend = new Set([...lijst.map((f) => f.id), ...gezien]);
-  for (const f of STANDAARD) if (!bekend.has(f.id)) lijst.push(kopie(f));
-  try { localStorage.setItem(`${OPSLAG}.seen`, JSON.stringify(STANDAARD.map((f) => f.id))); } catch {}
+  const weg = leesWeg();
+  const bekend = new Set(lijst.map((f) => f.id));
+  const nieuw = STANDAARD.filter((f) => !bekend.has(f.id) && !weg.has(f.id));
+  for (const f of nieuw) lijst.push(kopie(f));
+  if (nieuw.length) bewaarFamilies(lijst);
   return lijst;
 }
 

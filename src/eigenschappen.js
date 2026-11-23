@@ -352,6 +352,9 @@ function toon(api, renderFn, ann) {
         wachtend = null;
         try { api.applyAnnotationBatch([{ op: 'update', id, changes }]); } catch (e) { console.warn('[seed43] properties update:', e); }
         try { api.redrawAnnotations?.(); } catch {}
+        // Again on the next frame: the desktop app can still be busy with the
+        // update on the first redraw, and the sheet then only changed after a click.
+        requestAnimationFrame(() => { try { api.redrawAnnotations?.(); } catch {} });
         const scroll = l.lijf.scrollTop;
         toon(api, renderFn, lees());
         l.lijf.scrollTop = scroll;

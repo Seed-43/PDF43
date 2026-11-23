@@ -10,6 +10,7 @@
 // A placed stamp can be scaled (ann.scale). Every layout draws only ink:
 // nothing is filled white except the table/banner paper, so a sheet never
 // hides the drawing under it.
+import { revTekst } from './revs.js';
 
 const TITEL_H = 16;
 const RIJ_H = 12;
@@ -57,6 +58,9 @@ export function waardeTekst(veld, stamp, ann, context) {
     }
   }
   if (veld.kind === 'signature') return '';
+  // Revision rows show the newest revisions from the sheet's list.
+  const rt = revTekst(veld, stamp);
+  if (rt !== null) return veld.kind === 'date' ? datumTekst(rt, fmt) : rt;
   const v = stamp.values?.[veld.key] ?? '';
   // A date that was not set shows the date this stamp was placed.
   if (veld.kind === 'date') return datumTekst(v || (veld.blank ? '' : stamp.placed), fmt);

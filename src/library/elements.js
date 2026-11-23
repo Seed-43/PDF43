@@ -1002,12 +1002,16 @@ export function startElementen(api) {
   registreerEigenschappen(api, LID, lidPaneel());
   registreerMeervoud(api, ONZE, meervoudPaneel);
   // Selected while Seed43 Properties is closed or off: say it has properties.
+  // Only for library elements: a sheet or stamp is a Seed43 item too, and
+  // fell through to the member guide, which then shut as nothing was selected.
   bijGeslotenEigenschappen((ann, open) => {
+    if (!ONZE.includes(ann?.type)) return;
     const naam = ann.element ? (ann.element.shape === 'bracing' ? 'This bracing line' : labelNaam(ann.element) || ann.element.bolt?.name || 'This element') : 'This element';
     toonEigenschappenHint({ naam, open, nogBezig: () => geselecteerd === ann.id });
   });
   // The editing guide for the selected kind, when its properties are on show.
   bijEigenschappen((ann) => {
+    if (!ONZE.includes(ann?.type)) return;
     const soort = ann.type === BOUTEN ? 'bout-sel' : ann.type === SECTIE ? 'sectie-sel'
       : ann.element?.shape === 'bracing' ? 'bracing-sel' : 'lid-sel';
     toonGids(soort, { nogBezig: () => geselecteerd === ann.id });
