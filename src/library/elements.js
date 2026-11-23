@@ -671,6 +671,13 @@ function sectiePaneel() {
         const nu = cadView(cad, e.item.view)?.id;
         veld(el, 'View', keuze(cad.map((v) => [v.id, v.name]), nu,
           (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
+        // A strap (Multi-Brace) is as long as it needs to be.
+        const vw = cadView(cad, e.item.view);
+        if (vw?.stretch) {
+          veld(el, 'Length (mm)', getal(Math.round(Number(e.item.lengthMm) || vw.h), (n) => {
+            if (n > 20) werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, lengthMm: n }; });
+          }));
+        }
       } else {
         veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (side on)']], e.item.view === 'elevation' ? 'elevation' : 'section',
           (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));

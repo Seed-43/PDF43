@@ -47,14 +47,37 @@ export function cadView(views, view) {
     || views.find((v) => v.id === 'front') || views[0];
 }
 
-/** The view as lines in mm, centred: { w, h, lijnen: [[[x,y]...]...] }. */
-export function cadVorm(v) {
+/** The view as lines in mm, centred: { w, h, paden: [[[x,y]...]...] }. */
+export function cadVorm(v, lengte) {
   const paden = v.p.map((p) => {
     const uit = [];
     for (let i = 0; i < p.length; i += 2) uit.push([p[i] / 10, p[i + 1] / 10]);
     return uit;
   });
+  if (v.stretch && lengte > 0 && Math.abs(lengte - v.h) > 0.5) return gerekt(v, paden, lengte);
   return { w: v.w, h: v.h, paden };
+}
+
+/**
+ * A strap (Multi-Brace) at another length: its outline drawn to that length
+ * and the pattern inside (holes) repeated along it, whole holes only.
+ */
+function gerekt(v, paden, L) {
+  const hw = v.w / 2, hh = v.h / 2;
+  const isRand = (p) => {
+    const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]);
+    return Math.max(...xs) - Math.min(...xs) > v.w * 0.9 || Math.max(...ys) - Math.min(...ys) > v.h * 0.5;
+  };
+  const binnen = paden.filter((p) => !isRand(p));
+  const uit = [[[-hw, -L / 2], [hw, -L / 2], [hw, L / 2], [-hw, L / 2], [-hw, -L / 2]]];
+  for (let k = 0; -L / 2 + k * v.h < L / 2; k++) {
+    const dy = -L / 2 + hh + k * v.h;
+    for (const p of binnen) {
+      const q = p.map(([x, y]) => [x, y + dy]);
+      if (q.every(([, y]) => y >= -L / 2 + 0.5 && y <= L / 2 - 0.5)) uit.push(q);
+    }
+  }
+  return { w: v.w, h: L, paden: uit };
 }
 
 export const isCadGeladen = () => !!data;
