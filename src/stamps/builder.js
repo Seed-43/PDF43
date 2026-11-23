@@ -7,6 +7,7 @@
 
 import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan, STANDAARD, merkVerwijderd, merkTerug } from './families.js';
 import { opmaak } from './render.js';
+import { zorgStijl, leesTab } from './panel.js';
 import { laadProfiel, bewaarProfiel, PROFIEL_VELDEN, inktPlaatje } from './profile.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
@@ -40,7 +41,9 @@ function kiesBestand(accept) {
 export function openBouwer(families, api, opslaan) {
   let lijst = kopie(families);
   const oorspronkelijk = JSON.stringify(families);
-  let gekozen = lijst[0]?.id || null;   // family id, or 'profiel'
+  // The tab: the one the drawer is on; the first family of it is shown.
+  let tab = leesTab();
+  let gekozen = (lijst.find((f) => groepVan(f) === tab) || lijst[0])?.id || null;   // family id, or 'profiel'
   let gekozenVeld = null;               // key of the field selected in the sheet editor
   let profiel = laadProfiel();
   let profielGewijzigd = false;
@@ -49,6 +52,10 @@ export function openBouwer(families, api, opslaan) {
   const achter = maak('div', 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000;display:flex;align-items:center;justify-content:center;');
   const venster = maak('div', 'width:min(1100px,96vw);height:min(760px,92vh);display:flex;flex-direction:column;background:var(--theme-app-menu-bg,#fff);color:var(--theme-app-menu-text,#222);border:1px solid var(--theme-app-menu-sidebar-border,#888);box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:12px;');
   const kop = maak('div', 'padding:10px 14px;font-size:14px;font-weight:bold;border-bottom:1px solid var(--theme-app-menu-divider,#ddd);', 'Seed43 Stamp Builder');
+  // Tabs like the Stamps drawer: Stamps | Sheets | Memos, and My details on the right.
+  zorgStijl();
+  const tabs = maak('div', '--acc:var(--theme-accent,#0078d7);--rand:var(--theme-app-menu-divider,#ddd);--hover:var(--theme-app-menu-item-hover,#eef);');
+  tabs.className = 's43p-tabs';
   const midden = maak('div', 'flex:1;display:flex;min-height:0;');
   const links = maak('div', 'width:230px;border-right:1px solid var(--theme-app-menu-divider,#ddd);display:flex;flex-direction:column;');
   const lijstEl = maak('div', 'flex:1;overflow:auto;');
@@ -57,7 +64,7 @@ export function openBouwer(families, api, opslaan) {
   const voet = maak('div', 'display:flex;justify-content:flex-end;gap:6px;padding:8px 12px;border-top:1px solid var(--theme-app-menu-divider,#ddd);');
   links.append(lijstEl, linksKnoppen);
   midden.append(links, rechts);
-  venster.append(kop, midden, voet);
+  venster.append(kop, tabs, midden, voet);
   achter.appendChild(venster);
 
   const fam = () => lijst.find((f) => f.id === gekozen);
@@ -81,22 +88,36 @@ export function openBouwer(families, api, opslaan) {
     return s;
   }
 
-  // ── left: the families, grouped ─────────────────────────────────────
+  // ── top: the tabs and My details ────────────────────────────────────
+  function tekenTabs() {
+    tabs.replaceChildren();
+    for (const [g, titel] of Object.entries(GROEPEN)) {
+      const t = maak('button', '', titel);
+      t.className = 's43p-tabje';
+      t.dataset.aan = g === tab && gekozen !== 'profiel' ? '1' : '0';
+      t.addEventListener('click', () => {
+        tab = g;
+        if (gekozen === 'profiel' || groepVan(fam()) !== g) gekozen = lijst.find((f) => groepVan(f) === g)?.id || null;
+        gekozenVeld = null; tekenAlles();
+      });
+      tabs.appendChild(t);
+    }
+    const mijn = maak('button', gekozen === 'profiel' ? 'background:color-mix(in srgb,var(--acc) 15%,transparent);font-weight:bold;' : '', 'My details…');
+    mijn.className = 's43p-bouwer';
+    mijn.title = 'Your name, initials, company, CPEng number and signature, used to fill stamps';
+    mijn.addEventListener('click', () => { gekozen = 'profiel'; tekenAlles(); });
+    tabs.appendChild(mijn);
+  }
+
+  // ── left: the families of the tab ───────────────────────────────────
   function tekenLijst() {
     lijstEl.innerHTML = '';
-    const p = maak('div', `padding:8px 10px;cursor:pointer;border-left:3px solid #888;${gekozen === 'profiel' ? 'background:var(--theme-app-menu-item-hover,#eef);font-weight:bold;' : ''}`, 'My details');
-    p.title = 'Your name, initials, company, CPEng number and signature, used to fill stamps';
-    p.addEventListener('click', () => { gekozen = 'profiel'; tekenAlles(); });
-    lijstEl.appendChild(p);
-    for (const [g, titel] of Object.entries(GROEPEN)) {
-      const inGroep = lijst.filter((f) => groepVan(f) === g);
-      if (!inGroep.length) continue;
-      lijstEl.appendChild(maak('div', 'padding:8px 10px 2px;font-weight:bold;opacity:.65;font-size:11px;', titel.toUpperCase()));
-      for (const f of inGroep) {
-        const r = maak('div', `padding:6px 10px;cursor:pointer;border-left:3px solid ${f.color || '#c0392b'};${f.id === gekozen ? 'background:var(--theme-app-menu-item-hover,#eef);font-weight:bold;' : ''}`, f.name);
-        r.addEventListener('click', () => { gekozen = f.id; gekozenVeld = null; tekenAlles(); });
-        lijstEl.appendChild(r);
-      }
+    const inTab = lijst.filter((f) => groepVan(f) === tab);
+    if (!inTab.length) lijstEl.appendChild(maak('div', 'padding:10px;opacity:.7;', `No ${GROEPEN[tab].toLowerCase()} yet: make one with New… below.`));
+    for (const f of inTab) {
+      const r = maak('div', `padding:6px 10px;cursor:pointer;border-left:3px solid ${f.color || '#c0392b'};${f.id === gekozen ? 'background:var(--theme-app-menu-item-hover,#eef);font-weight:bold;' : ''}`, f.name);
+      r.addEventListener('click', () => { gekozen = f.id; gekozenVeld = null; tekenAlles(); });
+      lijstEl.appendChild(r);
     }
   }
 
@@ -445,14 +466,17 @@ export function openBouwer(families, api, opslaan) {
 
   function tekenAlles() {
     const y = rechts.scrollTop;
-    tekenLijst(); tekenRechts();
+    // A family moved to another group (Group field), or a new one: its tab opens.
+    const f = fam();
+    if (f && gekozen !== 'profiel' && groepVan(f) !== tab) tab = groepVan(f);
+    tekenTabs(); tekenLijst(); tekenRechts();
     rechts.scrollTop = y;
   }
 
   // ── buttons ─────────────────────────────────────────────────────────
   const nieuwMenu = keuzelijst({
     '': 'New…', stamp: 'Stamp (table)', banner: 'Stamp (banner)', picture: 'Stamp from a picture…',
-    page: 'Sheet from the open page', sheet: 'Blank sheet (A3)', form: 'Blank form (A4)',
+    page: 'Sheet from the open page', sheet: 'Blank sheet (A3)', form: 'Blank memo (A4)',
   }, '', async (w) => {
     nieuwMenu.value = '';
     let f = null;
@@ -481,7 +505,7 @@ export function openBouwer(families, api, opslaan) {
     knop('Delete', () => {
       const f = fam(); if (!f) return;
       if (!confirm(`Delete "${f.name}"? Stamps and sheets already placed keep showing.`)) return;
-      lijst = lijst.filter((x) => x.id !== f.id); verwijderd.add(f.id); gekozen = lijst[0]?.id || null; tekenAlles();
+      lijst = lijst.filter((x) => x.id !== f.id); verwijderd.add(f.id); gekozen = (lijst.find((x) => groepVan(x) === tab) || lijst[0])?.id || null; tekenAlles();
     }),
     knop('Reset', () => {
       const f = fam();

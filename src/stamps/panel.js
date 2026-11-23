@@ -40,7 +40,15 @@ const CSS = `
 ${QA_CSS}
 `;
 
-function leesTab() {
+/** The tab and button styles, for the drawer and the Stamp Builder. */
+export function zorgStijl() {
+  let s = document.getElementById(STIJL_ID);
+  if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
+  if (s.textContent !== CSS) s.textContent = CSS;
+}
+
+/** The tab the Stamps drawer is on (stamp, sheet or form). */
+export function leesTab() {
   try { const t = localStorage.getItem(TAB); return t in GROEPEN ? t : 'stamp'; } catch { return 'stamp'; }
 }
 
@@ -114,9 +122,7 @@ function vulLijst(lijst, families, g, icoon, kies, blad, zoekt) {
  * The list for the Stamps tab of the Seed43 drawer. Returns { el, ververs(families) }.
  */
 export function maakStempelLijst({ families, icoon, kies, blad, bouwer, qa }) {
-  let s = document.getElementById(STIJL_ID);
-  if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
-  if (s.textContent !== CSS) s.textContent = CSS;
+  zorgStijl();
   const el = document.createElement('div');
   el.className = 's43p-tab';
   let tab = leesTab();

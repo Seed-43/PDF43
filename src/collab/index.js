@@ -3,6 +3,7 @@
 // encrypted. The server: https://collab.seed43.org (see the Seed43 Collab design).
 
 import { registreerLadeTab, toonLadeTab } from '../eigenschappen.js';
+import { maakQa, zetStoelBron, verversQa, stoelKleur, stopQa, QA_CSS } from '../stamps/qa.js';
 import { uitleg } from './client.js';
 import * as S from './sessions.js';
 import { Koppeling } from './sync.js';
@@ -59,6 +60,8 @@ const CSS = `
 .s43c-band i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2ecc71;font-style:normal;}
 .s43c-band i[data-staat="alleen-lezen"],.s43c-band i[data-staat="gepauzeerd"]{background:#f5c04a;}
 .s43c-band i[data-staat="offline"],.s43c-band i[data-staat="einde"],.s43c-band i[data-staat="fout"]{background:#ff6b6b;}
+.s43c-qa{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;}
+${QA_CSS}
 `;
 
 let api0 = null;
@@ -308,6 +311,9 @@ function sessieKaart(s) {
   if (st?.seats) {
     for (const seat of st.seats) {
       const r = maak('div', 's43c-stoel');
+      // The seat's QA colour (By seat): seat 1 Check 1, seat 2 Check 2, seat 3 Check 3.
+      const qk = stoelKleur(seat.seat);
+      if (qk) { const stip = maak('i', 's43c-qa'); stip.style.background = qk.kleur; stip.title = `Seat ${seat.seat} draws as ${qk.label} with QA colours By seat`; r.appendChild(stip); }
       r.appendChild(maak('span', null, `${seat.seat}. ${seat.name}${seat.owner ? ' (owner)' : ''}${seat.you ? ' · you' : ''}`));
       if (s.role === 'owner' && !seat.owner) r.appendChild(knop('Remove', async () => { await S.verwijderStoel(s, seat.seat); await ververs(); }));
       kaart.appendChild(r);
@@ -352,6 +358,7 @@ async function vraag(tekst) {
 }
 
 function teken() {
+  verversQa();
   if (!wortel) return;
   const w = maak('div', 's43c');
   if (melding) w.appendChild(maak('div', melding.soort === 'fout' ? 's43c-fout' : 's43c-melding', melding.tekst));
@@ -470,14 +477,19 @@ export function startCollab(api) {
   let s = document.getElementById(STIJL_ID);
   if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
   if (s.textContent !== CSS) s.textContent = CSS;
+  // QA colours By seat: this PC's seat in the shared PDF on show.
+  zetStoelBron(() => [...koppelingen.values()].find((x) => !x.stop && x.actief() && x.mijnStoel != null)?.mijnStoel ?? null);
   registreerLadeTab('collab', {
     bouw: () => {
+      const tab = maak('div');
+      tab.appendChild(maakQa(api, 'seed43Stamp', { collab: true }));
       wortel = maak('div');
+      tab.appendChild(wortel);
       teken();
       S.limieten().then((l) => { limieten = l; teken(); }).catch(() => {});
       laadSteun();
       ververs().catch(() => {});
-      return wortel;
+      return tab;
     },
     ververs: () => { teken(); ververs().catch(() => {}); },
   });
@@ -489,5 +501,7 @@ export function stopCollab() {
   for (const k of koppelingen.values()) k.sluit();
   koppelingen.clear();
   registreerLadeTab('collab', null);
+  stopQa('collab');
+  zetStoelBron(null);
   wortel = null;
 }

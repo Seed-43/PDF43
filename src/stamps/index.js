@@ -470,7 +470,7 @@ export async function stopStamps(api) {
   if (!actief) return;
   actief = false;
   clearInterval(achterKlok);
-  stopQa();
+  stopQa('stamps');
   stopInPlaats();
   registreerStempelTab(null);
   ladeLijst = null;
