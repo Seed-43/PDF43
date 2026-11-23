@@ -993,6 +993,7 @@ export function startElementen(api) {
   laadBibliotheek(api).catch(() => {});
   // Maker's drawings for fixings; redraw what is on the page once they are in.
   laadCad(api, () => { try { api.redrawAnnotations?.(); } catch {} });
+  registreerCatalogus(api);
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
@@ -1205,4 +1206,93 @@ function meervoudPaneel(api, anns, opnieuw) {
   }
   el.appendChild(tip('Select one element to see all its properties.'));
   return el;
+}
+
+// ── Catalogue sheet: every maker's drawing in every view ───────────────────
+//
+// A command (Seed43 › MCP tool ext_…__place_maker_drawings) that lays out each
+// fixing with a maker's drawing (MiTek CAD) in all its views, one product per
+// block, row by row, flowing onto the next pages. For checking the drawings.
+
+const CATALOGUS = 'place_maker_drawings';
+
+async function plaatsCatalogus(api, { scale = 5, startPage = 1, region } = {}) {
+  const lib = await laadBibliotheek(api);
+  await laadCad(api);
+  const n = Math.max(1, Math.round(scale));
+  const schaal = { ptsPerMm: PT_PER_PAPER_MM / n, scaleText: `1:${n}` };
+  const producten = [];
+  const gezien = new Set();
+  for (const c of lib?.categories || []) {
+    if (!BEVESTIGINGEN.includes(c.shape)) continue;
+    if (region && regioVan(c) !== region) continue;
+    for (const it of c.items) {
+      const cad = cadVan(it);
+      if (!cad) continue;
+      const sleutel = cad;   // one block per drawing (SS and DG share one)
+      if (gezien.has(sleutel)) continue;
+      gezien.add(sleutel);
+      producten.push({ c, it, cad });
+    }
+  }
+  const pages = api.getPageCount();
+  let page = Math.max(1, Math.min(pages, startPage));
+  let info = await api.getPageInfo(page);
+  const MARGE = 20 * PT_PER_PAPER_MM, TUSSEN = 8 * PT_PER_PAPER_MM;
+  let x = MARGE, y = MARGE, rijH = 0;
+  const ops = [];
+  const over = [];
+  for (const { c, it, cad } of producten) {
+    const delen = cad.map((v) => {
+      const element = { category: c.name, shape: c.shape, item: { ...kopie(it), view: v.id }, rotation: 0, label: true, catId: c.id, ...schaal };
+      return { element, m: sectieMaat(element) };
+    });
+    const blokW = delen.reduce((s, d) => s + d.m.w, 0) + TUSSEN * (delen.length - 1);
+    const blokH = Math.max(...delen.map((d) => d.m.h));
+    if (x > MARGE && x + blokW > info.width - MARGE) { x = MARGE; y += rijH + TUSSEN * 2; rijH = 0; }
+    if (y + blokH > info.height - MARGE) {
+      if (page >= pages) { over.push(it.name); continue; }
+      page += 1; info = await api.getPageInfo(page); x = MARGE; y = MARGE; rijH = 0;
+    }
+    for (const { element, m } of delen) {
+      ops.push({ op: 'create', annotation: { type: SECTIE, page, x, y, width: m.w, height: m.h, element, subject: it.name } });
+      x += m.w + TUSSEN;
+    }
+    x += TUSSEN * 2;
+    rijH = Math.max(rijH, blokH);
+  }
+  for (const p of new Set(ops.map((o) => o.annotation.page))) await api.waitForPageAnnotations?.(p);
+  if (ops.length) api.applyAnnotationBatch(ops);
+  api.redrawAnnotations?.();
+  return { ok: true, products: producten.length - over.length, drawings: ops.length, lastPage: page, notPlaced: over };
+}
+
+function registreerCatalogus(api) {
+  if (typeof api.registerCommand !== 'function') return;
+  try { api.unregisterCommand?.(CATALOGUS); } catch {}
+  try {
+    api.registerCommand({
+      name: CATALOGUS,
+      title: "Place all maker's drawings",
+      description: "Lay out every fixing that has a maker's drawing (MiTek CAD), in every view (plan, front, side…), on the open PDF: one product per block, row by row from the start page, flowing onto the next pages. For checking the drawings. Products that do not fit on the remaining pages are listed in notPlaced.",
+      effect: 'mutate',
+      timeoutMs: 60000,
+      inputSchema: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          scale: { type: 'number', description: 'Drawing scale 1:n (default 5).' },
+          startPage: { type: 'integer', description: 'First page to use (default 1).' },
+          region: { type: 'string', description: 'Only this library region, for example "New Zealand".' },
+        },
+      },
+      outputSchema: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' }, products: { type: 'integer' }, drawings: { type: 'integer' },
+          lastPage: { type: 'integer' }, notPlaced: { type: 'array', items: { type: 'string' } },
+        },
+      },
+      handler: (args) => plaatsCatalogus(api, args),
+    });
+  } catch (e) { console.warn('[seed43] catalogue command:', e); }
 }
