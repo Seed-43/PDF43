@@ -3,7 +3,7 @@
 // encrypted. The server: https://collab.seed43.org (see the Seed43 Collab design).
 
 import { registreerLadeTab, toonLadeTab } from '../eigenschappen.js';
-import { maakQa, zetStoelBron, zetNaamBron, verversQa, stoelKleur, stopQa, qaNaam, QA_CSS } from '../stamps/qa.js';
+import { maakQa, zetStoelBron, zetNaamBron, zetKleurBron, verversQa, stoelKleur, stopQa, qaNaam, QA_KLEUREN, QA_CSS } from '../stamps/qa.js';
 import { uitleg } from './client.js';
 import * as S from './sessions.js';
 import { Koppeling } from './sync.js';
@@ -311,9 +311,9 @@ function sessieKaart(s) {
   if (st?.seats) {
     for (const seat of st.seats) {
       const r = maak('div', 's43c-stoel');
-      // The seat's QA colour (By seat): seat 1 Check 1, seat 2 Check 2, seat 3 Check 3.
+      // The seat's QA colour: seat 1 Check 1, seat 2 Check 2, seat 3 Check 3.
       const qk = stoelKleur(seat.seat);
-      if (qk) { const stip = maak('i', 's43c-qa'); stip.style.background = qk.kleur; stip.title = `Seat ${seat.seat} draws as ${qk.label} (${qaNaam(qk)}) with QA colours By seat`; r.appendChild(stip); }
+      if (qk) { const stip = maak('i', 's43c-qa'); stip.style.background = qk.kleur; stip.title = `Seat ${seat.seat} draws as ${qk.label} (${qaNaam(qk)})`; r.appendChild(stip); }
       r.appendChild(maak('span', null, `${seat.seat}. ${seat.name}${seat.owner ? ' (owner)' : ''}${seat.you ? ' · you' : ''}`));
       if (s.role === 'owner' && !seat.owner) r.appendChild(knop('Remove', async () => { await S.verwijderStoel(s, seat.seat); await ververs(); }));
       kaart.appendChild(r);
@@ -372,6 +372,10 @@ function teken() {
   naam.addEventListener('change', () => S.zetNaam(naam.value));
   naamVak.appendChild(naam);
   w.appendChild(naamVak);
+
+  // The shared PDF on screen: its QA colours (the owner sets them).
+  const opScherm = [...koppelingen.values()].find((x) => !x.stop && x.actief() && x.mijnStoel != null);
+  if (opScherm) w.appendChild(qaKleurenVak(opScherm));
 
   if (concept) {
     const k = maak('div', 's43c-kaart');
@@ -468,6 +472,46 @@ function tekenBand() {
   band.style.top = `${v ? v.top : 0}px`;
 }
 
+// ── QA colours for everyone in a shared PDF (set by the owner) ──────────
+
+const QA_TYPE = 'seed43CollabQa';
+
+function gedeeldeKleuren() {
+  return api0?.getAnnotations?.().find((a) => a.type === QA_TYPE)?.qaColours || null;
+}
+
+function zetGedeeldeKleur(id, kleur) {
+  const al = api0.getAnnotations().find((a) => a.type === QA_TYPE);
+  const qaColours = { ...(al?.qaColours || {}), [id]: kleur };
+  if (al) api0.applyAnnotationBatch([{ op: 'update', id: al.id, changes: { qaColours } }]);
+  else api0.applyAnnotationBatch([{ op: 'create', annotation: { type: QA_TYPE, page: 1, x: 0, y: 0, width: 0, height: 0, opacity: 0, qaColours, subject: 'Seed43 Collab QA colours' } }]);
+  verversQa();
+  teken();
+}
+
+/** In the shared PDF on screen: the owner picks the three check colours; the others see them. */
+function qaKleurenVak(k) {
+  const vak = maak('div', 's43c-kaart');
+  const eigenaar = k.s.role === 'owner';
+  vak.appendChild(maak('div', 's43c-titel', 'QA colours for everyone'));
+  vak.appendChild(maak('div', 's43c-klein', eigenaar
+    ? 'You shared this PDF: the colours you pick here are used by all three seats.'
+    : 'Set by the owner of this PDF.'));
+  for (const id of ['c1', 'c2', 'c3']) {
+    const basis = QA_KLEUREN.find((x) => x.id === id);
+    const nu = gedeeldeKleuren()?.[id] || basis.kleur;
+    const r = maak('div', 's43c-stoel');
+    const invoer = maak('input');
+    invoer.type = 'color'; invoer.value = nu; invoer.disabled = !eigenaar;
+    invoer.style.cssText = 'width:34px;height:22px;padding:0;border:none;background:none;flex:none;';
+    invoer.addEventListener('change', () => zetGedeeldeKleur(id, invoer.value));
+    r.append(invoer, maak('span', null, `${basis.label}${qaNaam(basis) !== basis.label ? ` · ${qaNaam(basis)}` : ''}`));
+    if (eigenaar && gedeeldeKleuren()?.[id]) r.appendChild(knop('Reset', async () => zetGedeeldeKleur(id, basis.kleur)));
+    vak.appendChild(r);
+  }
+  return vak;
+}
+
 export function startCollab(api) {
   api0 = api;
   startPaginaSlot(() => !!actieveKoppeling());
@@ -477,11 +521,23 @@ export function startCollab(api) {
   let s = document.getElementById(STIJL_ID);
   if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
   if (s.textContent !== CSS) s.textContent = CSS;
-  // QA colours By seat: this PC's seat in the shared PDF on show.
+  // QA colours: this PC's seat in the shared PDF on show decides its colour.
   const opScherm = () => [...koppelingen.values()].find((x) => !x.stop && x.actief() && x.mijnStoel != null);
   zetStoelBron(() => opScherm()?.mijnStoel ?? null);
   // Check 1-3 take the names of the people in seats 1-3.
   zetNaamBron((stoel) => opScherm()?.namen.get(stoel) || null);
+  // The owner's colours for the checks travel with the shared PDF as an
+  // invisible settings markup (synced like any markup, locked for the others).
+  try {
+    api.registerAnnotationType(QA_TYPE, {
+      drawMode: 'click', cursor: 'default',
+      create() { return null; },
+      render() {},
+      getBounds() { return { x: 0, y: 0, width: 0, height: 0 }; },
+      hitTest() { return false; },
+    });
+  } catch (e) { console.warn('[seed43 collab] QA colours type:', e); }
+  zetKleurBron((id) => (opScherm() ? gedeeldeKleuren()?.[id] : null) || null);
   registreerLadeTab('collab', {
     bouw: () => {
       const tab = maak('div');
@@ -507,5 +563,6 @@ export function stopCollab() {
   stopQa('collab');
   zetStoelBron(null);
   zetNaamBron(null);
+  zetKleurBron(null);
   wortel = null;
 }
