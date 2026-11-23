@@ -6,6 +6,9 @@
 // seat 2 as Check 2 and seat 3 as Check 3, so the three people need not pick.
 // Outside a shared PDF it does nothing.
 //
+// In a shared PDF the three checks carry the names of the people in seats
+// 1-3 (once they typed their name), and the Collab bar has no Approved.
+//
 // One setting and one watcher for the whole extension; the bar shows in the
 // Stamps tab and in the Collab tab, and both stay in step.
 //
@@ -22,6 +25,7 @@ export const QA_KLEUREN = [
 ];
 
 const PER_STOEL = { 1: 'c1', 2: 'c2', 3: 'c3' };
+const STOEL_VAN = { c1: 1, c2: 2, c3: 3 };
 
 /** The QA colour of a Collab seat (1-3), or null. */
 export function stoelKleur(stoel) {
@@ -36,6 +40,7 @@ let doc = null, bekend = new Set();
 const houders = new Set();       // who started the watcher (stamps, collab)
 const balken = new Set();        // redraw functions of the bars on show
 let stoelBron = () => null;      // this PC's seat in the shared PDF on show
+let naamBron = () => null;       // the name of the person in a seat of that PDF
 
 function leesKeuze() {
   try { return localStorage.getItem(OPSLAG) || 'off'; } catch { return 'off'; }
@@ -43,6 +48,17 @@ function leesKeuze() {
 
 /** Collab tells which seat this PC has in the shared PDF on show (or null). */
 export function zetStoelBron(fn) { stoelBron = typeof fn === 'function' ? fn : () => null; }
+
+/** Collab tells the name of the person in a seat (1-3) of the shared PDF on show. */
+export function zetNaamBron(fn) { naamBron = typeof fn === 'function' ? fn : () => null; }
+
+/** What a choice is called: Check 1-3 take the seat's name in a shared PDF. */
+export function qaNaam(k) {
+  const stoel = STOEL_VAN[k?.id];
+  let naam = null;
+  if (stoel) { try { naam = naamBron(stoel); } catch {} }
+  return (naam && String(naam).trim()) || k?.label || '';
+}
 
 /** The colour new markups take now, or null. */
 function huidig() {
@@ -62,7 +78,7 @@ function tik() {
     bekend.add(a.id);
     if (a.locked || a.type === eigenType || String(a.type).startsWith('seed43')) continue;
     const kleur = /highlight/i.test(a.type) && k.markeer ? k.markeer : k.kleur;
-    ops.push({ op: 'update', id: a.id, changes: { color: kleur, strokeColor: kleur, subject: a.subject ? a.subject : k.label } });
+    ops.push({ op: 'update', id: a.id, changes: { color: kleur, strokeColor: kleur, subject: a.subject ? a.subject : qaNaam(k) } });
   }
   if (ops.length) { try { api.applyAnnotationBatch(ops); api.redrawAnnotations?.(); } catch (e) { console.warn('[seed43 qa]', e); } }
 }
@@ -103,20 +119,22 @@ export function maakQa(a, type, { collab = false } = {}) {
     rij.replaceChildren();
     for (const k of QA_KLEUREN) {
       if (k.collab && !collab && keuze !== k.id) continue;
+      if (collab && k.id === 'ok') continue;   // Collab: only the three checks
       const b = document.createElement('button');
       b.className = 's43q-knop';
       b.dataset.aan = k.id === keuze ? '1' : '0';
       b.title = k.id === 'seat' ? 'In a shared PDF: seat 1 draws as Check 1, seat 2 as Check 2, seat 3 as Check 3'
-        : k.kleur ? `Draw as ${k.label}: new markups turn this colour` : 'Markups keep their own colours';
+        : k.kleur ? `Draw as ${qaNaam(k)}${qaNaam(k) !== k.label ? ` (${k.label})` : ''}: new markups turn this colour` : 'Markups keep their own colours';
       b.innerHTML = k.id === 'seat'
         ? `<i style="background:${stoelKleur(1).kleur}"></i><i style="background:${stoelKleur(2).kleur}"></i><i style="background:${stoelKleur(3).kleur}"></i>${k.label}`
-        : k.kleur ? `<i style="background:${k.kleur}"></i>${k.label}` : k.label;
+        : k.kleur ? `<i style="background:${k.kleur}"></i>` : k.label;
+      if (k.kleur && k.id !== 'seat') b.appendChild(document.createTextNode(qaNaam(k)));
       b.addEventListener('click', () => kies(k.id));
       rij.appendChild(b);
     }
     if (keuze === 'seat') {
       const s = stoelBron(), k = stoelKleur(s);
-      noot.textContent = k ? `You are in seat ${s}: you draw as ${k.label}.` : 'By seat works in a shared PDF: seat 1 is Check 1, seat 2 Check 2, seat 3 Check 3.';
+      noot.textContent = k ? `You are in seat ${s}: you draw as ${k.label}${qaNaam(k) !== k.label ? ` (${qaNaam(k)})` : ''}.` : 'By seat works in a shared PDF: seat 1 is Check 1, seat 2 Check 2, seat 3 Check 3.';
       noot.hidden = false;
     } else noot.hidden = true;
   };

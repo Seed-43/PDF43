@@ -3,7 +3,7 @@
 // encrypted. The server: https://collab.seed43.org (see the Seed43 Collab design).
 
 import { registreerLadeTab, toonLadeTab } from '../eigenschappen.js';
-import { maakQa, zetStoelBron, verversQa, stoelKleur, stopQa, QA_CSS } from '../stamps/qa.js';
+import { maakQa, zetStoelBron, zetNaamBron, verversQa, stoelKleur, stopQa, qaNaam, QA_CSS } from '../stamps/qa.js';
 import { uitleg } from './client.js';
 import * as S from './sessions.js';
 import { Koppeling } from './sync.js';
@@ -313,7 +313,7 @@ function sessieKaart(s) {
       const r = maak('div', 's43c-stoel');
       // The seat's QA colour (By seat): seat 1 Check 1, seat 2 Check 2, seat 3 Check 3.
       const qk = stoelKleur(seat.seat);
-      if (qk) { const stip = maak('i', 's43c-qa'); stip.style.background = qk.kleur; stip.title = `Seat ${seat.seat} draws as ${qk.label} with QA colours By seat`; r.appendChild(stip); }
+      if (qk) { const stip = maak('i', 's43c-qa'); stip.style.background = qk.kleur; stip.title = `Seat ${seat.seat} draws as ${qk.label} (${qaNaam(qk)}) with QA colours By seat`; r.appendChild(stip); }
       r.appendChild(maak('span', null, `${seat.seat}. ${seat.name}${seat.owner ? ' (owner)' : ''}${seat.you ? ' · you' : ''}`));
       if (s.role === 'owner' && !seat.owner) r.appendChild(knop('Remove', async () => { await S.verwijderStoel(s, seat.seat); await ververs(); }));
       kaart.appendChild(r);
@@ -478,7 +478,10 @@ export function startCollab(api) {
   if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
   if (s.textContent !== CSS) s.textContent = CSS;
   // QA colours By seat: this PC's seat in the shared PDF on show.
-  zetStoelBron(() => [...koppelingen.values()].find((x) => !x.stop && x.actief() && x.mijnStoel != null)?.mijnStoel ?? null);
+  const opScherm = () => [...koppelingen.values()].find((x) => !x.stop && x.actief() && x.mijnStoel != null);
+  zetStoelBron(() => opScherm()?.mijnStoel ?? null);
+  // Check 1-3 take the names of the people in seats 1-3.
+  zetNaamBron((stoel) => opScherm()?.namen.get(stoel) || null);
   registreerLadeTab('collab', {
     bouw: () => {
       const tab = maak('div');
@@ -503,5 +506,6 @@ export function stopCollab() {
   registreerLadeTab('collab', null);
   stopQa('collab');
   zetStoelBron(null);
+  zetNaamBron(null);
   wortel = null;
 }
