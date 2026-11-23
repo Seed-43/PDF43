@@ -20,7 +20,13 @@ const TEKST_PT = 7;
 export const BRACING_STANDAARD = { tag: 'JHD', wallOffset: 1, tagOffset: 1, both: false, flip: false, above: false, round05: false, fromEnd: 0 };
 
 /** Common NZ bracing element codes offered in the tag list (free text is fine too). */
-export const BRACING_CODES = ['JHD', 'GS1-N', 'GS2-N', 'GSP-H', 'GS1-H', 'GS2-H', 'BL1-H', 'BLG-H', 'BLP-H', 'EP1', 'EPB'];
+export const BRACING_CODES = ['JHD', 'GS1-N', 'GS2-N', 'GSP-H', 'GS1-H', 'GS2-H', 'BL1-H', 'BLG-H', 'BLP-H', 'EP1', 'EPB',
+  // Rod and strap bracing (23 November 2026): drawn as a solid line with an
+  // end connector at each end instead of the dashed wall line.
+  'RB12', 'RB16', 'RB20', 'RB25', 'RB32', 'DB15', 'DB20', 'DB25'];
+
+/** Rod or strap bracing (Reid Brace RB.., Donobrace DB..): solid line, end connectors. */
+export const isStaafBracing = (tag) => /^(RB|DB)\d/i.test(String(tag || '').trim());
 
 const num = (v, d = 0) => (Number.isFinite(+v) ? +v : d);
 
@@ -90,9 +96,29 @@ export function tekenBracing(ctx, ann) {
     ctx.lineTo(g.bx + g.sx * o, g.by + g.sy * o);
     ctx.stroke();
   };
+  const staaf = isStaafBracing(g.it.tag);
+  if (staaf) { ctx.setLineDash([]); ctx.lineWidth = 1.3; }
   lijn(g.wo);
   if (g.it.both) lijn(-g.wo);
   ctx.setLineDash([]);
+  if (staaf) {
+    // End connector: a small filled plate at each end, across the line.
+    const ux = g.bx - g.ax, uy = g.by - g.ay, l = Math.hypot(ux, uy) || 1;
+    const ex = ux / l, ey = uy / l, px = -ey, py = ex, a = 3.2, b = 2.2;
+    ctx.fillStyle = LIJN;
+    for (const o of g.it.both ? [g.wo, -g.wo] : [g.wo]) {
+      for (const [x, y, r] of [[g.ax, g.ay, 1], [g.bx, g.by, -1]]) {
+        const cx = x + g.sx * o, cy = y + g.sy * o;
+        ctx.beginPath();
+        ctx.moveTo(cx + px * a, cy + py * a);
+        ctx.lineTo(cx + px * a + ex * b * 2 * r, cy + py * a + ey * b * 2 * r);
+        ctx.lineTo(cx - px * a + ex * b * 2 * r, cy - py * a + ey * b * 2 * r);
+        ctx.lineTo(cx - px * a, cy - py * a);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
   if (ann.element.label !== false) {
     // Readable: never upside down; the text sits on the far side of the line.
     let hoek = Math.atan2(g.uy, g.ux);
