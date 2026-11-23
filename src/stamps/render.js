@@ -320,11 +320,33 @@ function geplaatst(fam, stamp, ann, context) {
       const bg = plaatje(fam.background);
       if (bg) c.drawImage(bg, 0, 0, w, h);
       c.strokeStyle = kleur; c.fillStyle = kleur;
-      for (const p of fam.frame || []) {
+      // A smart border (smart.js) first, then the sheet's own frame lines and boxes.
+      for (const p of [...(fam.smart || []), ...(fam.frame || [])]) {
         c.lineWidth = p.lw || 0.6;
         if (p.t === 'rect') c.strokeRect(p.x, p.y, p.w, p.h);
         else if (p.t === 'line') { c.beginPath(); c.moveTo(p.x1, p.y1); c.lineTo(p.x2, p.y2); c.stroke(); }
-        else if (p.t === 'text') {
+        else if (p.t === 'path') {
+          // Smart border line work (smart.js): a polyline in its own weight and colour.
+          c.save();
+          if (p.c) c.strokeStyle = p.c;
+          c.lineCap = 'round'; c.lineJoin = 'round';
+          c.beginPath(); c.moveTo(p.p[0], p.p[1]);
+          for (let i = 2; i < p.p.length; i += 2) c.lineTo(p.p[i], p.p[i + 1]);
+          c.stroke(); c.restore();
+        } else if (p.t === 'img') {
+          const b = plaatje(p.src);
+          if (b) c.drawImage(b, p.x, p.y, p.w, p.h);
+        } else if (p.t === 'text' && (p.bl || p.r || p.w || p.c)) {
+          // Text from a smart border: on its baseline, at its angle, squeezed to its width.
+          c.save();
+          c.translate(p.x, p.y);
+          if (p.r) c.rotate(p.r);
+          c.font = font(p.s || 5, p.b); c.textAlign = 'left'; c.textBaseline = p.bl ? 'alphabetic' : 'top';
+          if (p.c) c.fillStyle = p.c;
+          if (p.w) { const m = c.measureText(p.text).width; if (m > 0) c.scale(p.w / m, 1); }
+          c.fillText(p.text, 0, 0);
+          c.restore();
+        } else if (p.t === 'text') {
           c.font = font(p.s || 5, p.b); c.textAlign = p.align || 'left'; c.textBaseline = 'top';
           c.fillText(p.text, p.x, p.y);
         }

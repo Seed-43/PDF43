@@ -9,6 +9,7 @@ import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan,
 import { opmaak } from './render.js';
 import { zorgStijl, leesTab } from './panel.js';
 import { naarPagina } from '../library/overlay.js';
+import { slimmeRand } from './smart.js';
 import { laadProfiel, bewaarProfiel, PROFIEL_VELDEN, inktPlaatje } from './profile.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
@@ -408,6 +409,31 @@ export function openBouwer(families, api, opslaan) {
     f.width = Math.round(info.width * 100) / 100;
     f.height = Math.round(info.height * 100) / 100;
   }
+  /**
+   * A smart border from the open page: lines and text as vectors, only real
+   * pictures as images (smart.js). Shows its progress over the builder.
+   */
+  async function slimVanPagina(f) {
+    const page = api?.getCurrentPage?.() || 1;
+    if (!api?.readPageContent || !api?.renderPageTile) throw new Error('This needs a newer Open PDF Studio.');
+    const sluier = maak('div', 'position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:5;');
+    const kaart = maak('div', 'background:var(--theme-app-menu-bg,#fff);padding:16px 20px;border-radius:8px;min-width:320px;box-shadow:0 6px 24px rgba(0,0,0,.35);');
+    const kop = maak('div', 'font-weight:bold;margin-bottom:6px;', 'Building a smart border…');
+    const regel = maak('div', 'opacity:.8;', 'Starting…');
+    kaart.append(kop, regel); sluier.appendChild(kaart);
+    venster.style.position = 'relative'; venster.appendChild(sluier);
+    try {
+      const r = await slimmeRand(api, page, (t) => { regel.textContent = t; });
+      f.smart = r.frame;
+      delete f.background;
+      f.width = r.width; f.height = r.height;
+      const s = r.stats;
+      alert(`Smart border built from page ${page}:\n\n${s.paths} lines (from ${s.lines} pieces), ${s.texts} pieces of text, ${s.pictures} picture${s.pictures === 1 ? '' : 's'}.`
+        + '\n\nCheck it against the original. If something looks wrong, use "From the open page: as is" instead.');
+      return true;
+    } finally { sluier.remove(); }
+  }
+
   async function achtergrondVanPlaatje(f) {
     const b = await kiesBestand(['png', 'jpg', 'jpeg', 'webp'], 'Pictures');
     if (!b) return false;
@@ -504,9 +530,10 @@ export function openBouwer(families, api, opslaan) {
       veld('Size', maat);
       const bg = maak('div', 'display:flex;gap:6px;flex-wrap:wrap;');
       bg.append(
-        knop('From the open page', async () => { await achtergrondVanPagina(f); tekenAlles(); }),
+        knop('From the open page: as is', async () => { await achtergrondVanPagina(f); delete f.smart; tekenAlles(); }),
+        knop('From the open page: smart', async () => { if (await slimVanPagina(f)) tekenAlles(); }),
         knop('From a picture…', async () => { if (await achtergrondVanPlaatje(f)) tekenAlles(); }),
-        ...(f.background ? [knop('Remove', () => { delete f.background; tekenAlles(); })] : []),
+        ...(f.background || f.smart ? [knop('Remove', () => { delete f.background; delete f.smart; tekenAlles(); })] : []),
       );
       veld('Background', bg);
       if (groepVan(f) !== 'stamp') {
@@ -576,8 +603,8 @@ export function openBouwer(families, api, opslaan) {
   // New…: only what fits the open tab.
   const NIEUW = {
     stamp: { stamp: 'Stamp (table)', banner: 'Stamp (banner)', picture: 'Stamp from a picture…', area: 'Stamp from an area of the page…' },
-    sheet: { page: 'Sheet from the open page', sheet: 'Blank sheet (A3)' },
-    form: { pageForm: 'Memo from the open page', form: 'Blank memo (A4)' },
+    sheet: { page: 'Sheet from the open page: as is (picture)', pageSmart: 'Sheet from the open page: smart (vectors)', sheet: 'Blank sheet (A3)' },
+    form: { pageForm: 'Memo from the open page: as is (picture)', pageFormSmart: 'Memo from the open page: smart (vectors)', form: 'Blank memo (A4)' },
   };
   const nieuwMenu = keuzelijst({
     '': 'New…', ...NIEUW.stamp, ...NIEUW.sheet, ...NIEUW.form,
@@ -593,6 +620,11 @@ export function openBouwer(families, api, opslaan) {
     if (w === 'area') {
       f = { id: nieuwId(), name: 'Page stamp', layout: 'placed', color: '#1f2328', width: 200, height: 100, fields: [] };
       try { if (!(await achtergrondVanVlak(f))) return; } catch (e) { alert(e.message || e); return; }
+    }
+    if (w === 'pageSmart' || w === 'pageFormSmart') {
+      const blad = w === 'pageSmart';
+      f = { id: nieuwId(), name: blad ? 'My sheet' : 'My memo', group: blad ? 'sheet' : 'form', layout: 'placed', color: '#1f2328', fields: [] };
+      try { if (!(await slimVanPagina(f))) return; } catch (e) { alert(e.message || e); return; }
     }
     if (w === 'page' || w === 'pageForm') {
       f = { id: nieuwId(), name: w === 'page' ? 'My sheet' : 'My memo', group: w === 'page' ? 'sheet' : 'form', layout: 'placed', color: '#1f2328', fields: [] };
