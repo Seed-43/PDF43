@@ -1,5 +1,28 @@
 [
   {
+    "version": "26.11.23",
+    "date": "2026-11-23",
+    "notes": {
+      "New": [
+        "Stamps: the Stamps tab has three tabs, Stamps, Sheets and Memos, with the Stamp Builder button on the same row; the Stamp Builder has the same tabs and a My details button",
+        "Stamps: A1 and A0 drawing sheets, and A2 to A0 paper sizes in the Stamp Builder",
+        "Stamps: double-click a box on a sheet, memo or placed stamp to fill it in right there; Enter or a click elsewhere keeps it, Esc cancels. Properties edits the same values",
+        "Stamps: revisions on sheets are kept as a list. Only the newest can be changed, older ones are greyed out, Add revision starts the next one on a new line, and the sheet shows as many as it has revision rows (the oldest drops off when they are full)",
+        "Stamps: smart borders. Make a sheet or memo from a company's blank border PDF either as is (a picture) or smart: lines and text become sharp vectors, and only real pictures such as a logo are kept as images",
+        "Stamps: make a stamp from an area of the open page (drag a box), and the New menu shows only what fits the open tab",
+        "Elements: maker's drawings for MiTek Lumberlok and Bowmac fixings (joist hangers, split hangers, post and beam brackets, angles, screws and more), drawn 1:1 from MiTek's CAD files in plan, front and side",
+        "Elements: the Multi-Brace strap can be any length (Length in Properties)",
+        "QA colours in the Collab tab: in a shared PDF each seat draws in its own check colour (seat 1, who shared it, is Check 1, the two who join are Check 2 and Check 3), the checks carry the people's names, and the owner can set the three colours for everyone"
+      ],
+      "Fixed": [
+        "Changes made in Seed43 Properties, and moving an element by its centre grip, now show straight away in continuous view instead of after the next click",
+        "Stamp from a picture, Import and Export in the Stamp Builder now use the app's own Open and Save windows (they did nothing in the desktop app)",
+        "The member editing guide no longer flashes up when a sheet is selected",
+        "Built-in stamps and sheets no longer go missing after the first start"
+      ]
+    }
+  },
+  {
     "version": "26.11.21.4",
     "date": "2026-11-21",
     "notes": {
