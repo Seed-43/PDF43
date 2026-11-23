@@ -10,12 +10,12 @@ const HOUT_VLAG = 'seed43.library.timber2025b';
 const ZA_VLAG = 'seed43.library.za2026b';
 const AU_VLAG = 'seed43.library.au2026a';
 const UK_VLAG = 'seed43.library.uk2026b';
-const FIXING_VLAG = 'seed43.library.fixings2024a';
+const FIXING_VLAG = 'seed43.library.fixings2026a';   // 2026a: MiTek CAD drawings (Bowmac brackets, screws)
 const HOUT_VERVANG = /^(timber-sg8|lvl-|prolam-|hyjoist$)/;
 const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 
 export const SOORTEN = { section: 'Section', bolt: 'Bolt', table: 'Table' };
-export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', 'lipped-z': 'Lipped Z (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)', hanger: 'Hanger (fixing)', plate: 'Plate (fixing)', fangle: 'Angle cleat (fixing)' };
+export const VORMEN = { I: 'I-section', channel: 'Channel', angle: 'Angle', rhs: 'RHS / SHS', chs: 'CHS', flat: 'Flat / square', round: 'Round bar', 'lipped-c': 'Lipped C (purlin)', 'lipped-z': 'Lipped Z (purlin)', rect: 'Sawn timber', glulam: 'Glulam', lvl: 'LVL', ijoist: 'I-joist (timber)', hanger: 'Hanger (fixing)', plate: 'Plate (fixing)', fangle: 'Angle cleat (fixing)', cad: "Maker's drawing (fixing)" };
 
 export function geldigeBibliotheek(b) {
   return b && typeof b === 'object' && Array.isArray(b.categories)
@@ -139,7 +139,7 @@ export function groepVan(c) {
   if (c.group) return c.group;
   if (c.kind === 'bolt') return 'Bolts';
   if (c.kind === 'table') return 'Reference tables';
-  if (['hanger', 'plate', 'fangle'].includes(c.shape)) return 'Fixings';
+  if (['hanger', 'plate', 'fangle', 'cad'].includes(c.shape)) return 'Fixings';
   return ['rect', 'glulam', 'lvl', 'ijoist'].includes(c.shape) ? 'Timber' : 'Steel';
 }
 

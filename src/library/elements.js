@@ -114,6 +114,7 @@ function sectieGegevens(el, shape, item) {
   }
 }
 import { laadBibliotheek, categorie, geladenBibliotheek, regioVan } from './store.js';
+import { laadCad, cadVan, cadView } from './cad.js';
 import { leesRegios } from './window.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
 import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN, AANTAL_VORMEN, metAantal, labelNaam, UITLIJNING } from './draw.js';
@@ -664,8 +665,22 @@ function sectiePaneel() {
     veld(el, 'Label text', eigen);
 
     if (BEVESTIGINGEN.includes(e.shape)) {
-      veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (side on)']], e.item.view === 'elevation' ? 'elevation' : 'section',
-        (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
+      // With a maker's drawing: its own views (Plan, Front, Side, 3D…).
+      const cad = cadVan({ ...e.item, drawing: undefined });
+      if (cad && e.item.drawing !== 'simple') {
+        const nu = cadView(cad, e.item.view)?.id;
+        veld(el, 'View', keuze(cad.map((v) => [v.id, v.name]), nu,
+          (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
+      } else {
+        veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (side on)']], e.item.view === 'elevation' ? 'elevation' : 'section',
+          (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
+      }
+      if (cad && e.shape !== 'cad') {
+        veld(el, 'Drawing', keuze([['maker', "Maker's drawing (MiTek CAD)"], ['simple', 'Simple outline']], e.item.drawing === 'simple' ? 'simple' : 'maker',
+          (v) => werkBij(ann, update, sectieMaat, (x) => {
+            x.item = { ...x.item }; if (v === 'simple') { x.item.drawing = 'simple'; x.item.view = /side|elevation/.test(x.item.view) ? 'elevation' : 'section'; } else delete x.item.drawing;
+          })));
+      }
     }
     if (e.shape === 'rect') {
       // Sawn timber: a cross for a member in section, one diagonal for blocking.
@@ -976,6 +991,8 @@ export function startElementen(api) {
   apiRef = api;
   // Load the library now, so Change element can list it straight away.
   laadBibliotheek(api).catch(() => {});
+  // Maker's drawings for fixings; redraw what is on the page once they are in.
+  laadCad(api, () => { try { api.redrawAnnotations?.(); } catch {} });
   api.registerAnnotationType(SECTIE, plaatsingsType(api, SECTIE));
   api.registerAnnotationType(BOUTEN, plaatsingsType(api, BOUTEN));
   api.registerAnnotationType(LID, lidType(api));
@@ -1090,7 +1107,7 @@ export function plaats(api, cat, it, view = 'section', greep = 'A') {
   const fixing = BEVESTIGINGEN.includes(cat.shape);
   const soort = cat.kind === 'bolt' ? BOUTEN : (view === 'section' || fixing) ? SECTIE : LID;
   const item = kopie(it);
-  if (fixing) item.view = view === 'section' ? 'section' : 'elevation';
+  if (fixing) item.view = ['section', 'elevation', 'plan'].includes(view) ? view : 'section';
   plaatsing = { category: cat.name, catId: cat.id, shape: cat.shape, item, view: fixing ? 'section' : view, rotation: 0, greep: ['A', 'mid', 'B'].includes(greep) ? greep : 'A',
     uitlijn: leesUitlijn() };
   richting = null;

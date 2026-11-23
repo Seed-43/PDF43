@@ -41,6 +41,7 @@ if (!WEB) {
 }
 fs.mkdirSync(`${pkg}/data`, { recursive: true });
 fs.copyFileSync('data/nz-steel.seed43lib.json', `${pkg}/data/nz-steel.seed43lib.json`);
+fs.copyFileSync('data/mitek-cad.json', `${pkg}/data/mitek-cad.json`);
 fs.copyFileSync('plugin.json', `${pkg}/plugin.json`);
 for (const f of ['LICENSE', 'NOTICE.md', 'ort-LICENSE.txt']) if (fs.existsSync(f)) fs.copyFileSync(f, `${pkg}/${f}`);
 if (WEB) {

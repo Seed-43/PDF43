@@ -61,7 +61,7 @@ function hooiberg(c, it) {
 /** The views offered for an item: [label, view] pairs; the first is the default. */
 function views(c) {
   if (c.kind === 'bolt') return [['Face', 'section'], ['Plan', 'plan'], ['Elevation', 'elevation']];
-  if (['hanger', 'plate', 'fangle'].includes(c.shape)) return [['Section', 'section'], ['Elevation', 'elevation']];
+  if (['hanger', 'plate', 'fangle', 'cad'].includes(c.shape)) return [['Section', 'section'], ['Elevation', 'elevation'], ['Plan', 'plan']];
   return [['Section', 'section'], ['Elevation', 'elevation'], ['Plan', 'plan']];
 }
 
@@ -141,7 +141,7 @@ export function maakSnelKies(api) {
       cv.width = 60; cv.height = 60;
       try {
         const ctx = cv.getContext('2d');
-        tekenVoorbeeld(ctx, r.c.shape, r.it, 60, 60, { kleur: ['hanger', 'plate', 'fangle'].includes(r.c.shape) ? '#a855f7' : isHout(r.c.shape) ? '#b45309' : getComputedStyle(el).getPropertyValue('--acc') || '#0078d7', lijn: 2, marge: 6 });
+        tekenVoorbeeld(ctx, r.c.shape, r.it, 60, 60, { kleur: ['hanger', 'plate', 'fangle', 'cad'].includes(r.c.shape) ? '#a855f7' : isHout(r.c.shape) ? '#b45309' : getComputedStyle(el).getPropertyValue('--acc') || '#0078d7', lijn: 2, marge: 6 });
       } catch {}
       const naam = maak('div', 's43k-naam');
       naam.append(maak('b', '', r.it.name), maak('span', '', `${r.c.name} · ${groepVan(r.c)} · ${regioVan(r.c)}${r.n ? ` · placed ${r.n}×` : ''}`));

@@ -52,7 +52,7 @@ function hulp(ctx, x1, y1, x2, y2) {
 /** The key as a canvas element, or null for shapes without one (fixings). */
 export function maakMaatschets(shape, it) {
   const v = sectieVorm(shape, it);
-  if (!(v.w > 0) || !(v.h > 0) || ['hanger', 'plate', 'fangle', 'ijoist'].includes(shape)) return null;
+  if (!(v.w > 0) || !(v.h > 0) || ['hanger', 'plate', 'fangle', 'cad', 'ijoist'].includes(shape)) return null;
   const dpr = window.devicePixelRatio || 1;
   const cv = document.createElement('canvas');
   cv.width = B * dpr; cv.height = H * dpr;

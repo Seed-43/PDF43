@@ -13008,7 +13008,7 @@
     "fixing",
     "estimated"
    ],
-   "note": "LUMBERLOK joist hangers, 0.91 mm G300 Z275 or 0.9 mm stainless 304-2B. JH47 x 90 = 47 inside width, 90 high. 52 wide for rough sawn. L (side plate along the joist) and F (face flange) are estimated from the catalogue drawing. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7 and 55.",
+   "note": "LUMBERLOK joist hangers, 0.91 mm G300 Z275 or 0.9 mm stainless 304-2B. JH47 x 90 = 47 inside width, 90 high. 52 wide for rough sawn. L (side plate along the joist) and F (face flange) are estimated from the catalogue drawing. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7 and 55. Items with a MiTek CAD file are drawn from it (Properties: View, Drawing).",
    "items": [
     {
      "name": "JH47x90",
@@ -13495,7 +13495,7 @@
     "material",
     "fixing"
    ],
-   "note": "LUMBERLOK split hangers for wide or double members, always in pairs. a = height, c = 72 side, l = 52 flange. 1.55 mm galvanised or 1.5 mm stainless 304-2B. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 10 and 59.",
+   "note": "LUMBERLOK split hangers for wide or double members, always in pairs. a = height, c = 72 side, l = 52 flange. 1.55 mm galvanised or 1.5 mm stainless 304-2B. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 10 and 59. Items with a MiTek CAD file are drawn from it (Properties: View, Drawing).",
    "items": [
     {
      "name": "SPH140",
@@ -13567,7 +13567,7 @@
     "material",
     "fixing"
    ],
-   "note": "LUMBERLOK Tylok angles, concealed purlin cleats (CPC), concrete fixing cleats (CF) and Multigrip. a = upright leg, c = leg across, l = length. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7, 11, 19 and 21.",
+   "note": "LUMBERLOK Tylok angles, concealed purlin cleats (CPC), concrete fixing cleats (CF) and Multigrip. a = upright leg, c = leg across, l = length. MiTek Structural Fixings On-Site Guide, 2024 edition, pages 7, 11, 19 and 21. Items with a MiTek CAD file are drawn from it (Properties: View, Drawing).",
    "items": [
     {
      "name": "3A6",
@@ -13957,6 +13957,397 @@
      "t": 0.95,
      "material": "Galvanised Z275",
      "fixing": "teeth plus nails"
+    }
+   ]
+  },
+  {
+   "id": "bm-post-brackets",
+   "name": "Post and bearer brackets (Bowmac)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "BOWMAC post and bearer brackets, drawn from the maker's CAD file. Pick the view (Plan, Front, Side, 3D) in Properties. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "B12",
+     "b": 100.0,
+     "d": 176.2,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B16",
+     "b": 50.0,
+     "d": 440.7,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B18",
+     "b": 75.0,
+     "d": 422.7,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B21",
+     "b": 80.0,
+     "d": 156.0,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B22",
+     "b": 50.0,
+     "d": 156.0,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B23",
+     "b": 75.0,
+     "d": 206.0,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B25",
+     "b": 50.0,
+     "d": 136.1,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B28",
+     "b": 75.0,
+     "d": 136.2,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B132",
+     "b": 75.0,
+     "d": 316.9,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B134",
+     "b": 75.0,
+     "d": 313.9,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B135",
+     "b": 50.0,
+     "d": 335.3,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B138",
+     "b": 75.0,
+     "d": 335.4,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B195",
+     "b": 75.0,
+     "d": 346.1,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B196",
+     "b": 80.0,
+     "d": 346.1,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B197",
+     "b": 92.0,
+     "d": 450.2,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B198",
+     "b": 80.0,
+     "d": 444.5,
+     "description": "Post and bearer bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    }
+   ]
+  },
+  {
+   "id": "bm-beam-supports",
+   "name": "Z and L beam supports (Bowmac)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "BOWMAC Z and L beam supports, drawn from the maker's CAD file. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "B98",
+     "b": 75.0,
+     "d": 202.0,
+     "description": "Z and L beam support",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B99",
+     "b": 75.0,
+     "d": 292.0,
+     "description": "Z and L beam support",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B108",
+     "b": 75.0,
+     "d": 194.0,
+     "description": "Z and L beam support",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B109",
+     "b": 75.0,
+     "d": 286.0,
+     "description": "Z and L beam support",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    }
+   ]
+  },
+  {
+   "id": "bm-angles",
+   "name": "Angle brackets (Bowmac)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "BOWMAC angle brackets (B, hot dip galvanised; BS, stainless steel), drawn from the maker's CAD file. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "B175",
+     "b": 140.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B176",
+     "b": 190.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B177",
+     "b": 240.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B178",
+     "b": 290.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "BS175",
+     "b": 140.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Stainless steel",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "BS176",
+     "b": 190.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Stainless steel",
+     "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "BS177",
+     "b": 240.0,
+     "d": 75.0,
+     "description": "Angle bracket",
+     "material": "Stainless steel",
+     "fixing": "M12 bolts (holes for M12)"
+    }
+   ]
+  },
+  {
+   "id": "bm-other",
+   "name": "Pole brace and HandiBrac (Bowmac)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "BOWMAC B145 pole brace bracket and the GIB HandiBrac with its blue head screw bolt, drawn from the maker's CAD files. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "B145",
+     "b": 130.8,
+     "d": 289.0,
+     "description": "Pole brace bracket",
+     "material": "Hot dip galvanised",
+     "fixing": "M12 bolts"
+    },
+    {
+     "name": "GIB HandiBrac",
+     "b": 54.0,
+     "d": 234.5,
+     "description": "GIB HandiBrac with blue head screw bolt",
+     "material": "Hot dip galvanised",
+     "fixing": "Blue head screw bolt to concrete (supplied)",
+     "cad": "GIBHBRACWB"
+    }
+   ]
+  },
+  {
+   "id": "ll-other",
+   "name": "Other connectors (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "LUMBERLOK stud stiffener, girt plate, Multi-Brace and tensioner, Multigrip 100 DG, drawn from the maker's CAD files. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "FSS",
+     "b": 88.0,
+     "d": 350.0,
+     "description": "Framing stud stiffener",
+     "material": "1.55 mm G300 Z275 galvanised",
+     "fixing": "Type 17-14g x 35 hex head screws (supplied)"
+    },
+    {
+     "name": "Girt plate",
+     "b": 120.0,
+     "d": 55.6,
+     "description": "Girt to pole fixing",
+     "material": "Hot dip galvanised",
+     "cad": "GIRTPLATE"
+    },
+    {
+     "name": "Multi-Brace",
+     "b": 53.0,
+     "d": 301.3,
+     "description": "Strip brace, 0.91 x 53 mm, coils of 10, 15 and 30 m",
+     "material": "G300 Z275 galvanised",
+     "fixing": "30 x 3.15 product nails, 11 each end folded over, else 15",
+     "cad": "MB"
+    },
+    {
+     "name": "MBTENS",
+     "b": 102.0,
+     "d": 53.0,
+     "description": "Multi-Brace tensioner",
+     "material": "Galvanised"
+    },
+    {
+     "name": "MG100DG",
+     "b": 39.2,
+     "d": 129.3,
+     "description": "Multigrip (DG)",
+     "material": "Galvanised",
+     "fixing": "30 x 3.15 product nails"
+    }
+   ]
+  },
+  {
+   "id": "ll-screws",
+   "name": "Screws (Lumberlok)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material"
+   ],
+   "note": "LUMBERLOK screws, drawn from the maker's CAD files. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "SC3512SS",
+     "b": 14.8,
+     "d": 40.9,
+     "description": "Type 17-12g x 35 hex head screw",
+     "material": "Stainless steel"
+    },
+    {
+     "name": "SC3514SS",
+     "b": 15.5,
+     "d": 41.6,
+     "description": "Type 17-14g x 35 hex head screw",
+     "material": "Stainless steel"
+    },
+    {
+     "name": "SC7514SS",
+     "b": 15.5,
+     "d": 81.6,
+     "description": "Type 17-14g x 75 hex head screw",
+     "material": "Stainless steel"
+    },
+    {
+     "name": "Bluescrew",
+     "b": 9.5,
+     "d": 81.2,
+     "description": "Blue screw",
+     "material": "Coated",
+     "cad": "BLUESCREW"
     }
    ]
   },

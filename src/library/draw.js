@@ -3,19 +3,26 @@
 // (ptsPerMm, stored on the element when it is placed).
 
 import { tekenBracing, bracingBounds } from './bracing.js';
+import { cadVan, cadView, cadVorm } from './cad.js';
 
 const num = (v) => (Number.isFinite(+v) ? +v : 0);
 
 /** Timber shapes, drawn in brown. */
 export const HOUTVORMEN = ['rect', 'glulam', 'lvl', 'ijoist'];
 /** Fixings (brackets, hangers, plates): placed by a click, in section or elevation. */
-export const BEVESTIGINGEN = ['hanger', 'plate', 'fangle'];
+export const BEVESTIGINGEN = ['hanger', 'plate', 'fangle', 'cad'];
 /** Glulam lamination thickness and LVL veneer line spacing, mm (drawing only). */
 const LAMEL = 45;
 const VINEER = 10;
 
 /** Outline of a section in mm, centred: { polys: [[x,y]...][], circles: [{r, hole}], w, h }. */
 export function sectieVorm(shape, it) {
+  // Fixings with a maker's drawing (MiTek CAD) are drawn from it, unless
+  // the simple outline was chosen.
+  if (BEVESTIGINGEN.includes(shape) && it.drawing !== 'simple') {
+    const views = cadVan(it);
+    if (views) return { ...cadVorm(cadView(views, it.view)), staal: true };
+  }
   const d = num(it.d), b = num(it.b) || d, tf = num(it.tf) || num(it.t), tw = num(it.tw) || num(it.t), t = num(it.t) || tf;
   const hd = d / 2, hb = b / 2;
   switch (shape) {
@@ -121,6 +128,12 @@ export function sectieVorm(shape, it) {
       return { w: b, h: d, hout: true, streep: [[[0, -hd], [0, hd]]],
         polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
     }
+    case 'cad': {
+      // A maker's drawing that has not loaded (yet): a box of its size.
+      const w = num(it.b) || 40, h = num(it.d) || 40;
+      return { w, h, staal: true, streep: [[[-w / 2, -h / 2], [w / 2, h / 2]], [[w / 2, -h / 2], [-w / 2, h / 2]]],
+        polys: [[[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]]] };
+    }
     case 'flat':
     default:
       return { w: b, h: d, polys: [[[-hb, -hd], [hb, -hd], [hb, hd], [-hb, hd]]] };
@@ -146,7 +159,7 @@ const HOUT = '#92400e';
 const FIXING = '#7e22ce';
 const FIXING_VUL = 'rgba(126, 34, 206, 0.14)';
 export const FIXING_KLEUR = FIXING;
-const isFixing = (shape) => ['hanger', 'plate', 'fangle'].includes(shape);
+const isFixing = (shape) => BEVESTIGINGEN.includes(shape);
 const HOUT_VUL = 'rgba(180, 120, 50, 0.16)';
 
 /** Timber shapes are drawn in brown. */
@@ -168,6 +181,15 @@ function tekenVorm(ctx, v, cx, cy, k, rot, kleur, vul) {
   }
   ctx.fill('evenodd');
   ctx.stroke();
+  if (v.paden?.length) {
+    // Maker's drawing: lines only, a little finer than outlines.
+    const lw = ctx.lineWidth;
+    ctx.lineWidth = lw * 0.7;
+    ctx.beginPath();
+    for (const p of v.paden) p.forEach((q, i) => { const [x, y] = P(q); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+    ctx.lineWidth = lw;
+  }
   const lijn = (lijst, streep) => {
     if (!lijst?.length) return;
     const lw = ctx.lineWidth;
