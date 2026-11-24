@@ -1,5 +1,26 @@
 [
   {
+    "version": "26.11.24",
+    "date": "2026-11-24",
+    "notes": {
+      "New": [
+        "Sheet button on the Seed43 ribbon, next to About: pick a sheet or memo, see it, then add it to this page, to every page, or start a new PDF with as many pages as you need",
+        "Builder (was Stamp Builder): stamps, sheets and memos are also kept as files in Documents\\S43 PDF Templates (Stamps, Sheets, Memos). Open folder shows them; nothing there is ever deleted, deleted ones move to Deleted",
+        "Builder: Locations… adds shared template folders, such as a company library on a network drive. They are read only, show with a lock, and Duplicate makes your own copy",
+        "Builder: Pick text for fields. On a smart border, click the texts that change per drawing (or drag around several) and each becomes a box for a value, named after its label, in the same size and colour",
+        "Builder: the sheet zooms (mouse wheel, middle button pans, − Fit +), with a grid to line things up, snap to grid (Alt places freely), a colour per value, and drag to reorder parameters",
+        "Builder: tick which stamps, sheets and memos show in the Stamps drawer and the Sheet dialog",
+        "Sheets are fixed in place: they cannot be moved, resized or deleted by accident and clicks go through them, while their boxes still fill in. Alt + click selects one; untick Fixed in place to move it",
+        "Elements: MiTek drawings redrawn from a cleaned CAD set, with Bowmac straps, more angle brackets, B128, B155 and MB10/15/30 punched coil added",
+        "Elements: the strap of a pole and brace bracket (B145, B155) turns around its pivot bolt, -90 to 90 degrees (Strap angle in Properties)",
+        "Elements: F flips a fixing (left for right), while placing or when selected"
+      ],
+      "Fixed": [
+        "A sheet no longer disappears when zoomed in away from the top-left corner of the page"
+      ]
+    }
+  },
+  {
     "version": "26.11.23",
     "date": "2026-11-23",
     "notes": {
