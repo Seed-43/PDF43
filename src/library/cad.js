@@ -47,15 +47,39 @@ export function cadView(views, view) {
     || views.find((v) => v.id === 'front') || views[0];
 }
 
-/** The view as lines in mm, centred: { w, h, paden: [[[x,y]...]...] }. */
-export function cadVorm(v, lengte) {
-  const paden = v.p.map((p) => {
-    const uit = [];
-    for (let i = 0; i < p.length; i += 2) uit.push([p[i] / 10, p[i + 1] / 10]);
-    return uit;
-  });
-  if (v.stretch && lengte > 0 && Math.abs(lengte - v.h) > 0.5) return gerekt(v, paden, lengte);
-  return { w: v.w, h: v.h, paden };
+const mm = (p) => {
+  const uit = [];
+  for (let i = 0; i < p.length; i += 2) uit.push([p[i] / 10, p[i + 1] / 10]);
+  return uit;
+};
+
+/** The strap angle allowed: -90 (south) to 90 (north). */
+export const armHoek = (a) => Math.max(-90, Math.min(90, Math.round((Number(a) || 0) * 10) / 10));
+
+/**
+ * The view as lines in mm, centred: { w, h, paden: [[[x,y]...]...], anker }.
+ * opties.turn: the angle of a part that turns (a pole brace strap) around
+ * its pivot, degrees, 0 = east, 90 = north (the strap's direction toward the
+ * pivot); opties.mirror: drawn mirrored, left for right. anker is where the
+ * view's own centre went (mm), so turning can keep the fixed part still.
+ */
+export function cadVorm(v, lengte, opties = {}) {
+  let paden = v.p.map(mm);
+  if (v.stretch && lengte > 0 && Math.abs(lengte - v.h) > 0.5) paden = gerekt(v, paden, lengte).paden;
+  const t = v.turn;
+  if (t) {
+    const [px, py] = [t.pivot[0] / 10, t.pivot[1] / 10];
+    const d = ((opties.turn == null ? t.angle : armHoek(opties.turn)) - t.angle) * Math.PI / 180;
+    const c = Math.cos(d), s = Math.sin(d);
+    // Counter-clockwise on the sheet (y down).
+    paden = paden.concat(t.p.map(mm).map((l) => l.map(([x, y]) => [px + (x - px) * c + (y - py) * s, py - (x - px) * s + (y - py) * c])));
+  }
+  if (opties.mirror) paden = paden.map((l) => l.map(([x, y]) => [-x, y]));
+  if (!t && !opties.mirror) return { w: v.w, h: lengte > 0 && v.stretch ? lengte : v.h, paden, anker: [0, 0] };
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const l of paden) for (const [x, y] of l) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+  return { w: x1 - x0, h: y1 - y0, paden: paden.map((l) => l.map(([x, y]) => [x - mx, y - my])), anker: [-mx, -my] };
 }
 
 /**

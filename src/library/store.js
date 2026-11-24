@@ -10,7 +10,7 @@ const HOUT_VLAG = 'seed43.library.timber2025b';
 const ZA_VLAG = 'seed43.library.za2026b';
 const AU_VLAG = 'seed43.library.au2026a';
 const UK_VLAG = 'seed43.library.uk2026b';
-const FIXING_VLAG = 'seed43.library.fixings2026a';   // 2026a: MiTek CAD drawings (Bowmac brackets, screws)
+const FIXING_VLAG = 'seed43.library.fixings2026b';   // 2026b: MiTek drawings from Fred's cleaned CAD sheet, Bowmac straps and more angle brackets
 const HOUT_VERVANG = /^(timber-sg8|lvl-|prolam-|hyjoist$)/;
 const OUDE_TABELLEN = new Set(['gauge-angles', 'gauge-welded-flange', 'gauge-welded-web', 'pfc-baseplate']);
 

@@ -21,8 +21,16 @@ export function sectieVorm(shape, it) {
   // the simple outline was chosen.
   if (BEVESTIGINGEN.includes(shape) && it.drawing !== 'simple') {
     const views = cadVan(it);
-    if (views) return { ...cadVorm(cadView(views, it.view), num(it.lengthMm)), staal: true };
+    if (views) return { ...cadVorm(cadView(views, it.view), num(it.lengthMm), { turn: it.turn, mirror: !!it.mirror }), staal: true };
   }
+  const v = vormVan(shape, it);
+  // A plain fixing mirrored (F): left for right.
+  if (!it?.mirror || !BEVESTIGINGEN.includes(shape)) return v;
+  const sp = (l) => l.map(([x, y]) => [-x, y]);
+  return { ...v, polys: (v.polys || []).map(sp), lijnen: v.lijnen?.map(sp), streep: v.streep?.map(sp) };
+}
+
+function vormVan(shape, it) {
   const d = num(it.d), b = num(it.b) || d, tf = num(it.tf) || num(it.t), tw = num(it.tw) || num(it.t), t = num(it.t) || tf;
   const hd = d / 2, hb = b / 2;
   switch (shape) {

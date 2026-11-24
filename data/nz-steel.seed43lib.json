@@ -14164,6 +14164,72 @@
    "note": "BOWMAC angle brackets (B, hot dip galvanised; BS, stainless steel), drawn from the maker's CAD file. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
    "items": [
     {
+     "name": "B50",
+     "b": 50.0,
+     "d": 65.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B51",
+     "b": 50.0,
+     "d": 145.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B52",
+     "b": 50.0,
+     "d": 220.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B53",
+     "b": 50.0,
+     "d": 294.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B54",
+     "b": 50.0,
+     "d": 220.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B55",
+     "b": 50.0,
+     "d": 181.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B58",
+     "b": 75.0,
+     "d": 181.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B65",
+     "b": 50.0,
+     "d": 181.0,
+     "description": "Angle bracket with gusset"
+    },
+    {
+     "name": "B68",
+     "b": 75.0,
+     "d": 181.0,
+     "description": "Angle bracket with gusset"
+    },
+    {
+     "name": "B163",
+     "b": 50.0,
+     "d": 300.0,
+     "description": "Angle bracket with gusset"
+    },
+    {
+     "name": "B165",
+     "b": 50.0,
+     "d": 400.0,
+     "description": "Angle bracket with gusset"
+    },
+    {
      "name": "B175",
      "b": 140.0,
      "d": 75.0,
@@ -14194,6 +14260,72 @@
      "description": "Angle bracket",
      "material": "Hot dip galvanised",
      "fixing": "M12 bolts (holes for M12)"
+    },
+    {
+     "name": "B350",
+     "b": 50.0,
+     "d": 63.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B351",
+     "b": 50.0,
+     "d": 142.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B352",
+     "b": 50.0,
+     "d": 218.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B353",
+     "b": 50.0,
+     "d": 295.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B354",
+     "b": 50.0,
+     "d": 221.0,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B554",
+     "b": 25.0,
+     "d": 174.9,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B555",
+     "b": 25.0,
+     "d": 247.9,
+     "description": "Angle bracket, no gusset"
+    },
+    {
+     "name": "B564",
+     "b": 25.0,
+     "d": 174.9,
+     "description": "Angle bracket with gusset"
+    },
+    {
+     "name": "B565",
+     "b": 25.0,
+     "d": 247.9,
+     "description": "Angle bracket with gusset"
+    },
+    {
+     "name": "B566",
+     "b": 25.0,
+     "d": 342.9,
+     "description": "Angle bracket with gusset"
+    },
+    {
+     "name": "B567",
+     "b": 25.0,
+     "d": 405.9,
+     "description": "Angle bracket with gusset"
     },
     {
      "name": "BS175",
@@ -14235,12 +14367,24 @@
    "note": "BOWMAC B145 pole brace bracket and the GIB HandiBrac with its blue head screw bolt, drawn from the maker's CAD files. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
    "items": [
     {
+     "name": "B128",
+     "b": 80.0,
+     "d": 246.0,
+     "description": "Pole beam bracket"
+    },
+    {
      "name": "B145",
      "b": 130.8,
      "d": 289.0,
      "description": "Pole brace bracket",
      "material": "Hot dip galvanised",
      "fixing": "M12 bolts"
+    },
+    {
+     "name": "B155",
+     "b": 140.8,
+     "d": 276.2,
+     "description": "Pole and brace bracket"
     },
     {
      "name": "GIB HandiBrac",
@@ -14250,6 +14394,87 @@
      "material": "Hot dip galvanised",
      "fixing": "Blue head screw bolt to concrete (supplied)",
      "cad": "GIBHBRACWB"
+    }
+   ]
+  },
+  {
+   "id": "bm-straps",
+   "name": "Straps (Bowmac)",
+   "group": "Fixings",
+   "kind": "section",
+   "shape": "cad",
+   "fields": [
+    "description",
+    "material",
+    "fixing"
+   ],
+   "note": "BOWMAC straps, drawn from the maker's CAD file. Drawings 1:1 from the MiTek NZ CAD files; MiTek Structural Fixings On-Site Guide, 2024 edition.",
+   "items": [
+    {
+     "name": "B35",
+     "b": 315.0,
+     "d": 250.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B38",
+     "b": 315.0,
+     "d": 275.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B45",
+     "b": 250.0,
+     "d": 250.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B48",
+     "b": 275.0,
+     "d": 275.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B75",
+     "b": 50.0,
+     "d": 346.1,
+     "description": "Strap"
+    },
+    {
+     "name": "B78",
+     "b": 75.0,
+     "d": 340.9,
+     "description": "Strap"
+    },
+    {
+     "name": "B79",
+     "b": 80.0,
+     "d": 450.2,
+     "description": "Strap"
+    },
+    {
+     "name": "B84",
+     "b": 50.0,
+     "d": 200.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B85",
+     "b": 50.0,
+     "d": 315.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B86",
+     "b": 75.0,
+     "d": 272.0,
+     "description": "Strap"
+    },
+    {
+     "name": "B88",
+     "b": 75.0,
+     "d": 315.0,
+     "description": "Strap"
     }
    ]
   },
@@ -14305,6 +14530,24 @@
      "description": "Multigrip (DG)",
      "material": "Galvanised",
      "fixing": "30 x 3.15 product nails"
+    },
+    {
+     "name": "MB10",
+     "b": 53.0,
+     "d": 320.0,
+     "description": "Punched coil strap"
+    },
+    {
+     "name": "MB15",
+     "b": 53.0,
+     "d": 320.0,
+     "description": "Punched coil strap"
+    },
+    {
+     "name": "MB30",
+     "b": 53.0,
+     "d": 320.0,
+     "description": "Punched coil strap"
     }
    ]
   },

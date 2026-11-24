@@ -91,7 +91,7 @@ function getalTekst(v, macht = 0) {
 
 /** Dimensions (with the key), section properties, then anything else. */
 function sectieGegevens(el, shape, item) {
-  const gezien = new Set(['name', 'blocking', 'view', 'check']);
+  const gezien = new Set(['name', 'blocking', 'view', 'check', 'mirror', 'turn']);
   groep(el, 'Dimensions');
   for (const [k, naam, eenheid] of MATEN) {
     if (item[k] == null || item[k] === '') continue;
@@ -114,10 +114,10 @@ function sectieGegevens(el, shape, item) {
   }
 }
 import { laadBibliotheek, categorie, geladenBibliotheek, regioVan } from './store.js';
-import { laadCad, cadVan, cadView } from './cad.js';
+import { laadCad, cadVan, cadView, armHoek } from './cad.js';
 import { leesRegios } from './window.js';
 import { BRACING_STANDAARD, BRACING_CODES, bracingLengte, bracingRaak } from './bracing.js';
-import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN, AANTAL_VORMEN, metAantal, labelNaam, UITLIJNING } from './draw.js';
+import { sectieMaat, tekenSectie, boutMaat, tekenBoutGroep, boutGroep, boutZijaanzicht, boutOpties, tekenLid, lidBounds, lidGeometrie, BEVESTIGINGEN, AANTAL_VORMEN, metAantal, labelNaam, UITLIJNING, sectieVorm } from './draw.js';
 import { SECTIE, BOUTEN, LID, ONZE, GREEP_NAAM, grepen, zoekSnap, haaks, haaksStap, lidPunten } from './snap.js';
 import { startOverlay, stopOverlay, meldStaat, ijk, naarPagina, zoomVan, teken, tekenSnap, tekenGrepen, tekenElastiek } from './overlay.js';
 
@@ -426,6 +426,7 @@ function herteken(api) {
         (soort === SECTIE ? tekenSectie : tekenBoutGroep)(c, { x: q.x - m.w / 2, y: q.y - m.h / 2, element });
         c.globalAlpha = 1;
         tekenSnap(c, s, q.snap);
+        if (soort === SECTIE && BEVESTIGINGEN.includes(plaatsing.shape)) tekenTekst(c, s, q.x, q.y, `Click to place ${labelNaam(plaatsing)}  (Space: turn  F: flip)`);
       }
     });
     return;
@@ -626,6 +627,21 @@ function schaalVeld(el, ann, update, maat) {
   veld(el, 'Scale 1:', i);
 }
 
+/** Turn a pole brace bracket's strap, keeping the bracket still on the sheet. */
+function draaiArm(ann, update, hoek) {
+  const e = ann.element, k = e.ptsPerMm || 1;
+  const oud = sectieVorm(e.shape, e.item), om = sectieMaat(e);
+  const element = kopie(e);
+  element.item = { ...element.item, turn: hoek };
+  const nieuw = sectieVorm(element.shape, element.item), nm = sectieMaat(element);
+  const r = ((e.rotation || 0) * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+  const dx = ((nieuw.anker?.[0] || 0) - (oud.anker?.[0] || 0)) * k, dy = ((nieuw.anker?.[1] || 0) - (oud.anker?.[1] || 0)) * k;
+  const cx = ann.x + om.w / 2 - (dx * c - dy * s), cy = ann.y + om.h / 2 - (dx * s + dy * c);
+  update('element', element);
+  update('x', cx - nm.w / 2); update('y', cy - nm.h / 2);
+  update('width', nm.w); update('height', nm.h);
+}
+
 function sectiePaneel() {
   return (ann, update) => {
     if (!ann) return document.createElement('div');   // the host calls this on deselect too
@@ -671,8 +687,15 @@ function sectiePaneel() {
         const nu = cadView(cad, e.item.view)?.id;
         veld(el, 'View', keuze(cad.map((v) => [v.id, v.name]), nu,
           (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
-        // A strap (Multi-Brace) is as long as it needs to be.
+        // A pole brace bracket's strap turns around its pivot bolt.
         const vw = cadView(cad, e.item.view);
+        if (vw?.turn) {
+          const i = getal(e.item.turn == null ? vw.turn.angle : armHoek(e.item.turn), (n) => { if (Number.isFinite(n)) draaiArm(ann, update, armHoek(n)); });
+          i.min = '-90'; i.max = '90';
+          i.title = 'Angle of the strap toward the pivot bolt: 0 = east, 90 = north, -90 = south (-90 to 90). Mirrored: as seen mirrored.';
+          veld(el, 'Strap angle °', i);
+        }
+        // A strap (Multi-Brace) is as long as it needs to be.
         if (vw?.stretch) {
           veld(el, 'Length (mm)', getal(Math.round(Number(e.item.lengthMm) || vw.h), (n) => {
             if (n > 20) werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, lengthMm: n }; });
@@ -682,6 +705,8 @@ function sectiePaneel() {
         veld(el, 'View', keuze([['section', 'Section (end on)'], ['elevation', 'Elevation (side on)']], e.item.view === 'elevation' ? 'elevation' : 'section',
           (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, view: v }; })));
       }
+      veld(el, 'Flip', keuze([['0', 'As drawn'], ['1', 'Mirrored']], e.item.mirror ? '1' : '0',
+        (v) => werkBij(ann, update, sectieMaat, (x) => { x.item = { ...x.item, mirror: v === '1' }; })));
       if (cad && e.shape !== 'cad') {
         veld(el, 'Drawing', keuze([['maker', "Maker's drawing (MiTek CAD)"], ['simple', 'Simple outline']], e.item.drawing === 'simple' ? 'simple' : 'maker',
           (v) => werkBij(ann, update, sectieMaat, (x) => {
@@ -926,11 +951,35 @@ function draaiGeselecteerd(api, stap) {
   return true;
 }
 
+/** F: mirror a fixing (the one being placed, or the selected one). */
+function spiegelFixing(api) {
+  if (api.getCurrentTool?.() === SECTIE && plaatsing && BEVESTIGINGEN.includes(plaatsing.shape)) {
+    plaatsing.item = { ...plaatsing.item, mirror: !plaatsing.item.mirror };
+    api.setToolOverrides({ seed43Element: plaatsing });
+    startLus(api);
+    return true;
+  }
+  const ann = geselecteerd && api.getAnnotations().find((a) => a.id === geselecteerd);
+  if (ann?.type !== SECTIE || !BEVESTIGINGEN.includes(ann.element?.shape)) return false;
+  const oud = sectieMaat(ann.element);
+  const element = kopie(ann.element);
+  element.item = { ...element.item, mirror: !element.item.mirror };
+  const m = sectieMaat(element);
+  const cx = ann.x + oud.w / 2, cy = ann.y + oud.h / 2;
+  api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { element, x: cx - m.w / 2, y: cy - m.h / 2, width: m.w, height: m.h } }]);
+  api.redrawAnnotations?.();
+  return true;
+}
+
 function spatieToets(api) {
   return (e) => {
-    if (e.code !== 'Space' || e.ctrlKey || e.altKey || e.metaKey) return;
     const t = e.target;
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName))) return;
+    if (e.code === 'KeyF' && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+      if (spiegelFixing(api)) { e.preventDefault(); e.stopPropagation(); }
+      return;
+    }
+    if (e.code !== 'Space' || e.ctrlKey || e.altKey || e.metaKey) return;
     const stap = e.shiftKey ? -90 : 90;
     // Placing a bracing line: Space flips the line and tag to the other side
     // (and new bracing lines keep that side).
