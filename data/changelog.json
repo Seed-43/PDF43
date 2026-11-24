@@ -5,6 +5,7 @@
     "notes": {
       "New": [
         "Sheet button on the Seed43 ribbon, next to About: pick a sheet or memo, see it, then add it to this page, to every page, or start a new PDF with as many pages as you need",
+        "Memos: a built-in Calculation sheet, an A4 pad with a 5 mm grid and Project, Job, Calcs by, Page and Date on top",
         "Builder (was Stamp Builder): stamps, sheets and memos are also kept as files in Documents\\S43 PDF Templates (Stamps, Sheets, Memos). Open folder shows them; nothing there is ever deleted, deleted ones move to Deleted",
         "Builder: Locations… adds shared template folders, such as a company library on a network drive. They are read only, show with a lock, and Duplicate makes your own copy",
         "Builder: Pick text for fields. On a smart border, click the texts that change per drawing (or drag around several) and each becomes a box for a value, named after its label, in the same size and colour",
