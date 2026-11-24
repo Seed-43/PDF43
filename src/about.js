@@ -84,7 +84,8 @@ export function nieuwer(a, b) {
 /** The latest release on GitHub: { versie, url, oppx } or null (offline). */
 async function laatsteRelease() {
   try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
+    // no-store: GitHub lets a reply be cached for 60 s, which hid a release made just before.
+    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
     if (!r.ok) return null;
     const j = await r.json();
     const oppx = (j.assets || []).find((a) => /\.oppx$/i.test(a.name));
