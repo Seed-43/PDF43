@@ -269,6 +269,36 @@ function notesSheet() {
   };
 }
 
+// ── Calculation sheet (A4) ────────────────────────────────────────────
+// A 5 mm squared pad for hand or markup calcs: project, job, calcs by, page
+// and date on top, the grid below with every fifth line darker. Hairlines
+// (0.24 pt) as on a printed calc pad.
+
+function calcSheet() {
+  const W = 595.32, H = 841.92;
+  const S = 14.16;                       // 5 mm
+  const L = S, R = 41 * S, T = 119.04, B = T + 50 * S;
+  const lijn = (x1, y1, x2, y2, c) => ({ t: 'path', p: [x1, y1, x2, y2].map((v) => +v.toFixed(2)), lw: 0.24, c });
+  const frame = [];
+  for (let i = 0; i <= 40; i++) frame.push(lijn(L + i * S, T, L + i * S, B, i % 5 ? '#c0c0c0' : '#808080'));
+  for (let j = 0; j <= 50; j++) frame.push(lijn(L, T + j * S, R, T + j * S, j === 0 ? '#000000' : j % 5 ? '#c0c0c0' : '#808080'));
+  const label = (x, y, text) => ({ t: 'text', x, y, s: 8.1, text, bl: true });
+  frame.push(label(28, 95.6, 'PROJECT:'), label(319.7, 95.6, 'JOB:'), label(304.3, 112.1, 'Calcs by:'), label(453, 95.6, 'Page:'), label(454.8, 112.1, 'Date:'));
+  // A value sits on the label's baseline, 12 pt bold.
+  const waarde = (key, lbl, x, basis, w, extra = {}) => ({ key, label: lbl, kind: 'text', value: '', x: x - 0.5, y: +(basis - 3.96 - 7.8).toFixed(2), w, h: 15.6, size: 12, bold: true, ...extra });
+  const fields = [
+    waarde('project', 'Project', 71.2, 95.6, 240),
+    waarde('jobNo', 'Job', 341.3, 95.6, 100),
+    waarde('calcsBy', 'Calcs by', 341.3, 112.1, 100, { kind: 'profile', from: 'initials' }),
+    waarde('page', 'Page', 477.7, 95.6, 90, { kind: 'auto', auto: 'page' }),
+    waarde('date', 'Date', 477.7, 112.1, 90, { kind: 'date', perStamp: true }),
+  ];
+  return {
+    id: 'form-calc', name: 'Calculation sheet', group: 'form', layout: 'placed', builtin: true, title: 'CALCULATIONS',
+    color: '#1f2328', ink: '#000000', width: W, height: H, smart: frame, fields, hit: { x: 20, y: 70, w: 560, h: 46 },
+  };
+}
+
 // ── A1 and A0 drawing sheets ──────────────────────────────────────────
 // Every A size has the same shape, so the A1 and A0 sheets are the A3 sheet
 // drawn bigger (an A1 printed at A3 is the A3 sheet). They matter for a new
@@ -293,4 +323,4 @@ function vergroot(f, k, maat) {
 
 const A3 = a3();
 export const STANDAARD_BLADEN = [vergroot(A3, 3370.39 / 1190.55, 'A0'), vergroot(A3, 2383.94 / 1190.55, 'A1'), A3, a4(), notesSheet()];
-export const STANDAARD_FORMULIEREN = [rfi(), siteInstruction(), siteVisit(), snagList(), transmittal(), memo(), shopReviewCover()];
+export const STANDAARD_FORMULIEREN = [calcSheet(), rfi(), siteInstruction(), siteVisit(), snagList(), transmittal(), memo(), shopReviewCover()];
