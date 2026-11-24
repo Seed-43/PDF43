@@ -1,7 +1,7 @@
 // Built-in drawing sheets and forms: generic, with no company's name or
 // details in them. Each is a "placed" stamp family: a frame of lines and
 // small labels, with parameter boxes at fixed places. The user's own sheet is
-// made the same way in the Stamp Builder, from a blank title-block PDF.
+// made the same way in the Builder, from a blank title-block PDF.
 //
 // A cell is { key, label, x, y, w, h, ...field }: it draws a box with a small
 // label in its top-left corner and puts the parameter's value under it.

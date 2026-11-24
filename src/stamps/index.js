@@ -10,9 +10,11 @@
 
 import { registreerEigenschappen, registreerStempelTab } from '../eigenschappen.js';
 import { formulier, kop as formKop, groep, veld as formVeld, tip } from '../formulier.js';
-import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO, groepVan } from './families.js';
+import { laadFamilies, bewaarFamilies, standaardWaarden, AUTO, groepVan, STANDAARD } from './families.js';
+import { synchroniseer, schrijfFamilie, verplaatsNaarWeg, heeftMap, heeftBestand } from './map.js';
 import { maat, teken, grenzen, raakVlak, bijPlaatjeGeladen } from './render.js';
 import { openBouwer } from './builder.js';
+import { openBladVenster } from './bladvenster.js';
 import { maakStempelLijst } from './panel.js';
 import { laadProfiel, profielWaarden } from './profile.js';
 import { maakQa, stopQa } from './qa.js';
@@ -78,11 +80,23 @@ function nieuweWaarden(api, familie) {
 }
 
 function nieuwStempel(api, familie, page, x, y, extra = {}) {
-  return {
+  const ann = {
     type: TYPE, page, x, y, opacity: 1, subject: `${familie.name}${isBlad(familie) ? '' : ' stamp'}`,
     stamp: { family: kopie(familie), values: nieuweWaarden(api, familie), placed: new Date().toISOString() },
     ...extra,
   };
+  return { ...ann, ...metMaat(api, ann) };
+}
+
+/**
+ * The stamp's width and height on the page (its scale included). The host
+ * skips drawing markups it thinks are off screen, judged by these; without
+ * them it took a whole sheet for a small box at its top-left corner, and the
+ * sheet vanished once that corner was zoomed or scrolled out of view.
+ */
+function metMaat(api, ann) {
+  const b = grenzen(ann, context(api));
+  return { width: b.width, height: b.height };
 }
 
 /**
@@ -138,7 +152,8 @@ async function bladOp(api, familie, page) {
   const W = familie.width || 595, H = familie.height || 842;
   const s = m ? Math.min(m.w / W, m.h / H) : 1;
   const x = m ? (m.w - W * s) / 2 : 0, y = m ? (m.h - H * s) / 2 : 0;
-  return nieuwStempel(api, familie, page, x, y, { scale: s, seed43Sheet: true });
+  // A sheet is fixed in place from the start: not moved, resized or deleted by accident.
+  return nieuwStempel(api, familie, page, x, y, { scale: s, seed43Sheet: true, locked: true, sheetFixed: true });
 }
 
 /** Put sheets on pages: 'page' (the current one), 'all', or an array of page numbers. */
@@ -244,7 +259,8 @@ function paneel(api) {
     const el = formulier();
     if (!fam) { el.textContent = 'Not a Seed43 stamp'; return el; }
     const blad = isBlad(fam);
-    const vergrendeld = !!ann.locked;
+    // A sheet's lock fixes it in place only: its boxes stay fillable.
+    const vergrendeld = !!ann.locked && !ann.seed43Sheet;
     formKop(el, blad ? fam.name : `${fam.name} stamp`,
       blad ? 'Shared values change every sheet of this kind in the file. Per-sheet values belong to this page. Or double-click a box on the sheet to fill it in there.' : `Changes update every ${fam.name} stamp in this file.`,
       fam.color || '#c0392b', familieIcoon(fam));
@@ -279,7 +295,7 @@ function paneel(api) {
           extra = rijKnoppen(
             knopje('Sign', 'Use the signature saved in My details', async () => {
               const sig = laadProfiel().signature;
-              if (!sig) { alert('No signature saved yet. Add one in Stamp Builder › My details.'); return; }
+              if (!sig) { alert('No signature saved yet. Add one in Builder › My details.'); return; }
               await zet(sig);
             }),
             knopje('Clear', 'Remove the signature', () => zet('')),
@@ -296,7 +312,7 @@ function paneel(api) {
           invoer.value = stamp.values?.[veld.key] ?? '';
         }
         if (veld.kind === 'profile') {
-          extra = rijKnoppen(knopje('From my details', 'Fill in from Stamp Builder › My details', async () => {
+          extra = rijKnoppen(knopje('From my details', 'Fill in from Builder › My details', async () => {
             const w = laadProfiel()[veld.from] || '';
             if (!w) { alert('Nothing saved for this in My details yet.'); return; }
             invoer.value = w; await zet(w);
@@ -331,12 +347,12 @@ function paneel(api) {
     grootte.disabled = vergrendeld;
     grootte.addEventListener('change', () => {
       const s = Math.max(0.1, Math.min(20, (Number(grootte.value) || 100) / 100));
-      api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { scale: s } }]);
+      api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { scale: s, ...metMaat(api, { ...ann, scale: s }) } }]);
       api.redrawAnnotations?.();
     });
     const knoppenGrootte = blad ? rijKnoppen(knopje('Fit to page', 'Fit the sheet to this page again', async () => {
       const n = await bladOp(api, fam, ann.page);
-      api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { x: n.x, y: n.y, scale: n.scale } }]);
+      api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { x: n.x, y: n.y, scale: n.scale, width: n.width, height: n.height } }]);
       api.redrawAnnotations?.();
     })) : null;
     formVeld(el, 'Size (%)', grootte, knoppenGrootte);
@@ -355,13 +371,14 @@ function paneel(api) {
     formVeld(el, 'Copy to', keuze, rijKnoppen(bereik, kopKnop));
 
     const slot = document.createElement('input');
-    slot.type = 'checkbox'; slot.checked = vergrendeld;
-    slot.title = 'A locked stamp can\'t be moved or changed until it is unlocked';
+    slot.type = 'checkbox'; slot.checked = !!ann.locked;
+    slot.title = ann.seed43Sheet ? 'A fixed sheet can\'t be moved, resized or deleted; its boxes can still be filled in. Untick to move or delete it.'
+      : 'A locked stamp can\'t be moved or changed until it is unlocked';
     slot.addEventListener('change', () => {
       api.applyAnnotationBatch([{ op: 'update', id: ann.id, changes: { locked: slot.checked } }]);
       api.redrawAnnotations?.();
     });
-    formVeld(el, 'Locked', slot);
+    formVeld(el, ann.seed43Sheet ? 'Fixed in place' : 'Locked', slot);
     return el;
   };
 }
@@ -427,19 +444,43 @@ function markeringType(api) {
       delete ann.page;   // the host sets the page it was clicked on
       return ann;
     },
-    render(ctx, ann) { teken(ctx, ann, context(api)); },
+    render(ctx, ann) {
+      teken(ctx, ann, context(api));
+      // Sheets saved before width and height were kept: set them now, so the
+      // host stops skipping them when zoomed in (see metMaat).
+      const m = metMaat(api, ann);
+      if (Math.abs((ann.width || 0) - m.width) > 0.5 || Math.abs((ann.height || 0) - m.height) > 0.5) Object.assign(ann, m);
+      // Sheets placed before they were fixed in place: fix them once (after
+      // that, unticking "Fixed in place" stays off).
+      if (ann.seed43Sheet && !ann.sheetFixed) Object.assign(ann, { locked: true, sheetFixed: true });
+    },
     getBounds(ann) { return grenzen(ann, context(api)); },
     hitTest(px, py, ann, tol = 2) {
+      // A sheet fixed in place is not picked up by the pointer (no select
+      // cursor, clicks go to what is on the page); its boxes still turn blue
+      // and open on a double-click. Alt + click selects it (to unfix it).
+      if (ann.seed43Sheet && ann.locked && !altIn) return false;
       const b = raakVlak(ann, context(api));
       return px >= b.x - tol && px <= b.x + b.width + tol && py >= b.y - tol && py <= b.y + b.height + tol;
     },
   };
 }
 
+// Alt held: a fixed sheet can be selected (see hitTest).
+let altIn = false;
+const altToets = (e) => { altIn = e.altKey; };
+const altWeg = () => { altIn = false; };
+
 export async function startStamps(api) {
   if (actief) return;
+  window.addEventListener('keydown', altToets, true);
+  window.addEventListener('keyup', altToets, true);
+  window.addEventListener('pointermove', altToets, true);
+  window.addEventListener('blur', altWeg);
   api0 = api;
   families = laadFamilies();
+  // The templates folder (Documents\S43 PDF Templates): files there are taken in.
+  metMap().catch((e) => console.warn('[seed43] templates folder:', e));
   bijPlaatjeGeladen(() => api.redrawAnnotations?.());
   api.registerAnnotationType(TYPE, markeringType(api));
   registreerEigenschappen(api, TYPE, paneel(api));
@@ -469,6 +510,10 @@ export async function startStamps(api) {
 export async function stopStamps(api) {
   if (!actief) return;
   actief = false;
+  window.removeEventListener('keydown', altToets, true);
+  window.removeEventListener('keyup', altToets, true);
+  window.removeEventListener('pointermove', altToets, true);
+  window.removeEventListener('blur', altWeg);
   clearInterval(achterKlok);
   stopQa('stamps');
   stopInPlaats();
@@ -481,11 +526,35 @@ export async function stopStamps(api) {
 
 export function isActief() { return actief; }
 
-export function bouwer(api = api0) {
+/** A built-in family exactly as Seed43 ships it (not written to the folder). */
+function ongewijzigdStandaard(f) {
+  const std = STANDAARD.find((x) => x.id === f.id);
+  return !!std && JSON.stringify(std) === JSON.stringify(f);
+}
+
+/** Take in the templates folder; returns true when the families changed. */
+async function metMap() {
+  const r = await synchroniseer(families, ongewijzigdStandaard);
+  if (!r.gewijzigd) return false;
+  families = r.families;
+  bewaarFamilies(families.filter((f) => !f.shared));
+  ladeLijst?.ververs(families);
+  return true;
+}
+
+export async function bouwer(api = api0) {
   if (!actief) return;
+  // Files dropped into the templates folder show up in the builder.
+  try { await metMap(); } catch (e) { console.warn('[seed43] templates folder:', e); }
   openBouwer(families, api, async (nieuw, gewijzigd) => {
+    const weg = families.filter((f) => !f.shared && !nieuw.some((x) => x.id === f.id)).map((f) => f.id);
     families = nieuw;
-    bewaarFamilies(families);
+    bewaarFamilies(families.filter((f) => !f.shared));
+    if (heeftMap()) {
+      // A built-in put back (Reset) still updates its file, so the file does not undo it.
+      for (const f of gewijzigd) if (!f.shared && (!ongewijzigdStandaard(f) || heeftBestand(f.id))) await schrijfFamilie(f).catch((e) => console.warn('[seed43] template not written:', e));
+      for (const id of weg) await verplaatsNaarWeg(id);
+    }
     ladeLijst?.ververs(families);
     // Placed stamps of a changed family take its new design; values stay.
     for (const f of gewijzigd) {
@@ -498,4 +567,15 @@ export function bouwer(api = api0) {
     }
     api.redrawAnnotations?.();
   });
+}
+
+/** The Sheet button on the ribbon: pick a sheet, add it here, to all pages, or start a new PDF. */
+export async function bladVenster(api = api0) {
+  if (!actief) families = laadFamilies();
+  try { await metMap(); } catch (e) { console.warn('[seed43] templates folder:', e); }
+  openBladVenster(families, {
+    plaatsHier: (f) => plaatsBlad(api, f, 'page'),
+    plaatsAlle: (f) => plaatsBlad(api, f, 'all'),
+    nieuw: (f, n) => nieuwePdfVanBlad(api, f, n),
+  }, api);
 }

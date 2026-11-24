@@ -1,15 +1,17 @@
-// Stamp Builder: design stamp, sheet and form families, and set My details.
+// Builder: design stamp, sheet and form families, and set My details.
 // A modal window of the extension's own; the host draws everything else.
 //
 // A sheet is made from a blank title-block PDF: open it in the app, then
 // New › Sheet from the open page. White turns see-through; drag boxes onto
 // the picture where the values go.
 
-import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan, STANDAARD, merkVerwijderd, merkTerug } from './families.js';
+import { nieuwId, sleutelVan, geldig, AUTO, SOORTEN, LAYOUTS, GROEPEN, groepVan, STANDAARD, merkVerwijderd, merkTerug, leesVerborgen, bewaarVerborgen } from './families.js';
 import { opmaak } from './render.js';
 import { zorgStijl, leesTab } from './panel.js';
 import { naarPagina } from '../library/overlay.js';
 import { slimmeRand } from './smart.js';
+import { toonMap, heeftMap, MAP_NAAM, leesLocaties, bewaarLocaties, kiesMap } from './map.js';
+import { teksten, tekstVak, tekstOp, tekstenIn, maakVelden, tekstTerug } from './tekstvelden.js';
 import { laadProfiel, bewaarProfiel, PROFIEL_VELDEN, inktPlaatje } from './profile.js';
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
@@ -128,13 +130,22 @@ export function openBouwer(families, api, opslaan) {
   let tab = leesTab();
   let gekozen = (lijst.find((f) => groepVan(f) === tab) || lijst[0])?.id || null;   // family id, or 'profiel'
   let gekozenVeld = null;               // key of the field selected in the sheet editor
+  let kiesTekst = false;                // the sheet editor picks text for fields
+  let zoomBlad = 1;                     // sheet editor zoom (1 = the whole sheet fits)
+  let bladScroll = null;                // where the sheet editor was scrolled to, kept over a redraw
+  // Grid in the sheet editor: shown, snapped to, its spacing in mm (kept for next time).
+  let raster = { aan: false, snap: true, mm: 5 };
+  try { raster = { ...raster, ...JSON.parse(localStorage.getItem('seed43.builder.grid') || '{}') }; } catch {}
+  const bewaarRaster = () => { try { localStorage.setItem('seed43.builder.grid', JSON.stringify(raster)); } catch {} };
   let profiel = laadProfiel();
   let profielGewijzigd = false;
-  const verwijderd = new Set();         // built-ins deleted in this session (recorded on Save)
+  const verwijderd = new Set();
+  // Which families show in the Stamps drawer and the Sheet dialog (saved with Save).
+  const verborgen = leesVerborgen();         // built-ins deleted in this session (recorded on Save)
 
   const achter = maak('div', 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000;display:flex;align-items:center;justify-content:center;');
   const venster = maak('div', 'width:min(1100px,96vw);height:min(760px,92vh);display:flex;flex-direction:column;background:var(--theme-app-menu-bg,#fff);color:var(--theme-app-menu-text,#222);border:1px solid var(--theme-app-menu-sidebar-border,#888);box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:12px;');
-  const kop = maak('div', 'padding:10px 14px;font-size:14px;font-weight:bold;border-bottom:1px solid var(--theme-app-menu-divider,#ddd);', 'Seed43 Stamp Builder');
+  const kop = maak('div', 'padding:10px 14px;font-size:14px;font-weight:bold;border-bottom:1px solid var(--theme-app-menu-divider,#ddd);', 'Seed43 Builder');
   // Tabs like the Stamps drawer: Stamps | Sheets | Memos, and My details on the right.
   zorgStijl();
   const tabs = maak('div', '--acc:var(--theme-accent,#0078d7);--rand:var(--theme-app-menu-divider,#ddd);--hover:var(--theme-app-menu-item-hover,#eef);');
@@ -185,8 +196,24 @@ export function openBouwer(families, api, opslaan) {
       });
       tabs.appendChild(t);
     }
+    // The templates folder of this tab (Documents\S43 PDF Templates\Sheets…).
+    if (heeftMap()) {
+      const map = maak('button', 'margin-left:auto;', `Open ${GROEPEN[tab]} folder`);
+      map.className = 's43p-bouwer';
+      map.title = `Your ${GROEPEN[tab].toLowerCase()} are kept as files in Documents\\${MAP_NAAM}\\${GROEPEN[tab]}. Nothing there is ever deleted: deleted ones move to Deleted. Files you copy in show up the next time the builder opens.`;
+      map.addEventListener('click', async () => { try { await toonMap(tab); } catch (e) { alert(e.message || e); } });
+      tabs.appendChild(map);
+    }
+    if (heeftMap()) {
+      const loc = maak('button', 'margin-left:6px;', 'Locations…');
+      loc.className = 's43p-bouwer';
+      loc.title = 'Shared template folders (a company library on a network drive): read only, shown with a lock';
+      loc.addEventListener('click', () => locatiesVenster());
+      tabs.appendChild(loc);
+    }
     const mijn = maak('button', gekozen === 'profiel' ? 'background:color-mix(in srgb,var(--acc) 15%,transparent);font-weight:bold;' : '', 'My details…');
     mijn.className = 's43p-bouwer';
+    if (heeftMap()) mijn.style.marginLeft = '6px';
     mijn.title = 'Your name, initials, company, CPEng number and signature, used to fill stamps';
     mijn.addEventListener('click', () => { gekozen = 'profiel'; tekenAlles(); });
     tabs.appendChild(mijn);
@@ -197,8 +224,19 @@ export function openBouwer(families, api, opslaan) {
     lijstEl.innerHTML = '';
     const inTab = lijst.filter((f) => groepVan(f) === tab);
     if (!inTab.length) lijstEl.appendChild(maak('div', 'padding:10px;opacity:.7;', `No ${GROEPEN[tab].toLowerCase()} yet: make one with New… below.`));
+    else lijstEl.appendChild(maak('div', 'padding:6px 10px 2px;opacity:.65;font-size:11px;', `Ticked ${GROEPEN[tab].toLowerCase()} show in the Stamps drawer${tab === 'stamp' ? '' : ' and the Sheet dialog'}.`));
     for (const f of inTab) {
-      const r = maak('div', `padding:6px 10px;cursor:pointer;border-left:3px solid ${f.color || '#c0392b'};${f.id === gekozen ? 'background:var(--theme-app-menu-item-hover,#eef);font-weight:bold;' : ''}`, f.name);
+      const r = maak('div', `padding:6px 10px;cursor:pointer;border-left:3px solid ${f.color || '#c0392b'};${f.id === gekozen ? 'background:var(--theme-app-menu-item-hover,#eef);font-weight:bold;' : ''}`, f.shared ? `🔒 ${f.name}` : f.name);
+      if (f.shared) r.title = `From the shared location "${f.shared}" (read only). Duplicate it to make your own.`;
+      // Tick: shown in the Stamps drawer and the Sheet dialog.
+      r.style.display = 'flex'; r.style.alignItems = 'center'; r.style.gap = '6px';
+      const naam = r.firstChild;
+      const vink = maak('input', 'margin:0;flex:none;cursor:pointer;'); vink.type = 'checkbox'; vink.checked = !verborgen.has(f.id);
+      vink.title = 'Show in the Stamps drawer and the Sheet dialog';
+      vink.addEventListener('click', (e) => e.stopPropagation());
+      vink.addEventListener('change', () => { if (vink.checked) verborgen.delete(f.id); else verborgen.add(f.id); tekenLijst(); });
+      const tekst = maak('span', `flex:1;${verborgen.has(f.id) ? 'opacity:.5;' : ''}`); tekst.append(naam);
+      r.replaceChildren(vink, tekst);
       r.addEventListener('click', () => { gekozen = f.id; gekozenVeld = null; tekenAlles(); });
       lijstEl.appendChild(r);
     }
@@ -236,18 +274,98 @@ export function openBouwer(families, api, opslaan) {
   function bladEditor(f) {
     const W = f.width || 595, H = f.height || 842;
     const maxB = Math.min(760, rechts.clientWidth - 40 || 700);
-    const s = Math.min(maxB / W, 640 / H);
     const px = window.devicePixelRatio || 1;
-    const c = maak('canvas', 'align-self:flex-start;border:1px solid var(--theme-app-menu-divider,#ccc);background:#fff;cursor:crosshair;touch-action:none;');
+    const fit = Math.min(maxB / W, 640 / H);
+    // Zoom: the wheel over the sheet, or − Fit + ; the middle button pans.
+    // A canvas stays under the browser's size limit.
+    zoomBlad = Math.max(1, Math.min(zoomBlad, 16000 / (W * fit * px), 16000 / (H * fit * px), 40));
+    const s = fit * zoomBlad;
+    const doos = maak('div', 'align-self:flex-start;display:flex;flex-direction:column;gap:4px;');
+    const balk = maak('div', 'display:flex;gap:4px;align-items:center;');
+    const venster2 = maak('div', `overflow:auto;max-width:${Math.round(W * fit) + 4}px;max-height:${Math.round(H * fit) + 4}px;border:1px solid var(--theme-app-menu-divider,#ccc);`);
+    const c = maak('canvas', 'display:block;background:#fff;cursor:crosshair;touch-action:none;');
+    venster2.appendChild(c);
+    const zetZoom = (z, rond) => {
+      // Keep the point under the pointer (or the middle) where it is.
+      const r = venster2.getBoundingClientRect();
+      const ox = rond ? rond.x - r.left : venster2.clientWidth / 2, oy = rond ? rond.y - r.top : venster2.clientHeight / 2;
+      const px0 = (venster2.scrollLeft + ox) / s, py0 = (venster2.scrollTop + oy) / s;
+      const nieuw = Math.max(1, Math.min(z, 40));
+      if (Math.abs(nieuw - zoomBlad) < 1e-3) return;
+      zoomBlad = nieuw;
+      const s2 = fit * Math.min(zoomBlad, 16000 / (W * fit * px), 16000 / (H * fit * px));
+      bladScroll = { x: px0 * s2 - ox, y: py0 * s2 - oy };
+      tekenAlles();
+    };
+    balk.append(
+      knop('−', () => zetZoom(zoomBlad / 1.5)),
+      knop('Fit', () => { bladScroll = null; zetZoom(1); }),
+      knop('+', () => zetZoom(zoomBlad * 1.5)),
+      maak('span', 'opacity:.7;margin:0 10px 0 4px;', `${Math.round(zoomBlad * 100)}%  (wheel to zoom, middle button to pan)`),
+      (() => {
+        const l = maak('label', 'display:flex;gap:4px;align-items:center;'); const k = maak('input'); k.type = 'checkbox'; k.checked = raster.aan;
+        k.addEventListener('change', () => { raster.aan = k.checked; bewaarRaster(); teken(); }); l.append(k, 'Grid'); return l;
+      })(),
+      keuzelijst({ 1: '1 mm', 2.5: '2.5 mm', 5: '5 mm', 10: '10 mm', 20: '20 mm' }, String(raster.mm), (w) => { raster.mm = Number(w) || 5; bewaarRaster(); teken(); }, 'width:76px;'),
+      (() => {
+        const l = maak('label', 'display:flex;gap:4px;align-items:center;'); const k = maak('input'); k.type = 'checkbox'; k.checked = raster.snap;
+        l.title = 'Boxes you drag, move or resize land on the grid lines (hold Alt to place freely)';
+        k.addEventListener('change', () => { raster.snap = k.checked; bewaarRaster(); }); l.append(k, 'Snap to grid'); return l;
+      })(),
+    );
+    doos.append(balk, venster2);
+    venster2.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      zetZoom(zoomBlad * (e.deltaY < 0 ? 1.25 : 0.8), { x: e.clientX, y: e.clientY });
+    }, { passive: false });
+    if (bladScroll) {
+      const sc = bladScroll; bladScroll = null;
+      requestAnimationFrame(() => { venster2.scrollLeft = sc.x; venster2.scrollTop = sc.y; });
+    }
+    let pan = null;
+    c.addEventListener('pointerdown', (e) => {
+      if (e.button !== 1) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      c.setPointerCapture(e.pointerId);
+      pan = { x: e.clientX, y: e.clientY, sl: venster2.scrollLeft, st: venster2.scrollTop };
+      c.style.cursor = 'grabbing';
+    });
+    c.addEventListener('pointermove', (e) => {
+      if (!pan) return;
+      e.stopImmediatePropagation();
+      venster2.scrollLeft = pan.sl - (e.clientX - pan.x); venster2.scrollTop = pan.st - (e.clientY - pan.y);
+    });
+    c.addEventListener('pointerup', (e) => {
+      if (!pan) return;
+      e.stopImmediatePropagation();
+      pan = null; c.style.cursor = 'crosshair';
+    });
     c.width = W * s * px; c.height = H * s * px;
     c.style.width = `${W * s}px`; c.style.height = `${H * s}px`;
     const ctx = c.getContext('2d');
-    let sleep = null;   // { soort: 'nieuw'|'schuif'|'maat', veld, x0, y0, oud }
+    let sleep = null;   // { soort: 'nieuw'|'schuif'|'maat'|'kies', veld, x0, y0, oud }
+    let onder = null;   // the text under the pointer while picking text
     const teken = () => {
       ctx.setTransform(px, 0, 0, px, 0, 0);
       ctx.clearRect(0, 0, W * s, H * s);
       ctx.save(); ctx.scale(s, s); ctx.textBaseline = 'middle';
       opmaak({ family: f, values: voorbeeldWaarden(f), placed: new Date().toISOString() }, { page: 1 }, { fileName: 'Drawing.pdf', pages: 4 }).teken(ctx);
+      if (raster.aan) {
+        // Grid lines (every 5th darker); left out when they would be closer than 4 px.
+        const st = raster.mm * 72 / 25.4;
+        if (st * s >= 4) {
+          ctx.save();
+          for (let i = 0, x = 0; x <= W; i++, x = i * st) {
+            ctx.strokeStyle = i % 5 ? 'rgba(0,120,215,.13)' : 'rgba(0,120,215,.32)'; ctx.lineWidth = 1 / s;
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+          }
+          for (let i = 0, y = 0; y <= H; i++, y = i * st) {
+            ctx.strokeStyle = i % 5 ? 'rgba(0,120,215,.13)' : 'rgba(0,120,215,.32)'; ctx.lineWidth = 1 / s;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
       for (const v of f.fields) {
         if (v.x == null) continue;
         const aan = v.key === gekozenVeld;
@@ -257,7 +375,18 @@ export function openBouwer(families, api, opslaan) {
         ctx.strokeRect(v.x, v.y, v.w, v.h);
         if (aan) { ctx.fillStyle = '#0078d7'; ctx.fillRect(v.x + v.w - 4 / s, v.y + v.h - 4 / s, 8 / s, 8 / s); }
       }
-      if (sleep?.soort === 'nieuw' && sleep.rect) {
+      if (kiesTekst) {
+        // Picking text: every text a faint orange box, the one under the pointer strong.
+        for (const p of teksten(f)) {
+          const v = tekstVak(p);
+          const aan = p === onder || (sleep?.rect && tekstenIn(f, sleep.rect).includes(p));
+          ctx.fillStyle = aan ? 'rgba(234,88,12,.25)' : 'rgba(234,88,12,.07)';
+          ctx.fillRect(v.x, v.y, v.w, v.h);
+          ctx.strokeStyle = aan ? '#ea580c' : 'rgba(234,88,12,.45)'; ctx.lineWidth = (aan ? 1.4 : 0.6) / s;
+          ctx.strokeRect(v.x, v.y, v.w, v.h);
+        }
+      }
+      if ((sleep?.soort === 'nieuw' || sleep?.soort === 'kies') && sleep.rect) {
         ctx.setLineDash([4 / s, 3 / s]); ctx.strokeStyle = '#0078d7'; ctx.lineWidth = 1 / s;
         ctx.strokeRect(sleep.rect.x, sleep.rect.y, sleep.rect.w, sleep.rect.h);
       }
@@ -268,6 +397,7 @@ export function openBouwer(families, api, opslaan) {
     c.addEventListener('pointerdown', (e) => {
       const p = punt(e);
       c.setPointerCapture(e.pointerId);
+      if (kiesTekst) { sleep = { soort: 'kies', x0: p.x, y0: p.y, rect: null }; return; }
       const g = f.fields.find((v) => v.key === gekozenVeld && v.x != null);
       if (g && Math.abs(p.x - (g.x + g.w)) < 7 / s && Math.abs(p.y - (g.y + g.h)) < 7 / s) { sleep = { soort: 'maat', veld: g, x0: p.x, y0: p.y, oud: { ...g } }; return; }
       const v = opVeld(p);
@@ -276,22 +406,47 @@ export function openBouwer(families, api, opslaan) {
     });
     c.addEventListener('pointermove', (e) => {
       const p = punt(e);
+      if (!sleep && kiesTekst) {
+        const o = tekstOp(f, p.x, p.y);
+        c.style.cursor = o ? 'pointer' : 'crosshair';
+        if (o !== onder) { onder = o; teken(); }
+        return;
+      }
       if (!sleep) {
         const g = f.fields.find((v) => v.key === gekozenVeld && v.x != null);
         c.style.cursor = g && Math.abs(p.x - (g.x + g.w)) < 7 / s && Math.abs(p.y - (g.y + g.h)) < 7 / s ? 'nwse-resize' : opVeld(p) ? 'move' : 'crosshair';
         return;
       }
       const dx = p.x - sleep.x0, dy = p.y - sleep.y0;
-      if (sleep.soort === 'nieuw') sleep.rect = { x: Math.min(p.x, sleep.x0), y: Math.min(p.y, sleep.y0), w: Math.abs(dx), h: Math.abs(dy) };
-      else if (sleep.soort === 'schuif') { sleep.veld.x = Math.round(sleep.oud.x + dx); sleep.veld.y = Math.round(sleep.oud.y + dy); }
-      else { sleep.veld.w = Math.max(8, Math.round(sleep.oud.w + dx)); sleep.veld.h = Math.max(6, Math.round(sleep.oud.h + dy)); }
+      // On the grid when Snap is on (Alt: free).
+      const st = raster.aan && raster.snap && !e.altKey ? raster.mm * 72 / 25.4 : 0;
+      const g = (v) => (st ? Math.round(v / st) * st : Math.round(v));
+      if (sleep.soort === 'nieuw') {
+        const ax = g(sleep.x0), ay = g(sleep.y0), bx = g(p.x), by = g(p.y);
+        sleep.rect = { x: Math.min(ax, bx), y: Math.min(ay, by), w: Math.abs(bx - ax), h: Math.abs(by - ay) };
+      } else if (sleep.soort === 'kies') sleep.rect = { x: Math.min(p.x, sleep.x0), y: Math.min(p.y, sleep.y0), w: Math.abs(dx), h: Math.abs(dy) };
+      else if (sleep.soort === 'schuif') { sleep.veld.x = +g(sleep.oud.x + dx).toFixed(2); sleep.veld.y = +g(sleep.oud.y + dy).toFixed(2); }
+      else {
+        sleep.veld.w = +Math.max(8, g(sleep.oud.x + sleep.oud.w + dx) - sleep.veld.x).toFixed(2);
+        sleep.veld.h = +Math.max(6, g(sleep.oud.y + sleep.oud.h + dy) - sleep.veld.y).toFixed(2);
+      }
       teken();
     });
-    c.addEventListener('pointerup', () => {
+    c.addEventListener('pointerup', (e) => {
+      if (sleep?.soort === 'kies') {
+        // A click takes the text under it; a box takes every text inside it.
+        const r = sleep.rect;
+        const p = punt(e);
+        const lijst = r && r.w > 4 && r.h > 3 ? tekstenIn(f, r) : [tekstOp(f, p.x, p.y)].filter(Boolean);
+        sleep = null; onder = null;
+        const nieuw = maakVelden(f, lijst, sleutelVan);
+        if (nieuw.length) { gekozenVeld = nieuw[nieuw.length - 1].key; tekenAlles(); } else teken();
+        return;
+      }
       if (sleep?.soort === 'nieuw' && sleep.rect && sleep.rect.w > 6 && sleep.rect.h > 5) {
         const label = 'Field';
         const r = sleep.rect;
-        const v = { key: sleutelVan(label, f.fields.map((x) => x.key)), label, kind: 'text', value: '', x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) };
+        const v = { key: sleutelVan(label, f.fields.map((x) => x.key)), label, kind: 'text', value: '', x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.w.toFixed(2), h: +r.h.toFixed(2) };
         f.fields.push(v);
         gekozenVeld = v.key;
         sleep = null;
@@ -304,7 +459,7 @@ export function openBouwer(families, api, opslaan) {
       teken();
     });
     teken();
-    return c;
+    return doos;
   }
 
   // ── parameters ──────────────────────────────────────────────────────
@@ -318,8 +473,34 @@ export function openBouwer(families, api, opslaan) {
 
   function veldRij(f, v, i) {
     const placed = f.layout === 'placed';
-    const r = maak('div', `display:grid;grid-template-columns:1.3fr 1fr 1.6fr auto;gap:6px;align-items:center;padding:3px;${v.key === gekozenVeld ? 'background:rgba(0,120,215,.1);' : ''}`);
+    const r = maak('div', `display:grid;grid-template-columns:18px 1.3fr 1fr 1.6fr auto;gap:6px;align-items:center;padding:3px;${v.key === gekozenVeld ? 'background:rgba(0,120,215,.1);' : ''}`);
     r.dataset.veld = v.key;
+    // Drag the grip to put the parameter elsewhere in the list (the order the
+    // Properties panel and the in-place editor show them in).
+    const greep = maak('span', 'cursor:grab;opacity:.6;text-align:center;user-select:none;font-size:14px;', '⠿');
+    greep.title = 'Drag to reorder';
+    greep.draggable = true;
+    greep.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/x-seed43-veld', String(i)); e.dataTransfer.effectAllowed = 'move'; r.style.opacity = '.45'; });
+    greep.addEventListener('dragend', () => { r.style.opacity = ''; });
+    r.addEventListener('dragover', (e) => {
+      if (!e.dataTransfer.types.includes('text/x-seed43-veld')) return;
+      e.preventDefault();
+      const boven = e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2;
+      r.style.boxShadow = boven ? 'inset 0 2px 0 var(--theme-accent,#0078d7)' : 'inset 0 -2px 0 var(--theme-accent,#0078d7)';
+    });
+    r.addEventListener('dragleave', () => { r.style.boxShadow = ''; });
+    r.addEventListener('drop', (e) => {
+      r.style.boxShadow = '';
+      const van = Number(e.dataTransfer.getData('text/x-seed43-veld'));
+      if (!Number.isInteger(van) || van === i) return;
+      e.preventDefault();
+      const boven = e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2;
+      const [weg] = f.fields.splice(van, 1);
+      let naar = i + (boven ? 0 : 1);
+      if (van < naar) naar--;
+      f.fields.splice(naar, 0, weg);
+      tekenAlles();
+    });
     if (placed) r.addEventListener('click', (e) => { if (gekozenVeld !== v.key && e.target.tagName !== 'INPUT') { gekozenVeld = v.key; tekenAlles(); } });
     const label = invoer(v.label, (w) => { v.label = w.trim() || 'Parameter'; tekenAlles(); });
     label.placeholder = 'Parameter name';
@@ -349,9 +530,9 @@ export function openBouwer(families, api, opslaan) {
     acties.append(
       knop('↑', () => { if (i > 0) { [f.fields[i - 1], f.fields[i]] = [f.fields[i], f.fields[i - 1]]; tekenAlles(); } }),
       knop('↓', () => { if (i < f.fields.length - 1) { [f.fields[i + 1], f.fields[i]] = [f.fields[i], f.fields[i + 1]]; tekenAlles(); } }),
-      knop('×', () => { f.fields.splice(i, 1); if (gekozenVeld === v.key) gekozenVeld = null; tekenAlles(); }),
+      knop('×', () => { f.fields.splice(i, 1); tekstTerug(f, v); if (gekozenVeld === v.key) gekozenVeld = null; tekenAlles(); }),
     );
-    r.append(label, soort, detail, acties);
+    r.append(greep, label, soort, detail, acties);
     // Options under the row.
     const opties = maak('div', 'grid-column:1 / -1;display:flex;gap:12px;flex-wrap:wrap;padding-left:4px;opacity:.85;');
     const vink = (tekst, titel, aan, bij) => {
@@ -370,6 +551,13 @@ export function openBouwer(families, api, opslaan) {
       const grootte = invoer(v.size || '', (w) => { v.size = Number(w) || undefined; tekenAlles(); }, 'width:56px;', 'number');
       grootte.placeholder = 'auto'; grootte.title = 'Text size (pt); empty fits the box';
       opties.append(maak('span', '', 'Size'), grootte);
+      // Text colour of this value (empty: the sheet's text colour).
+      const kl = maak('input', 'width:34px;height:22px;padding:0;'); kl.type = 'color';
+      kl.value = /^#[0-9a-f]{6}$/i.test(v.color || '') ? v.color : (/^#[0-9a-f]{6}$/i.test(f.ink || '') ? f.ink : '#1f2328');
+      kl.title = 'Colour of this value on the sheet';
+      kl.addEventListener('change', () => { v.color = kl.value; tekenAlles(); });
+      opties.append(maak('span', '', 'Colour'), kl);
+      if (v.color) opties.appendChild(knop('Default colour', () => { delete v.color; tekenAlles(); }));
       if (v.x == null) opties.appendChild(maak('span', 'color:#c0392b', 'Not on the sheet: drag a box for it'));
     }
     r.appendChild(opties);
@@ -485,12 +673,68 @@ export function openBouwer(families, api, opslaan) {
     );
   }
 
+  /** Shared locations: a list like Revit's Places, read only folders. */
+  function locatiesVenster() {
+    let lijstL = leesLocaties();
+    const sluier = maak('div', 'position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:6;');
+    const kaart = maak('div', 'background:var(--theme-app-menu-bg,#fff);padding:14px 16px;border-radius:8px;width:min(720px,92%);box-shadow:0 6px 24px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px;');
+    const tabel = maak('div', 'display:flex;flex-direction:column;gap:3px;max-height:320px;overflow:auto;border:1px solid var(--theme-app-menu-divider,#ddd);padding:4px;');
+    const teken = () => {
+      tabel.replaceChildren();
+      tabel.appendChild(maak('div', 'display:grid;grid-template-columns:170px 1fr auto;gap:6px;font-weight:bold;opacity:.8;padding:2px 4px;', '')).append(maak('span', '', 'Name'), maak('span', '', 'Path'), maak('span', '', ''));
+      if (!lijstL.length) tabel.appendChild(maak('div', 'opacity:.7;padding:8px;', 'No shared locations yet. Add a folder, for example the company templates on the network.'));
+      lijstL.forEach((l, i) => {
+        const rij = maak('div', 'display:grid;grid-template-columns:170px 1fr auto;gap:6px;align-items:center;padding:2px 4px;');
+        const pad = maak('span', 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;', l.path); pad.title = l.path;
+        const acties = maak('div', 'display:flex;gap:2px;');
+        acties.append(
+          knop('↑', () => { if (i > 0) { [lijstL[i - 1], lijstL[i]] = [lijstL[i], lijstL[i - 1]]; teken(); } }),
+          knop('↓', () => { if (i < lijstL.length - 1) { [lijstL[i + 1], lijstL[i]] = [lijstL[i], lijstL[i + 1]]; teken(); } }),
+          knop('−', () => { lijstL.splice(i, 1); teken(); }),
+        );
+        rij.append(invoer(l.name, (w) => { l.name = w.trim(); }), pad, acties);
+        tabel.appendChild(rij);
+      });
+    };
+    const klaar = (bewaar) => {
+      sluier.remove();
+      if (!bewaar) return;
+      bewaarLocaties(lijstL);
+      // Reopen the builder so the shared templates are read again.
+      alert('Locations saved. Close and reopen the Builder to see their templates (they also show in the Stamps tab after a restart).');
+    };
+    kaart.append(
+      maak('div', 'font-weight:bold;font-size:13px;', 'Shared template locations'),
+      maak('div', 'opacity:.75;', 'Folders with stamps, sheets and memos to use but not change: a company library on a network drive, say. Seed43 reads .seed43stamps files in each folder and in its Stamps, Sheets and Memos folders. They are read only and show with a lock; duplicate one to make your own copy. Higher in the list wins when two have the same template.'),
+      tabel,
+      maak('div', 'display:flex;gap:6px;justify-content:space-between;'),
+    );
+    kaart.lastChild.append(
+      knop('+ Add folder…', async () => {
+        const p = await kiesMap('Choose a shared templates folder');
+        if (!p || lijstL.some((l) => l.path.toLowerCase() === p.toLowerCase())) return;
+        lijstL.push({ name: p.split(/[\\/]/).filter(Boolean).pop(), path: p }); teken();
+      }),
+      maak('div', 'display:flex;gap:6px;'),
+    );
+    kaart.lastChild.lastChild.append(knop('Cancel', () => klaar(false)), knop('OK', () => klaar(true), 'background:var(--theme-accent,#0078d7);border-color:var(--theme-accent,#0078d7);color:#fff;'));
+    sluier.appendChild(kaart);
+    venster.style.position = 'relative'; venster.appendChild(sluier);
+    teken();
+  }
+
   function tekenRechts() {
     rechts.innerHTML = '';
     veldenDoos = null;
     if (gekozen === 'profiel') { tekenProfiel(); return; }
     const f = fam();
     if (!f) { rechts.appendChild(maak('div', 'opacity:.7', 'Nothing chosen. Click New to make a stamp or a sheet.')); return; }
+    if (f.shared) {
+      // Read only: shown, not changed. Duplicate makes an own copy.
+      rechts.appendChild(maak('div', 'padding:8px 10px;background:rgba(234,179,8,.15);border-radius:4px;', `🔒 From the shared location "${f.shared}": read only. Use Duplicate to make your own copy to change.`));
+      rechts.appendChild(voorbeeld(f));
+      return;
+    }
     const layout = f.layout || 'table';
     const raster = maak('div', 'display:grid;grid-template-columns:110px 1fr;gap:6px 10px;align-items:center;max-width:620px;');
     const veld = (naam, el) => { raster.append(maak('span', 'opacity:.8', naam), el); };
@@ -570,7 +814,18 @@ export function openBouwer(families, api, opslaan) {
 
     if (layout === 'placed') {
       rechts.appendChild(maak('div', 'font-weight:bold;margin-top:6px;', 'Sheet'));
-      rechts.appendChild(maak('div', 'opacity:.7', 'Drag on the sheet to add a box for a value. Click a box to pick it, drag it to move it, drag its corner to resize it.'));
+      if (teksten(f).length || f.fields.some((v) => v.uitTekst)) {
+        // A smart border: pick the texts that are values to fill in.
+        const rij = maak('div', 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;');
+        const k = knop(kiesTekst ? 'Done picking text' : 'Pick text for fields', () => { kiesTekst = !kiesTekst; tekenAlles(); },
+          kiesTekst ? 'background:#ea580c;border-color:#ea580c;color:#fff;' : '');
+        k.title = 'Click the texts on the sheet that change per drawing (project name, drawing number, date…). Each becomes a box for a value, named after its label; drag a box around several to take them all.';
+        rij.append(k, maak('span', 'opacity:.7', kiesTekst
+          ? 'Click a text (or drag around several) to make it a field. Labels stay as they are. × on a field puts its text back.'
+          : 'Turn the texts that change per drawing into fields.'));
+        rechts.appendChild(rij);
+      }
+      rechts.appendChild(maak('div', 'opacity:.7', kiesTekst ? '' : 'Drag on the sheet to add a box for a value. Click a box to pick it, drag it to move it, drag its corner to resize it.'));
       rechts.appendChild(bladEditor(f));
     }
 
@@ -645,10 +900,12 @@ export function openBouwer(families, api, opslaan) {
     knop('Duplicate', () => {
       const f = fam(); if (!f) return;
       const d = { ...kopie(f), id: nieuwId(), name: `${f.name} copy`, builtin: false };
+      delete d.shared;
       lijst.push(d); gekozen = d.id; tekenAlles();
     }),
     knop('Delete', () => {
       const f = fam(); if (!f) return;
+      if (f.shared) { alert(`"${f.name}" is in the shared location "${f.shared}" (read only). Remove the location under Locations… to stop showing it.`); return; }
       if (!confirm(`Delete "${f.name}"? Stamps and sheets already placed keep showing.`)) return;
       lijst = lijst.filter((x) => x.id !== f.id); verwijderd.add(f.id); gekozen = (lijst.find((x) => groepVan(x) === tab) || lijst[0])?.id || null; tekenAlles();
     }),
@@ -693,6 +950,7 @@ export function openBouwer(families, api, opslaan) {
     knop('Cancel', sluit),
     knop('Save', () => {
       if (profielGewijzigd) bewaarProfiel(profiel);
+      bewaarVerborgen(verborgen);
       for (const id of verwijderd) if (!lijst.some((f) => f.id === id)) merkVerwijderd(id);
       for (const f of lijst) merkTerug(f.id);
       const oud = JSON.parse(oorspronkelijk);

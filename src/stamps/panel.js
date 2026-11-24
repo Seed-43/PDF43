@@ -1,10 +1,10 @@
 // Stamps tab of the Seed43 drawer: QA colours, a row of three tabs with the
-// Stamp Builder on its right, a search box, then the families of that tab:
+// Builder on its right, a search box, then the families of that tab:
 //   Stamps  click one, then click on the sheet to place it
 //   Sheets  drawing sheets (A0 to A4): add to this page, to all pages, or a new PDF
 //   Memos   A4 memos and forms (RFI, site instruction…): usually a new PDF
 
-import { GROEPEN, groepVan } from './families.js';
+import { GROEPEN, groepVan, leesVerborgen } from './families.js';
 import { QA_CSS } from './qa.js';
 
 const STIJL_ID = 'seed43-stamp-panel-stijl';
@@ -40,7 +40,7 @@ const CSS = `
 ${QA_CSS}
 `;
 
-/** The tab and button styles, for the drawer and the Stamp Builder. */
+/** The tab and button styles, for the drawer and the Builder. */
 export function zorgStijl() {
   let s = document.getElementById(STIJL_ID);
   if (!s) { s = document.createElement('style'); s.id = STIJL_ID; document.head.appendChild(s); }
@@ -79,9 +79,9 @@ function bladActies(f, blad) {
 }
 
 const LEEG = {
-  stamp: 'No stamps yet. Make one in the Stamp Builder.',
-  sheet: 'No sheets yet. Make one in the Stamp Builder.',
-  form: 'No memos yet. Make one in the Stamp Builder.',
+  stamp: 'No stamps yet. Make one in the Builder.',
+  sheet: 'No sheets yet. Make one in the Builder.',
+  form: 'No memos yet. Make one in the Builder.',
 };
 
 function vulLijst(lijst, families, g, icoon, kies, blad, zoekt) {
@@ -143,7 +143,7 @@ export function maakStempelLijst({ families, icoon, kies, blad, bouwer, qa }) {
   }
   const b = document.createElement('button');
   b.className = 's43p-bouwer';
-  b.textContent = 'Stamp Builder…';
+  b.textContent = 'Builder…';
   b.title = 'Make or change stamps, sheets and memos, and set My details';
   b.addEventListener('click', () => bouwer());
   tabs.appendChild(b);
@@ -160,7 +160,9 @@ export function maakStempelLijst({ families, icoon, kies, blad, bouwer, qa }) {
   let alle = families;
   const toon = () => {
     const q = invoer.value.trim().toLowerCase();
-    const gevonden = q ? alle.filter((f) => `${f.name} ${f.title || ''}`.toLowerCase().includes(q)) : alle;
+    const verborgen = leesVerborgen();
+    const zicht = alle.filter((f) => !verborgen.has(f.id));
+    const gevonden = q ? zicht.filter((f) => `${f.name} ${f.title || ''}`.toLowerCase().includes(q)) : zicht;
     // While searching, each tab shows how many it found.
     for (const [g, { t, titel }] of Object.entries(tabjes)) {
       t.dataset.aan = g === tab ? '1' : '0';
@@ -171,6 +173,7 @@ export function maakStempelLijst({ families, icoon, kies, blad, bouwer, qa }) {
     vulLijst(lijst, gevonden.filter((f) => groepVan(f) === tab), tab, icoon, kies, blad, !!q);
   };
   invoer.addEventListener('input', toon);
+
   toon();
   return { el, ververs: (f) => { alle = f; toon(); }, focus: () => setTimeout(() => invoer.focus(), 50) };
 }

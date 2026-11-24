@@ -85,7 +85,7 @@ export function startInPlaats(api, { type, zet, profiel }) {
 
   const opener = (e, p, hit) => {
     const { ann, veld } = hit;
-    if (ann.locked) { melding('Locked: unlock it in Properties to change it.', e.clientX, e.clientY); return; }
+    if (ann.locked && !ann.seed43Sheet) { melding('Locked: unlock it in Properties to change it.', e.clientX, e.clientY); return; }
     if (veld.kind === 'auto') { melding(`${veld.label}: ${AUTO[veld.auto] || 'automatic'}, filled in by itself.`, e.clientX, e.clientY); return; }
     let oud = ann.stamp?.values?.[veld.key] ?? '';
     const rv = revVeld(veld.key);
@@ -99,7 +99,7 @@ export function startInPlaats(api, { type, zet, profiel }) {
     if (veld.kind === 'signature') {
       if (oud) { if (confirm(`Remove the signature from ${veld.label}?`)) zet(ann, veld, ''); return; }
       const sig = profiel().signature;
-      if (!sig) { melding('No signature saved yet: add one in Stamp Builder › My details.', e.clientX, e.clientY); return; }
+      if (!sig) { melding('No signature saved yet: add one in Builder › My details.', e.clientX, e.clientY); return; }
       zet(ann, veld, sig);
       return;
     }
@@ -168,7 +168,7 @@ export function startInPlaats(api, { type, zet, profiel }) {
     if (!e || open || e.buttons || !magNu(api) || e.target?.closest?.('.s43d-lade, .s43d-tab')) { rand?.remove(); rand = null; return; }
     const p = naarPagina(e);
     const hit = p && veldOnder(api, type, p);
-    if (!hit || hit.ann.locked || hit.veld.kind === 'auto') { rand?.remove(); rand = null; return; }
+    if (!hit || (hit.ann.locked && !hit.ann.seed43Sheet) || hit.veld.kind === 'auto') { rand?.remove(); rand = null; return; }
     const r = schermVak(e, p, hit);
     if (!rand) {
       rand = document.createElement('div');

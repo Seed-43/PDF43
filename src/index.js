@@ -14,7 +14,7 @@
 
 import { hertekenOveral } from './herteken.js';
 import { registreerOcr, stopOcr } from './ocr/engine.js';
-import { startStamps } from './stamps/index.js';
+import { startStamps, bladVenster } from './stamps/index.js';
 import { startElementen, stopElementen, plaatsBracing } from './library/elements.js';
 import { openBibliotheek } from './library/window.js';
 import { openAbout } from './about.js';
@@ -30,6 +30,7 @@ const OPSLAG = 'seed43.tools';
 const ZICHTBAAR = 'seed43.ribbon';
 const ICOON_EIGENSCHAPPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M14 4v16"/><path d="M16.5 8h2"/><path d="M16.5 11h2"/><path d="M16.5 14h2"/></svg>';
 const ICOON_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="7" r="3.5"/><path d="M3 7h7"/><circle cx="17.5" cy="17" r="3.5"/><path d="M14 17h7"/><path d="M9 10.5l5.5 3"/><path d="M12.5 14l2 -0.5 -0.6 -2"/></svg>';
+const ICOON_BLAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 15h9"/><path d="M12 15v4"/><path d="M16 15v4"/><path d="M12 17h9"/></svg>';
 const ICOON_ABOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
 
 const ICOON_STEMPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/><path d="M6 15h12"/></svg>';
@@ -117,7 +118,7 @@ export async function activate(api) {
 
 const ABOUT_TOOLS = [
   { id: 'ocr', label: 'Paddle OCR', beschrijving: 'OCR engine for scans and page labels; the ribbon button switches it on or off', icon: ICOON_OCR },
-  { id: 'stamps', label: 'Smart Stamps', beschrijving: 'Stamp families with shared parameters, and the Stamp Builder (in the Seed43 drawer)', icon: ICOON_STEMPEL },
+  { id: 'stamps', label: 'Smart Stamps', beschrijving: 'Stamp families with shared parameters, and the Builder (in the Seed43 drawer)', icon: ICOON_STEMPEL },
   { id: 'collab', label: 'Collab', beschrijving: 'Share a PDF by key and mark it up together (in the Seed43 drawer)', icon: ICOON_COLLAB },
   { id: 'library', label: 'Element Library', beschrijving: 'Steel, timber, fixings and bolts placed to scale', icon: ICOON_BIBLIOTHEEK },
   { id: 'autolink', label: 'Auto Link', beschrijving: 'Links section and detail bubbles to each other, both ways', icon: ICOON_LINK },
@@ -220,6 +221,10 @@ function bouwTab(api, aan) {
           zet: (id, v) => { const z = leesZichtbaar(); z[id] = v; try { localStorage.setItem(ZICHTBAAR, JSON.stringify(z)); } catch {} bouwTab(api, aan); },
         }),
       }, {
+        type: 'action', id: 'sheet', label: { en: 'Sheet', nl: 'Blad' }, icon: ICOON_BLAD, size: 'large',
+        title: { en: 'Add a drawing sheet or memo: to this page, to every page, or as a new PDF with as many pages as you need.', nl: 'Tekenblad of memo toevoegen: aan deze pagina, op alle bladzijden of als nieuwe PDF.' },
+        onRun: () => bladVenster(api).catch((e) => alert(e.message || e)),
+      }, {
         type: 'action', id: 'tips', label: { en: 'Tips', nl: 'Tips' }, icon: ICOON_TIPS, size: 'large',
         title: { en: 'Show or hide the Seed43 tips: the animated guides when placing or selecting, and the properties card. On again brings back the ones you ticked off.', nl: 'Seed43-tips tonen of verbergen.' },
         active: tipsAan(),
@@ -234,7 +239,7 @@ function bouwTab(api, aan) {
         onRun: () => { const aanNu = wisselVenster(); tab?.update('properties-window', { active: aanNu }); },
       },
       ...(zie('stamps') ? [ladeKnop('smart-stamps', 'stempels', 'Smart Stamps', ICOON_STEMPEL,
-        { en: 'Smart Stamps tab in the Seed43 drawer on or off. On: search and place a stamp, or open the Stamp Builder.', nl: 'Tabblad Slimme stempels in de Seed43-lade aan of uit.' })] : []),
+        { en: 'Smart Stamps tab in the Seed43 drawer on or off. On: search and place a stamp, or open the Builder.', nl: 'Tabblad Slimme stempels in de Seed43-lade aan of uit.' })] : []),
       ...(zie('collab') ? [ladeKnop('collab', 'collab', 'Collab', ICOON_COLLAB,
         { en: 'Collab tab in the Seed43 drawer on or off. On: share a PDF by key and mark it up together.', nl: 'Tabblad Collab in de Seed43-lade aan of uit.' })] : []),
       ],

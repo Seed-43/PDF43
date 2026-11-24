@@ -276,3 +276,19 @@ export function standaardWaarden(familie) {
 }
 
 export const isPerStempel = (veld) => !!veld.perStamp;
+
+// ── Which families show in the Stamps drawer and the Sheet dialog ────────
+// Like the Library's Countries: the user ticks in the Builder what they use; the rest is
+// hidden there (still in the Builder, still in the templates folder).
+
+const VERBORGEN = 'seed43.stamps.hidden';
+
+export function leesVerborgen() {
+  try { return new Set(JSON.parse(localStorage.getItem(VERBORGEN) || '[]')); } catch { return new Set(); }
+}
+
+export function bewaarVerborgen(ids) {
+  try { localStorage.setItem(VERBORGEN, JSON.stringify([...ids])); } catch {}
+}
+
+export const isGetoond = (f, verborgen = leesVerborgen()) => !verborgen.has(f.id);
