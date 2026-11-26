@@ -41,3 +41,14 @@ test('an existing link over the bubble is kept', () => {
   assert.ok(alGelinkt([{ type: 'link', page: 3, x: 0, y: 0, width: 50, height: 50 }], 3, { x: 10, y: 10, width: 20, height: 20 }));
   assert.ok(!alGelinkt([{ type: 'link', page: 4, x: 0, y: 0, width: 50, height: 50 }], 3, { x: 10, y: 10, width: 20, height: 20 }));
 });
+
+test('cut and drawn on the same sheet: bubble and title link to each other', () => {
+  const r = planLinks([
+    { page: 1, items: [blad('S1.01'), t('2', 107.6, 100), t('S1.01', 98, 111), t('2', 407.6, 500), t('S1.01', 398, 511)] },
+    { page: 2, items: [blad('S1.02')] },
+  ]);
+  assert.equal(r.links.length, 2);
+  const [a, b] = r.links.sort((x, y) => x.box.x - y.box.x);
+  assert.deepEqual([a.page, a.target.page, b.page, b.target.page], [1, 1, 1, 1]);
+  assert.ok(a.target.box.x > 300 && b.target.box.x < 200);
+});

@@ -11,6 +11,8 @@
 // This finds every such pair from the page text and links each bubble to its
 // partner: the plan bubble to the detail title, the title back to the bubble.
 // A bubble whose partner is not found links to the top of the sheet it names.
+// A detail cut and drawn on the same sheet: its bubble and its title link to
+// each other on that page.
 //
 // Pure: page text in, link plans out. The tool (index.js) reads the pages and
 // creates the app's own link annotations, so they can be edited, undone and
@@ -111,7 +113,14 @@ export function planLinks(paginas) {
     const eigen = vanPagina[page] || null;
     for (const b of lijst) {
       const doelPagina = paginaVan[b.sheet];
-      if (!doelPagina || doelPagina === page) { if (!doelPagina) zonderDoel.push({ page, label: b.label, sheet: b.sheet }); continue; }
+      if (!doelPagina) { zonderDoel.push({ page, label: b.label, sheet: b.sheet }); continue; }
+      if (doelPagina === page) {
+        // Cut and drawn on the same sheet (2 over S1.01, on S1.01): the cut
+        // bubble and the view title link to each other on this page.
+        const zelfde = lijst.filter((d) => d !== b && d.label === b.label && d.sheet === b.sheet);
+        if (zelfde.length === 1) links.push({ page, box: b.box, label: b.label, sheet: b.sheet, target: { page, box: zelfde[0].box } });
+        continue;
+      }
       const daar = perPagina.get(doelPagina) || [];
       // The partner: the same label, pointing back at this sheet.
       const partner = daar.find((d) => d.label === b.label && eigen && d.sheet === eigen)

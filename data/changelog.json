@@ -17,7 +17,8 @@
         "Elements: F flips a fixing (left for right), while placing or when selected"
       ],
       "Fixed": [
-        "A sheet no longer disappears when zoomed in away from the top-left corner of the page"
+        "A sheet no longer disappears when zoomed in away from the top-left corner of the page",
+        "Auto Link: a section cut and drawn on the same sheet now links its bubble and its view title to each other (before, the view title got no link back)"
       ]
     }
   },
