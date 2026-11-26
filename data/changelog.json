@@ -18,7 +18,7 @@
       ],
       "Fixed": [
         "A sheet no longer disappears when zoomed in away from the top-left corner of the page",
-        "Auto Link: a section cut and drawn on the same sheet now links its bubble and its view title to each other (before, the view title got no link back)"
+        "Auto Link: view titles are found when their number is larger than the sheet number under it, and section letters (A, B) count as bubble labels, so each title gets a link back to its section or detail bubble; a section cut and drawn on the same sheet links its bubble and title to each other"
       ]
     }
   },

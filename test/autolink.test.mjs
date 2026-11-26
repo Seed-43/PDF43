@@ -52,3 +52,22 @@ test('cut and drawn on the same sheet: bubble and title link to each other', () 
   assert.deepEqual([a.page, a.target.page, b.page, b.target.page], [1, 1, 1, 1]);
   assert.ok(a.target.box.x > 300 && b.target.box.x < 200);
 });
+
+test('a view title with a larger number than its sheet text is a bubble', () => {
+  const groot = (text, x, y) => ({ text, x, y, width: 6, height: 11.5, transform: [11.5, 0, 0, 11.5, x, y] });
+  const r = planLinks([
+    { page: 1, items: [blad('S1.01'), t('2', 107.6, 100), t('S1.02', 98, 111)] },
+    { page: 2, items: [blad('S1.02'), groot('2', 104, 99), t('S1.01', 96, 110)] },
+  ]);
+  const terug = r.links.find((l) => l.page === 2);
+  assert.ok(terug && terug.target.page === 1 && terug.target.box);
+});
+
+test('section letters (A, B) are bubble labels too', () => {
+  const r = planLinks([
+    { page: 1, items: [blad('S1.01'), t('A', 107.6, 100), t('S4.01', 98, 111)] },
+    { page: 2, items: [blad('S4.01'), t('A', 104, 99), t('S1.01', 96, 110)] },
+  ]);
+  assert.equal(r.links.length, 2);
+  assert.ok(r.links.every((l) => l.target.box));
+});

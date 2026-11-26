@@ -19,7 +19,8 @@
 // saved like any other link.
 
 const SHEET_RE = /^[A-Z]{1,3}-?\d{1,3}(?:\.\d{1,3})?[A-Z]?$/;
-const LABEL_RE = /^[A-Za-z]{0,3}\d{1,3}[A-Za-z]?$/;
+// A detail number (3, SD32) or a section letter (A, B, AA).
+const LABEL_RE = /^(?:[A-Za-z]{0,3}\d{1,3}[A-Za-z]?|[A-Z]{1,2})$/;
 
 /** Text items of a page, horizontal in the view, with a box: { text, x, y, w, h } (y down, top of the box). */
 export function tekstVakken(items) {
@@ -78,10 +79,12 @@ export function bubbels(vakken, bladen, eigenBlad = null) {
     let beste = null;
     for (const l of vakken) {
       if (l === s || gebruikt.has(l) || !LABEL_RE.test(l.text) || bladen.has(l.text)) continue;
-      if (Math.abs(l.h - s.h) > 0.35 * s.h) continue;
+      // The number may be larger than the sheet under it (a view title's
+      // bubble: 11.5 pt over 7.5 pt), not smaller.
+      if (l.h < 0.65 * s.h || l.h > 2.1 * s.h) continue;
       const dx = Math.abs(l.x + l.w / 2 - cx);
       const dy = s.y - l.y;   // label above: its top is higher
-      if (dx > Math.max(1.5, 0.5 * s.h) || dy < 0.6 * s.h || dy > 2.2 * s.h) continue;
+      if (dx > Math.max(1.5, 0.5 * Math.max(s.h, l.h)) || dy < 0.6 * s.h || dy > 0.6 * s.h + 1.6 * l.h) continue;
       if (!beste || dy < beste.dy) beste = { l, dy };
     }
     if (!beste) continue;
